@@ -21,7 +21,10 @@ lower, upper := stats.confidence_interval_mean(data, 0.95)
 cm := utils.build_confusion_matrix(y_true, y_pred)
 println("F1: ${cm.f1_score():.4f}")
 
-// Linear Algebra
+// Linear Algebra (also supports generics)
+v1 := [1, 2, 3]
+v2 := [4, 5, 6]
+v_sum := linalg.add(v1, v2)  // Works with int or f64
 result := linalg.matmul(matrix_a, matrix_b)
 distance := linalg.distance(vector_a, vector_b)
 ```
@@ -42,17 +45,20 @@ distance := linalg.distance(vector_a, vector_b)
 
 ## Generic Type Support
 
-Many statistical and numerical functions now support **generic numeric types** (`int`, `f64`):
+Many functions across VStats support **generic numeric types** (`int`, `f64`):
 
-- **Generic Input Functions**: Accept `[]int` or `[]f64` seamlessly
+- **Linear Algebra (linalg)**: All vector and matrix operations
+  - Examples: `add[T]`, `subtract[T]`, `dot[T]`, `matmul[T]`, `distance[T]`
+  - Vector operations return the same type: `add[int]` returns `[]int`
+  - Matrix operations work seamlessly with both types
+  
+- **Statistics & Optimization**: Accept generic input, return `f64` for precision
   - Examples: `mean[T]`, `variance[T]`, `correlation[T]`, `mse_loss[T]`
-  - Always return `f64` for numerical precision in statistical calculations
+  - Design: Generic input `[]T` → F64 output (maintains mathematical precision)
   
 - **Type-Specific Functions**: Require `[]f64` due to algorithmic constraints
   - `median`, `quantile`, `mode` - require sorting/hashing
   - Functions depending on `[][]f64` matrices for feature operations
-
-- **Design Principle**: Generic input `[]T` → F64 output (statistical precision)
 
 ## Modules implemented
 
@@ -62,25 +68,26 @@ The following is the list of modules and functions implemented
 
 ####  Vectors 
 
-- `add(v []f64, w []f64) []f64`: Adds two vectors `a` and `b`: `(a + b)`
-- `subtract(v []f64, w []f64) []f64`: Subtracts two vectors `a` and `b`: `(a - b)`
-- `vector_sum(vector_list [][]f64) []f64`: Sums a list of vectors, example: `vector_sum([[f64(1),2],[3,4]]) => [4.0, 6.0]`
-- `scalar_multiply(c f64, v []f64) []f64`: Multiplies an scalar value `c` to each element of a vector `v`
-- `vector_mean(vector_list [][]f64) []f64`: Calculates 1/n sum_j (v[j])
-- `dot(v []f64, w []f64) f64`: Dot product of `v` and `w`
-- `sum_of_squares(v []f64) f64`: Squares each term of a vector, example: [1,2,3]^2 = [1^2, 2^2, 3^2]
-- `magnitude(v []f64) f64`: Module of a vector, example: || [3,4] || = 5
-- `squared_distance(v []f64, w []f64) f64`: Calculates sqrt[(v1-w1)^2 + (v2-w2)^2...]
-- `distance(v []f64, w []f64) f64`: Calculates the distance between `v` and `w`
+- `add[T](v []T, w []T) []T`: Adds two vectors `a` and `b`: `(a + b)`
+- `subtract[T](v []T, w []T) []T`: Subtracts two vectors `a` and `b`: `(a - b)`
+- `vector_sum[T](vector_list [][]T) []T`: Sums a list of vectors, example: `vector_sum([[1,2],[3,4]]) => [4, 6]`
+- `scalar_multiply[T](c f64, v []T) []T`: Multiplies a scalar value `c` to each element of a vector `v`
+- `vector_mean[T](vector_list [][]T) []T`: Calculates 1/n sum_j (v[j])
+- `dot[T](v []T, w []T) T`: Dot product of `v` and `w`
+- `sum_of_squares[T](v []T) T`: Squares each term of a vector, example: [1,2,3]^2 = [1^2, 2^2, 3^2]
+- `magnitude[T](v []T) T`: Module of a vector, example: || [3,4] || = 5
+- `squared_distance[T](v []T, w []T) T`: Calculates sqrt[(v1-w1)^2 + (v2-w2)^2...]
+- `distance[T](v []T, w []T) T`: Calculates the distance between `v` and `w`
 
 #### Matrices
 
-- `shape(a [][]f64) (int, int)`: Returns the shape of a matrix (rows, columns)
-- `get_row(a [][]f64, i int) []f64`: Gets the i-th row of a matrix as a vector
-- `get_column(a [][]f64, j int) []f64`: Gets the j-th column of a matrix as a vector
-- `make_matrix(num_rows int, num_cols int, op fn (int, int) f64) [][]f64`: Makes a matrix using a formula given by function `op(i,j)` 
-- `identity_matrix(n int) [][]f64`: Returns a n-identity matrix
-- `matmul(a [][]f64, b [][]f64) [][]f64`: Multuplies matrix `a` with `b`
+- `shape[T](a [][]T) (int, int)`: Returns the shape of a matrix (rows, columns)
+- `get_row[T](a [][]T, i int) []T`: Gets the i-th row of a matrix as a vector
+- `get_column[T](a [][]T, j int) []T`: Gets the j-th column of a matrix as a vector
+- `flatten[T](m [][]T) []T`: Flattens a matrix to a 1D array
+- `make_matrix[T](num_rows int, num_cols int, op fn (int, int) T) [][]T`: Makes a matrix using a formula given by function `op(i,j)` 
+- `identity_matrix[T](n int) [][]T`: Returns an n-identity matrix
+- `matmul[T](a [][]T, b [][]T) [][]T`: Multiplies matrix `a` with `b`
 
 ### Probabilites (prob)
 
@@ -255,6 +262,79 @@ The following is the list of modules and functions implemented
 - `sparse_categorical_crossentropy_loss(y_true []int, y_pred [][]f64) f64` - Sparse multi-class loss
 - `kl_divergence_loss(y_true []f64, y_pred []f64) f64` - KL divergence
 - `contrastive_loss(y_true f64, distance f64, margin f64) f64` - Siamese network loss
+
+## Machine Learning (ml)
+
+### Regression (Generic Support)
+All regression functions support generic numeric types with automatic conversion to f64 for precision.
+
+**Model Training & Prediction:**
+- `linear_regression[T](x [][]T, y []T) LinearModel[T]` - Ordinary Least Squares regression
+- `linear_predict[T](model LinearModel[T], x [][]T) []T` - Predictions using linear model
+- `logistic_regression[T](x [][]T, y []T, iterations int, learning_rate T) LogisticModel[T]` - Binary classification with gradient descent
+- `logistic_predict_proba[T](model LogisticModel[T], x [][]T) []T` - Probability predictions
+- `logistic_predict[T](model LogisticModel[T], x [][]T, threshold T) []T` - Class predictions
+
+**Error Metrics (Generic input, f64 output for precision):**
+- `mse[T](y_true []T, y_pred []T) f64` - Mean Squared Error
+- `rmse[T](y_true []T, y_pred []T) f64` - Root Mean Squared Error
+- `mae[T](y_true []T, y_pred []T) f64` - Mean Absolute Error
+- `r_squared[T](y_true []T, y_pred []T) f64` - R² coefficient of determination
+
+### Classification
+- `logistic_classifier(x [][]f64, y []f64, iterations int, learning_rate f64) LogisticClassifier[f64]`
+- `logistic_classifier_predict(model LogisticClassifier[f64], x [][]f64, threshold f64) []int`
+- `logistic_classifier_predict_proba(model LogisticClassifier[f64], x [][]f64) []f64`
+- `naive_bayes_classifier(x [][]f64, y []int) NaiveBayesClassifier` - Probabilistic classifier
+- `naive_bayes_predict(model NaiveBayesClassifier, x [][]f64) []int`
+- `svm_classifier(x [][]f64, y []f64, learning_rate f64, iterations int, gamma f64, kernel string) SVMClassifier`
+- `svm_predict(model SVMClassifier, x [][]f64) []int`
+- `random_forest_classifier(x [][]f64, y []int, num_trees int, max_depth int) RandomForestClassifier`
+- `random_forest_predict(model RandomForestClassifier, x [][]f64) []int`
+- `accuracy(y_true []int, y_pred []int) f64` - Classification accuracy
+
+### Clustering
+- `kmeans(data [][]f64, k int, max_iterations int) KMeansModel` - K-means clustering
+- `kmeans_predict(model KMeansModel, data [][]f64) []int` - Predict cluster assignments
+- `kmeans_inertia(model KMeansModel, data [][]f64) f64` - Sum of squared distances
+- `silhouette_coefficient(data [][]f64, labels []int) f64` - Cluster quality metric
+- `hierarchical_clustering(data [][]f64, num_clusters int) HierarchicalClustering` - Agglomerative clustering
+- `dbscan(data [][]f64, eps f64, min_points int) []int` - Density-based clustering
+
+## Hypothesis Testing (hypothesis)
+
+### Statistical Tests
+- `t_test_one_sample(x []f64, mu f64, tp TestParams) (f64, f64)` - One-sample t-test
+- `t_test_two_sample(x []f64, y []f64, tp TestParams) (f64, f64)` - Two-sample t-test
+- `chi_squared_test(observed []f64, expected []f64) (f64, f64)` - Chi-squared goodness of fit
+- `correlation_test(x []f64, y []f64, tp TestParams) (f64, f64)` - Pearson correlation significance
+- `wilcoxon_signed_rank_test(x []f64, y []f64) (f64, f64)` - Non-parametric paired test
+- `mann_whitney_u_test(x []f64, y []f64) (f64, f64)` - Non-parametric independent samples test
+
+## Neural Network Layers (nn)
+
+### Layer Operations
+- `dense_layer(input_size int, output_size int) DenseLayer` - Fully connected layer
+- `(layer DenseLayer) forward(input []f64) []f64` - Forward pass
+- `(mut layer DenseLayer) backward(grad_output []f64, input []f64, learning_rate f64) []f64` - Backward pass
+
+### Activation Functions
+- `relu(x f64) f64` - ReLU activation
+- `relu_derivative(x f64) f64` - ReLU derivative
+- `sigmoid(x f64) f64` - Sigmoid activation
+- `sigmoid_derivative(x f64) f64` - Sigmoid derivative
+- `tanh(x f64) f64` - Hyperbolic tangent
+- `tanh_derivative(x f64) f64` - Tanh derivative
+- `softmax(x []f64) []f64` - Softmax activation
+
+### Sequential Network
+- `sequential(layer_sizes []int, activation_fn string) NeuralNetwork` - Create sequential model
+- `(net NeuralNetwork) forward(input []f64) []f64` - Forward propagation
+- `(mut net NeuralNetwork) backward(grad_output []f64, input []f64, learning_rate f64) []f64` - Backpropagation
+- `(mut net NeuralNetwork) train(x_train [][]f64, y_train []f64, config TrainingConfig)` - Train network
+- `(net NeuralNetwork) predict(x [][]f64) [][]f64` - Batch predictions
+- `(net NeuralNetwork) predict_single(x []f64) []f64` - Single prediction
+- `(net NeuralNetwork) evaluate(x_test [][]f64, y_test []f64) f64` - Evaluate accuracy
 
 ## Usage Examples
 

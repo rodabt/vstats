@@ -1,6 +1,7 @@
 import stats
 import nn
 import optim
+import linalg
 
 fn main() {
 	println("=" .repeat(80))
@@ -89,9 +90,55 @@ fn main() {
 	println("Gradient step (f64): ${result_f64}")
 	println("")
 
-	println("5. KEY DESIGN PRINCIPLE")
+	println("5. LINEAR ALGEBRA WITH GENERIC TYPES")
 	println("-" .repeat(80))
-	println("Generic Input [T] → F64 Output")
+	
+	// Vector operations with int
+	v_int_a := [1, 2, 3]
+	v_int_b := [4, 5, 6]
+	v_int_sum := linalg.add(v_int_a, v_int_b)
+	v_int_dist := linalg.distance(v_int_a, v_int_b)
+	
+	println("Vector add (int): ${v_int_a} + ${v_int_b} = ${v_int_sum}")
+	println("Vector distance (int): ${v_int_dist}")
+	
+	// Vector operations with f64
+	v_f64_a := [1.0, 2.0, 3.0]
+	v_f64_b := [4.0, 5.0, 6.0]
+	v_f64_sum := linalg.add(v_f64_a, v_f64_b)
+	v_f64_dot := linalg.dot(v_f64_a, v_f64_b)
+	
+	println("Vector add (f64): ${v_f64_a} + ${v_f64_b} = ${v_f64_sum}")
+	println("Vector dot product: ${v_f64_dot}")
+	println("")
+
+	println("6. NEURAL NETWORK LAYERS WITH GENERIC TYPES")
+	println("-" .repeat(80))
+	
+	// Dense layer with int predictions
+	y_int_true := [1, 2, 3]
+	y_int_pred := [1, 2, 3]
+	layer_loss_int := nn.mse_loss(y_int_true, y_int_pred)
+	
+	println("Neural Network Loss (int data):")
+	println("  MSE Loss: ${layer_loss_int:.6f}")
+	
+	// Dense layer with f64 predictions
+	y_f64_true := [1.0, 2.0, 3.0]
+	y_f64_pred := [1.1, 2.1, 2.9]
+	layer_loss_f64 := nn.mse_loss(y_f64_true, y_f64_pred)
+	
+	println("Neural Network Loss (f64 data):")
+	println("  MSE Loss: ${layer_loss_f64:.6f}")
+	println("")
+
+	println("7. KEY DESIGN PRINCIPLES")
+	println("-" .repeat(80))
+	println("Linear Algebra: Generic input []T → Same type output []T")
+	println("- Vector/matrix operations preserve input type")
+	println("- Works seamlessly with int, f64, and other numeric types")
+	println("")
+	println("Statistics/ML: Generic input []T → F64 output")
 	println("- Functions accept both int and f64 arrays")
 	println("- Always return f64 for numerical precision")
 	println("- Supports type flexibility while maintaining mathematical accuracy")

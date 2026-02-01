@@ -13,35 +13,52 @@ pub struct LogisticModel[T] {
 	intercept    T
 }
 
-// Linear Regression - Ordinary Least Squares
+// Linear Regression - Ordinary Least Squares (converts to f64 internally for numerical stability)
 pub fn linear_regression[T](x [][]T, y []T) LinearModel[T] {
 	assert x.len == y.len, "number of samples must match"
 	assert x.len > 0, "must have at least one sample"
 	
-	// n := T(x.len)
-	p := x[0].len
+	// Convert input to f64 for numerical computation
+	mut x_f64 := [][]f64{len: x.len}
+	mut y_f64 := []f64{len: y.len}
+	
+	for i in 0 .. x.len {
+		x_f64[i] = []f64{len: x[i].len}
+		for j in 0 .. x[i].len {
+			x_f64[i][j] = f64(x[i][j])
+		}
+		y_f64[i] = f64(y[i])
+	}
+	
+	p := x_f64[0].len
 	
 	// Add intercept term (column of 1s)
-	mut x_mat := [][]T{len: x.len}
-	for i in 0 .. x.len {
-		x_mat[i] = []T{len: p + 1}
+	mut x_mat := [][]f64{len: x_f64.len}
+	for i in 0 .. x_f64.len {
+		x_mat[i] = []f64{len: p + 1}
 		x_mat[i][0] = 1.0
 		for j in 0 .. p {
-			x_mat[i][j + 1] = x[i][j]
+			x_mat[i][j + 1] = x_f64[i][j]
 		}
 	}
 	
 	// Normal equations: β = (X^T X)^(-1) X^T y
-	xt := matrix_transpose(x_mat)
-	xtx := matrix_multiply(xt, x_mat)
-	xty := matrix_vector_multiply(xt, y)
+	xt := matrix_transpose_f64(x_mat)
+	xtx := matrix_multiply_f64(xt, x_mat)
+	xty := matrix_vector_multiply_f64(xt, y_f64)
 	
-	// Solve using Gaussian elimination (simplified)
-	beta := gaussian_elimination(xtx, xty)
+	// Solve using Gaussian elimination
+	beta := gaussian_elimination_f64(xtx, xty)
 	
-	return LinearModel{
-		coefficients: beta[1..]
-		intercept: beta[0]
+	// Convert results back to T
+	mut coeffs := []T{len: beta.len - 1}
+	for i in 0 .. coeffs.len {
+		coeffs[i] = T(beta[i + 1])
+	}
+	
+	return LinearModel[T]{
+		coefficients: coeffs
+		intercept: T(beta[0])
 	}
 }
 
@@ -164,36 +181,37 @@ pub fn logistic_predict[T](model LogisticModel[T], x [][]T, threshold T) []T {
 	return predictions
 }
 
-// Mean Squared Error
-pub fn mse[T](y_true []T, y_pred []T) T {
+// Mean Squared Error - Generic input, f64 output (precision)
+pub fn mse[T](y_true []T, y_pred []T) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
 	mut sum := 0.0
 	for i in 0 .. y_true.len {
-		error := y_true[i] - y_pred[i]
+		error := f64(y_true[i]) - f64(y_pred[i])
 		sum += error * error
 	}
-	return sum / T(y_true.len)
+	return sum / f64(y_true.len)
 }
 
-// Root Mean Squared Error
-pub fn rmse[T](y_true []T, y_pred []T) T {
+// Root Mean Squared Error - Generic input, f64 output
+pub fn rmse[T](y_true []T, y_pred []T) f64 {
 	return math.sqrt(mse(y_true, y_pred))
 }
 
-// Mean Absolute Error
-pub fn mae[T](y_true []T, y_pred []T) T {
+// Mean Absolute Error - Generic input, f64 output (precision)
+pub fn mae[T](y_true []T, y_pred []T) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
 	mut sum := 0.0
 	for i in 0 .. y_true.len {
-		sum += math.abs(y_true[i] - y_pred[i])
+		diff := f64(y_true[i]) - f64(y_pred[i])
+		sum += math.abs(diff)
 	}
-	return sum / T(y_true.len)
+	return sum / f64(y_true.len)
 }
 
-// R-squared coefficient of determination
-pub fn r_squared[T](y_true []T, y_pred []T) T {
+// R-squared coefficient of determination - Generic input, f64 output
+pub fn r_squared[T](y_true []T, y_pred []T) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
 	y_mean := stats.mean(y_true)
@@ -202,25 +220,29 @@ pub fn r_squared[T](y_true []T, y_pred []T) T {
 	mut ss_tot := 0.0
 	
 	for i in 0 .. y_true.len {
-		ss_res += (y_true[i] - y_pred[i]) * (y_true[i] - y_pred[i])
-		ss_tot += (y_true[i] - y_mean) * (y_true[i] - y_mean)
+		y_t := f64(y_true[i])
+		y_p := f64(y_pred[i])
+		diff_res := y_t - y_p
+		diff_tot := y_t - y_mean
+		ss_res += diff_res * diff_res
+		ss_tot += diff_tot * diff_tot
 	}
 	
-	return if ss_tot > 0 { 1 - ss_res / ss_tot } else { 0 }
+	return if ss_tot > 0 { 1.0 - ss_res / ss_tot } else { 0.0 }
 }
 
-// Helper: Matrix transpose
-fn matrix_transpose[T](m [][]T) [][]T {
+// Helper: Matrix transpose (f64 version for numerical stability)
+fn matrix_transpose_f64(m [][]f64) [][]f64 {
 	if m.len == 0 {
-		return [][]T{}
+		return [][]f64{}
 	}
 	
 	rows := m[0].len
 	cols := m.len
 	
-	mut result := [][]T{len: rows}
+	mut result := [][]f64{len: rows}
 	for i in 0 .. rows {
-		result[i] = []T{len: cols}
+		result[i] = []f64{len: cols}
 		for j in 0 .. cols {
 			result[i][j] = m[j][i]
 		}
@@ -228,16 +250,16 @@ fn matrix_transpose[T](m [][]T) [][]T {
 	return result
 }
 
-// Helper: Matrix multiply
-fn matrix_multiply[T](a [][]T, b [][]T) [][]T {
+// Helper: Matrix multiply (f64 version)
+fn matrix_multiply_f64(a [][]f64, b [][]f64) [][]f64 {
 	assert a[0].len == b.len, "incompatible dimensions"
 	
 	rows := a.len
 	cols := b[0].len
 	
-	mut result := [][]T{len: rows}
+	mut result := [][]f64{len: rows}
 	for i in 0 .. rows {
-		result[i] = []T{len: cols}
+		result[i] = []f64{len: cols}
 		for j in 0 .. cols {
 			mut sum := 0.0
 			for k in 0 .. a[0].len {
@@ -249,9 +271,9 @@ fn matrix_multiply[T](a [][]T, b [][]T) [][]T {
 	return result
 }
 
-// Helper: Matrix-vector multiply
-fn matrix_vector_multiply[T](m [][]T, v []T) []T {
-	mut result := []T{len: m.len}
+// Helper: Matrix-vector multiply (f64 version)
+fn matrix_vector_multiply_f64(m [][]f64, v []f64) []f64 {
+	mut result := []f64{len: m.len}
 	for i in 0 .. m.len {
 		mut sum := 0.0
 		for j in 0 .. v.len {
@@ -262,11 +284,11 @@ fn matrix_vector_multiply[T](m [][]T, v []T) []T {
 	return result
 }
 
-// Helper: Gaussian elimination for solving Ax = b
-fn gaussian_elimination[T](a [][]T, b []T) []T {
+// Helper: Gaussian elimination for solving Ax = b (f64 version)
+fn gaussian_elimination_f64(a [][]f64, b []f64) []f64 {
 	n := a.len
-	mut matrix := [][]T{len: n}
-	mut rhs := []T{len: n}
+	mut matrix := [][]f64{len: n}
+	mut rhs := []f64{len: n}
 	
 	// Copy input
 	for i in 0 .. n {
@@ -301,7 +323,7 @@ fn gaussian_elimination[T](a [][]T, b []T) []T {
 	}
 	
 	// Back substitution
-	mut solution := []T{len: n}
+	mut solution := []f64{len: n}
 	for i := n - 1; i >= 0; i-- {
 		solution[i] = rhs[i]
 		for j in (i + 1) .. n {
@@ -315,7 +337,9 @@ fn gaussian_elimination[T](a [][]T, b []T) []T {
 	return solution
 }
 
-// Helper: Sigmoid function
+// Helper: Sigmoid function (converts to f64 internally for numerical stability)
 fn sigmoid[T](x T) T {
-	return 1.0 / (1.0 + math.exp(-x))
+	x_f64 := f64(x)
+	result := 1.0 / (1.0 + math.exp(-x_f64))
+	return T(result)
 }

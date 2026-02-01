@@ -186,10 +186,7 @@ fn main() {
 	for val in y_train {
 		y_train_f64 << f64(val)
 	}
-	
-	train_mean := y_train_f64.len
-	train_std := math.sqrt(f64(train_mean))
-	
+		
 	println("Training data distribution:")
 	println("  Class 0 samples: ${y_train_binary.filter(it == 1.0).len}")
 	println("  Class Rest samples: ${y_train_binary.filter(it == 0.0).len}")
