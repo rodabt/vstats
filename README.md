@@ -1,4 +1,4 @@
-# VStats 0.0.2
+# VStats 0.1.0
 
 A dependency-free Linear Algebra, Statistics, and Machine Learning library written from scratch in V.
 
@@ -24,17 +24,17 @@ distance := linalg.distance(vector_a, vector_b)
 
 ## Features Overview
 
-| Module | Purpose | Status |
-|--------|---------|--------|
-| **linalg** | Vector & Matrix operations | ✓ Complete |
-| **stats** | Descriptive & Advanced Statistics | ✓ Complete |
-| **prob** | Probability Distributions | ✓ Complete |
-| **optim** | Numerical Optimization | ✓ Complete |
-| **utils** | Utilities, Metrics, Datasets | ✓ Complete |
-| **ml** | Machine Learning Algorithms | ✓ Complete |
-| **nn** | Neural Networks | ✓ Complete |
-| **hypothesis** | Hypothesis Testing | ✓ Complete |
-| **symbol** | Symbolic Computation | 🚧 WIP |
+| Module         | Purpose                           | Status      |
+| -------------- | --------------------------------- | ----------- |
+| **linalg**     | Vector & Matrix operations        | ✓ Complete |
+| **stats**      | Descriptive & Advanced Statistics | ✓ Complete |
+| **prob**       | Probability Distributions         | ✓ Complete |
+| **optim**      | Numerical Optimization            | ✓ Complete |
+| **utils**      | Utilities, Metrics, Datasets      | ✓ Complete |
+| **ml**         | Machine Learning Algorithms       | ✓ Complete |
+| **nn**         | Neural Networks                   | ✓ Complete |
+| **hypothesis** | Hypothesis Testing                | ✓ Complete |
+| **symbol**     | Symbolic Computation              | 🚧 WIP     |
 
 ## Modules implemented
 
@@ -188,6 +188,17 @@ The following is the list of modules and functions implemented
 - `decay_learning_rate(initial_lr f64, epoch int, decay_rate f64) f64`
   - Exponential learning rate decay: `lr = initial_lr * (decay_rate)^epoch`
 
+### Feature Normalization
+- `normalize_features(x [][]f64) ([][]f64, []f64, []f64)` - Standardize features using z-score normalization
+  - Returns: (normalized_data, feature_means, feature_stds)
+  - Computes mean and std for each feature, then applies (x - mean) / std
+  - Essential for ML algorithms sensitive to feature scaling
+  
+- `apply_normalization(x [][]f64, means []f64, stds []f64) [][]f64` - Apply pre-computed normalization
+  - Uses statistics from training data on new data
+  - Prevents data leakage in train/test split scenarios
+  - Handles zero standard deviation gracefully
+
 ### Basic Utilities
 - `factorial(n int) f64` - Compute factorial
 - `combinations(n int, k int) f64` - Binomial coefficient C(n,k)
@@ -289,6 +300,30 @@ for combo in grid {
     batch := combo['batch_size']
     // Train model with these parameters
 }
+```
+
+### Feature Normalization for ML
+```v
+import utils
+
+// Load dataset
+iris := utils.load_iris()!
+train, test := iris.train_test_split(0.2)
+x_train, y_train := train.xy()
+x_test, y_test := test.xy()
+
+// Normalize using training set statistics
+x_train_norm, means, stds := utils.normalize_features(x_train)
+
+// Apply same normalization to test set (prevents data leakage)
+x_test_norm := utils.apply_normalization(x_test, means, stds)
+
+// Now train model on normalized data
+model := ml.logistic_regression(x_train_norm, y_train_float, 1000, 0.01)
+
+// Predict and evaluate on normalized test data
+predictions := ml.logistic_predict(model, x_test_norm, 0.5)
+metrics := utils.binary_classification_metrics(y_test, predictions)
 ```
 
 ### Dataset Loading
