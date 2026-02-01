@@ -9,7 +9,11 @@ import stats
 import utils
 import linalg
 
-// Statistics
+// Statistics with generic types (int or f64)
+mean_val := stats.mean([1, 2, 3, 4, 5])  // Works with int or f64
+variance := stats.variance([1.0, 2.0, 3.0])
+
+// Advanced statistics
 f_stat, p_val := stats.anova_one_way([group1, group2, group3])
 lower, upper := stats.confidence_interval_mean(data, 0.95)
 
@@ -35,6 +39,20 @@ distance := linalg.distance(vector_a, vector_b)
 | **nn**         | Neural Networks                   | ✓ Complete |
 | **hypothesis** | Hypothesis Testing                | ✓ Complete |
 | **symbol**     | Symbolic Computation              | 🚧 WIP     |
+
+## Generic Type Support
+
+Many statistical and numerical functions now support **generic numeric types** (`int`, `f64`):
+
+- **Generic Input Functions**: Accept `[]int` or `[]f64` seamlessly
+  - Examples: `mean[T]`, `variance[T]`, `correlation[T]`, `mse_loss[T]`
+  - Always return `f64` for numerical precision in statistical calculations
+  
+- **Type-Specific Functions**: Require `[]f64` due to algorithmic constraints
+  - `median`, `quantile`, `mode` - require sorting/hashing
+  - Functions depending on `[][]f64` matrices for feature operations
+
+- **Design Principle**: Generic input `[]T` → F64 output (statistical precision)
 
 ## Modules implemented
 
@@ -88,23 +106,23 @@ The following is the list of modules and functions implemented
 - `negative_binomial_pdf(k int, r int, p f64) f64`
 - `negative_binomial_cdf(k int, r int, p f64) f64`
 - `multinomial_pdf(x []int, p []f64) f64`
-- `expectation(x []f64, p []f64) f64`
+- `expectation[T](x []T, p []T) T` - Generic expectation calculation
 
 ### Statistics (stats)
 
 #### Descriptive Statistics
-- `sum(x []f64) f64`
-- `mean(x []f64) f64`
-- `median(x []f64) f64`
-- `quantile(x []f64, p f64) f64`
-- `mode(x []f64) []f64`
-- `range(x []f64) f64`
-- `dev_mean(x []f64) []f64`
-- `variance(x []f64) f64`
-- `standard_deviation(x []f64) f64`
-- `interquartile_range(x []f64) f64`
-- `covariance(x []f64, y []f64) f64`
-- `correlation(x []f64, y []f64) f64`
+- `sum[T](x []T) f64` - Accepts generic numeric input, returns f64
+- `mean[T](x []T) f64` - Accepts generic numeric input, returns f64
+- `median(x []f64) f64` - Requires f64 (requires sorting)
+- `quantile(x []f64, p f64) f64` - Requires f64 (requires sorting)
+- `mode(x []f64) []f64` - Requires f64 (requires hashing)
+- `range[T](x []T) T` - Accepts generic numeric input, returns same type
+- `dev_mean[T](x []T) []f64` - Accepts generic numeric input, returns f64
+- `variance[T](x []T) f64` - Accepts generic numeric input, returns f64
+- `standard_deviation[T](x []T) f64` - Accepts generic numeric input, returns f64
+- `interquartile_range(x []f64) f64` - Requires f64
+- `covariance[T](x []T, y []T) f64` - Accepts generic numeric input, returns f64
+- `correlation[T](x []T, y []T) f64` - Accepts generic numeric input, returns f64
 
 #### Advanced Statistical Tests
 - `anova_one_way(groups [][]f64) (f64, f64)` - One-way ANOVA test
@@ -119,8 +137,8 @@ The following is the list of modules and functions implemented
 - `difference_quotient(f fn (f64) f64, x f64, h f64) f64`
 - `partial_difference_quotient(f fn([]f64) f64, v []f64, i int, h f64) f64`
 - `gradient(f fn([]f64) f64, v []f64, h f64) []f64`
-- `gradient_step(v []f64, gradient_vector []f64, step_size f64) []f64`
-- `sum_of_squares_gradient(v []f64) []f64`
+- `gradient_step[T](v []T, gradient_vector []T, step_size T) []T` - Generic gradient descent step
+- `sum_of_squares_gradient[T](v []T) []T` - Generic sum of squares gradient
 
 ## Statistics (stats) - Advanced Functions
 
@@ -215,7 +233,47 @@ The following is the list of modules and functions implemented
 - `(Dataset).xy() ([][]f64, []int)` - Get features and targets separately
 - Similar methods for `RegressionDataset` with continuous targets
 
+## Neural Networks (nn)
+
+### Loss Functions
+
+#### Generic Loss Functions (Accept `int` or `f64`)
+- `mse_loss[T](y_true []T, y_pred []T) f64` - Mean Squared Error
+- `mse_loss_gradient[T](y_true []T, y_pred []T) []f64` - MSE gradient
+- `mae_loss[T](y_true []T, y_pred []T) f64` - Mean Absolute Error
+- `mae_loss_gradient[T](y_true []T, y_pred []T) []f64` - MAE gradient
+- `huber_loss[T](y_true []T, y_pred []T, delta f64) f64` - Robust loss function
+- `hinge_loss[T](y_true []T, y_pred []T) f64` - SVM-style loss
+- `squared_hinge_loss[T](y_true []T, y_pred []T) f64` - Squared hinge loss
+- `cosine_similarity_loss[T](y_true []T, y_pred []T) f64` - Cosine similarity-based loss
+- `triplet_loss[T](anchor []T, positive []T, negative []T, margin f64) f64` - Metric learning loss
+
+#### Fixed-Type Loss Functions (Require `f64`)
+- `binary_crossentropy_loss(y_true []f64, y_pred []f64) f64` - Binary classification loss
+- `binary_crossentropy_loss_gradient(y_true []f64, y_pred []f64) []f64` - BCE gradient
+- `categorical_crossentropy_loss(y_true [][]f64, y_pred [][]f64) f64` - Multi-class loss
+- `sparse_categorical_crossentropy_loss(y_true []int, y_pred [][]f64) f64` - Sparse multi-class loss
+- `kl_divergence_loss(y_true []f64, y_pred []f64) f64` - KL divergence
+- `contrastive_loss(y_true f64, distance f64, margin f64) f64` - Siamese network loss
+
 ## Usage Examples
+
+### Generic Types Support
+```v
+import stats
+import nn
+
+// Statistical functions accept both int and f64
+int_mean := stats.mean([1, 2, 3, 4, 5])  // Returns f64
+f64_mean := stats.mean([1.0, 2.0, 3.0])  // Also returns f64
+
+// Neural network loss functions are also generic
+y_true := [1, 2, 3]
+y_pred := [1, 2, 2]
+loss := nn.mse_loss(y_true, y_pred)  // Works with int arrays
+
+// See examples/generic_types_example.v for comprehensive demo
+```
 
 ### ANOVA Test
 ```v

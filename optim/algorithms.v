@@ -24,12 +24,12 @@ pub fn gradient(f fn([]f64) f64, v []f64, h f64) []f64 {
 	return g
 }
 
-pub fn gradient_step(v []f64, gradient_vector []f64, step_size f64) []f64 {
+pub fn gradient_step[T](v []T, gradient_vector []T, step_size T) []T {
 	assert v.len == gradient_vector.len, "vector and gradient lengths should be equal"
-	step := linalg.scalar_multiply(step_size, gradient_vector)
+	step := linalg.scalar_multiply(f64(step_size), gradient_vector)
 	return linalg.add(v, step)
 }
 
-pub fn sum_of_squares_gradient(v []f64) []f64 {
-	return v.map(2*it)
+pub fn sum_of_squares_gradient[T](v []T) []T {
+	return v.map(2 * it)
 }

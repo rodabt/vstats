@@ -3,12 +3,12 @@ module nn
 import math
 
 // Mean Squared Error Loss
-pub fn mse_loss(y_true []f64, y_pred []f64) f64 {
+pub fn mse_loss[T](y_true []T, y_pred []T) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
 	mut sum := 0.0
 	for i in 0 .. y_true.len {
-		error := y_true[i] - y_pred[i]
+		error := f64(y_true[i]) - f64(y_pred[i])
 		sum += error * error
 	}
 	
@@ -16,14 +16,14 @@ pub fn mse_loss(y_true []f64, y_pred []f64) f64 {
 }
 
 // MSE Loss Gradient
-pub fn mse_loss_gradient(y_true []f64, y_pred []f64) []f64 {
+pub fn mse_loss_gradient[T](y_true []T, y_pred []T) []f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
 	mut grad := []f64{len: y_true.len}
 	n := f64(y_true.len)
 	
 	for i in 0 .. y_true.len {
-		grad[i] = -2.0 * (y_true[i] - y_pred[i]) / n
+		grad[i] = -2.0 * (f64(y_true[i]) - f64(y_pred[i])) / n
 	}
 	
 	return grad
@@ -93,13 +93,13 @@ pub fn sparse_categorical_crossentropy_loss(y_true []int, y_pred [][]f64) f64 {
 }
 
 // Huber Loss (robust to outliers)
-pub fn huber_loss(y_true []f64, y_pred []f64, delta f64) f64 {
+pub fn huber_loss[T](y_true []T, y_pred []T, delta f64) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
 	mut sum := 0.0
 	
 	for i in 0 .. y_true.len {
-		error := math.abs(y_true[i] - y_pred[i])
+		error := math.abs(f64(y_true[i]) - f64(y_pred[i]))
 		if error <= delta {
 			sum += 0.5 * error * error
 		} else {
@@ -111,26 +111,26 @@ pub fn huber_loss(y_true []f64, y_pred []f64, delta f64) f64 {
 }
 
 // Mean Absolute Error Loss
-pub fn mae_loss(y_true []f64, y_pred []f64) f64 {
+pub fn mae_loss[T](y_true []T, y_pred []T) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
 	mut sum := 0.0
 	for i in 0 .. y_true.len {
-		sum += math.abs(y_true[i] - y_pred[i])
+		sum += math.abs(f64(y_true[i]) - f64(y_pred[i]))
 	}
 	
 	return sum / f64(y_true.len)
 }
 
 // MAE Loss Gradient
-pub fn mae_loss_gradient(y_true []f64, y_pred []f64) []f64 {
+pub fn mae_loss_gradient[T](y_true []T, y_pred []T) []f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
 	mut grad := []f64{len: y_true.len}
 	n := f64(y_true.len)
 	
 	for i in 0 .. y_true.len {
-		diff := y_pred[i] - y_true[i]
+		diff := f64(y_pred[i]) - f64(y_true[i])
 		grad[i] = if diff > 0 { 1.0 / n } else { -1.0 / n }
 	}
 	
@@ -138,13 +138,13 @@ pub fn mae_loss_gradient(y_true []f64, y_pred []f64) []f64 {
 }
 
 // Hinge Loss (for SVM-like classifiers)
-pub fn hinge_loss(y_true []f64, y_pred []f64) f64 {
+pub fn hinge_loss[T](y_true []T, y_pred []T) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
 	mut sum := 0.0
 	for i in 0 .. y_true.len {
 		// Assume y_true in {-1, 1}
-		loss := math.max(0.0, 1 - y_true[i] * y_pred[i])
+		loss := math.max(0.0, 1.0 - f64(y_true[i]) * f64(y_pred[i]))
 		sum += loss
 	}
 	
@@ -152,12 +152,12 @@ pub fn hinge_loss(y_true []f64, y_pred []f64) f64 {
 }
 
 // Squared Hinge Loss
-pub fn squared_hinge_loss(y_true []f64, y_pred []f64) f64 {
+pub fn squared_hinge_loss[T](y_true []T, y_pred []T) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
 	mut sum := 0.0
 	for i in 0 .. y_true.len {
-		loss := math.max(0.0, 1 - y_true[i] * y_pred[i])
+		loss := math.max(0.0, 1.0 - f64(y_true[i]) * f64(y_pred[i]))
 		sum += loss * loss
 	}
 	
@@ -181,7 +181,7 @@ pub fn kl_divergence_loss(y_true []f64, y_pred []f64) f64 {
 }
 
 // Cosine Similarity Loss
-pub fn cosine_similarity_loss(y_true []f64, y_pred []f64) f64 {
+pub fn cosine_similarity_loss[T](y_true []T, y_pred []T) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
 	mut dot_product := 0.0
@@ -189,9 +189,9 @@ pub fn cosine_similarity_loss(y_true []f64, y_pred []f64) f64 {
 	mut norm_pred := 0.0
 	
 	for i in 0 .. y_true.len {
-		dot_product += y_true[i] * y_pred[i]
-		norm_true += y_true[i] * y_true[i]
-		norm_pred += y_pred[i] * y_pred[i]
+		dot_product += f64(y_true[i]) * f64(y_pred[i])
+		norm_true += f64(y_true[i]) * f64(y_true[i])
+		norm_pred += f64(y_pred[i]) * f64(y_pred[i])
 	}
 	
 	denominator := math.sqrt(norm_true) * math.sqrt(norm_pred)
@@ -216,7 +216,7 @@ pub fn contrastive_loss(y_true f64, distance f64, margin f64) f64 {
 }
 
 // Triplet Loss (for metric learning)
-pub fn triplet_loss(anchor []f64, positive []f64, negative []f64, margin f64) f64 {
+pub fn triplet_loss[T](anchor []T, positive []T, negative []T, margin f64) f64 {
 	// Compute euclidean distances
 	mut dist_ap := 0.0
 	mut dist_an := 0.0
@@ -224,8 +224,8 @@ pub fn triplet_loss(anchor []f64, positive []f64, negative []f64, margin f64) f6
 	assert anchor.len == positive.len && anchor.len == negative.len, "vector sizes must match"
 	
 	for i in 0 .. anchor.len {
-		diff_p := anchor[i] - positive[i]
-		diff_n := anchor[i] - negative[i]
+		diff_p := f64(anchor[i]) - f64(positive[i])
+		diff_n := f64(anchor[i]) - f64(negative[i])
 		dist_ap += diff_p * diff_p
 		dist_an += diff_n * diff_n
 	}

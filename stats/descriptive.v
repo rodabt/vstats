@@ -4,20 +4,27 @@ import math
 import arrays
 import linalg
 
-pub fn sum(x []f64) f64 {
-	return arrays.reduce(x, fn (v1 f64, v2 f64) f64 { return v1 + v2 }) or { f64(0) }
+pub fn sum[T](x []T) f64 {
+	mut result := 0.0
+	for val in x {
+		result += f64(val)
+	}
+	return result
 }
 
-pub fn mean(x []f64) f64 {
-	return sum(x)/x.len
+pub fn mean[T](x []T) f64 {
+	return sum(x) / f64(x.len)
 }
 
 fn median_odd(x []f64) f64 {
-	return x.sorted()[x.len / 2]
+	mut x_sorted := x.clone()
+	x_sorted.sort()
+	return x_sorted[x.len / 2]
 }
 
 fn median_even(x []f64) f64 {
-	x_sorted := x.sorted()
+	mut x_sorted := x.clone()
+	x_sorted.sort()
 	hi_midpoint := x.len / 2 
 	return (x_sorted[hi_midpoint - 1] + x_sorted[hi_midpoint]) / 2
 }
@@ -28,7 +35,9 @@ pub fn median(x []f64) f64 {
 
 pub fn quantile(x []f64, p f64) f64 {
 	p_index := int(p * x.len)
-	return x.sorted()[p_index]
+	mut x_sorted := x.clone()
+	x_sorted.sort()
+	return x_sorted[p_index]
 }
 
 pub fn mode(x []f64) []f64 {
@@ -44,26 +53,26 @@ pub fn mode(x []f64) []f64 {
 }
 
 
-pub fn range(x []f64) f64 {
-	return arrays.max(x) or {0} - arrays.min(x) or {0}
+pub fn range[T](x []T) T {
+	return arrays.max(x) or {T(0)} - arrays.min(x) or {T(0)}
 }
 
 // Deviations from the mean
-pub fn dev_mean(x []f64) []f64 {
+pub fn dev_mean[T](x []T) []f64 {
 	x_bar := mean(x)
-	return x.map(it - x_bar)
+	return x.map(f64(it) - x_bar)
 }
 
 // Sample variance
-pub fn variance(x []f64) f64 {
+pub fn variance[T](x []T) f64 {
 	assert x.len >= 2, "variance requires at least two elements"
 	n := f64(x.len)
 	devs := dev_mean(x)
-	return linalg.sum_of_squares(devs)/(n-1)
+	return linalg.sum_of_squares(devs) / (n - 1)
 }
 
 // Sample standard deviation
-pub fn standard_deviation(x []f64) f64 {
+pub fn standard_deviation[T](x []T) f64 {
 	return math.sqrt(variance(x))
 }
 
@@ -73,16 +82,16 @@ pub fn interquartile_range(x []f64) f64 {
 }
 
 // Convariance
-pub fn covariance(x []f64, y []f64) f64 {
+pub fn covariance[T](x []T, y []T) f64 {
 	assert x.len == y.len, "x and y should have the same number of elements"
 	return linalg.dot(dev_mean(x), dev_mean(y)) / f64(x.len - 1)
 }
 
 // Correlation
-pub fn correlation(x []f64, y []f64) f64 {
+pub fn correlation[T](x []T, y []T) f64 {
 	stdev_x := standard_deviation(x)
 	stdev_y := standard_deviation(y)
-	return if stdev_x > 0 && stdev_y > 0 { covariance(x,y)/(stdev_x * stdev_y)} else { f64(0) }
+	return if stdev_x > 0 && stdev_y > 0 { covariance(x, y) / (stdev_x * stdev_y) } else { 0.0 }
 }
 
 // ============================================================================
@@ -91,11 +100,11 @@ pub fn correlation(x []f64, y []f64) f64 {
 
 // One-way ANOVA: test if means of multiple groups are equal
 // Returns (f_statistic, p_value)
-pub fn anova_one_way(groups [][]f64) (f64, f64) {
+pub fn anova_one_way[T](groups [][]T) (f64, f64) {
 	assert groups.len >= 2, "ANOVA requires at least 2 groups"
 	
 	// Calculate grand mean
-	mut all_values := []f64{}
+	mut all_values := []T{}
 	for group in groups {
 		all_values << group
 	}
@@ -115,7 +124,7 @@ pub fn anova_one_way(groups [][]f64) (f64, f64) {
 	for group in groups {
 		group_mean := mean(group)
 		for val in group {
-			ss_within += math.pow(val - group_mean, 2)
+			ss_within += math.pow(group_mean - f64(val), 2)
 		}
 	}
 	
@@ -140,7 +149,7 @@ pub fn anova_one_way(groups [][]f64) (f64, f64) {
 
 // Confidence interval for population mean (two-tailed t-distribution)
 // Returns (lower_bound, upper_bound)
-pub fn confidence_interval_mean(x []f64, confidence_level f64) (f64, f64) {
+pub fn confidence_interval_mean[T](x []T, confidence_level f64) (f64, f64) {
 	assert x.len >= 2, "need at least 2 samples"
 	assert confidence_level > 0 && confidence_level < 1, "confidence level must be between 0 and 1"
 	
@@ -162,7 +171,7 @@ pub fn confidence_interval_mean(x []f64, confidence_level f64) (f64, f64) {
 }
 
 // Cohen's d: effect size for difference between two means
-pub fn cohens_d(group1 []f64, group2 []f64) f64 {
+pub fn cohens_d[T](group1 []T, group2 []T) f64 {
 	mean1 := mean(group1)
 	mean2 := mean(group2)
 	
@@ -173,10 +182,10 @@ pub fn cohens_d(group1 []f64, group2 []f64) f64 {
 	n2 := f64(group2.len)
 	
 	// Pooled standard deviation
-	pooled_var := ((n1 - 1) * var1 + (n2 - 1) * var2) / (n1 + n2 - 2)
+	pooled_var := ((n1 - 1) * f64(var1) + (n2 - 1) * f64(var2)) / (n1 + n2 - 2)
 	pooled_std := math.sqrt(pooled_var)
 	
-	return if pooled_std > 0 { (mean1 - mean2) / pooled_std } else { 0.0 }
+	return if pooled_std > 0 { f64(mean1 - mean2) / pooled_std } else { 0.0 }
 }
 
 // Cramér's V: effect size for categorical association
@@ -229,40 +238,40 @@ pub fn cramers_v(contingency [][]int) f64 {
 }
 
 // Skewness: measure of distribution asymmetry
-pub fn skewness(x []f64) f64 {
+pub fn skewness[T](x []T) f64 {
 	assert x.len >= 3, "skewness requires at least 3 samples"
 	
 	x_mean := mean(x)
 	n := f64(x.len)
 	std := standard_deviation(x)
 	
-	if std == 0 {
+	if std == T(0) {
 		return 0.0
 	}
 	
 	mut m3 := 0.0
 	for val in x {
-		m3 += math.pow((val - x_mean) / std, 3)
+		m3 += math.pow(f64((val - x_mean) / std), 3)
 	}
 	
 	return m3 / n
 }
 
 // Kurtosis: measure of distribution tailedness
-pub fn kurtosis(x []f64) f64 {
+pub fn kurtosis[T](x []T) f64 {
 	assert x.len >= 4, "kurtosis requires at least 4 samples"
 	
 	x_mean := mean(x)
 	n := f64(x.len)
 	std := standard_deviation(x)
 	
-	if std == 0 {
+	if std == T(0) {
 		return 0.0
 	}
 	
 	mut m4 := 0.0
 	for val in x {
-		m4 += math.pow((val - x_mean) / std, 4)
+		m4 += math.pow(f64((val - x_mean) / std), 4)
 	}
 	
 	return (m4 / n) - 3.0 // Excess kurtosis

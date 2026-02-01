@@ -226,6 +226,6 @@ pub fn multinomial_pdf(x []int, p []f64) f64 {
 }
 
 // Discrete random var expectation
-pub fn expectation(x []f64, p []f64) f64 {
+pub fn expectation[T](x []T, p []T) T {
 	return linalg.dot(x, p)
 }
