@@ -13,6 +13,6 @@ fn test__mode() {
 	assert stats.mode([f64(1),2,2,2,3,3,3,5,6,7,8,8,9]) == [f64(2), 3]
 }
 
-fn test__data_range() {
-	assert stats.data_range([f64(1),2,3,4,5,7]) == f64(6.0)
+fn test__range() {
+	assert stats.range([f64(1),2,3,4,5,7]) == f64(6.0)
 }

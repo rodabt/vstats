@@ -1,58 +1,61 @@
 module linalg
 
 fn test__add() {
-	assert add([f64(1), 2, 3], [f64(4), 5, 6]) == [f64(5), 7, 9]
+	assert add([1, 2, 3], [4, 5, 6]) == [5, 7, 9]
+	assert add([1.0, 2, 3], [4.0, 5, 6]) == [5.0, 7, 9]
 }
 
 fn test__subtract() {
-	assert subtract([f64(1), 2, 3], [f64(4), 5, 6]) == [f64(-3), -3, -3]
+	assert subtract([1, 2, 3], [4, 5, 6]) == [-3, -3, -3]
+	assert subtract([1.0, 2, 3], [4.0, 5, 6]) == [-3.0, -3, -3]
 }
 
 fn test__vector_sum() {
-	assert vector_sum([[f64(1), 2], [f64(3), 4], [f64(5), 6]]) == [f64(9), 12]
+	assert vector_sum([[1, 2], [3, 4], [5, 6]]) == [9, 12]
+	assert vector_sum([[1.0, 2], [3.0, 4], [5.0, 6]]) == [9.0, 12]
 }
 
 fn test__flatten() {
-	assert flatten[int]([[1, 2, 3], [4, 5, 6]]) == [1, 2, 3, 4, 5, 6]
-	assert flatten[f64]([[1.0, 2, 3], [4.0, 5, 6]]) == [1.0, 2, 3, 4, 5, 6]
+	assert flatten([[1, 2, 3], [4, 5, 6]]) == [1, 2, 3, 4, 5, 6]
+	assert flatten([[1.0, 2, 3], [4.0, 5, 6]]) == [1.0, 2, 3, 4.0, 5, 6]
 }
 
 fn test__flatten_uneven() {
-	assert flatten[int]([[1, 2, 3], [4, 0]]) == [1, 2, 3, 4, 0]
+	assert flatten([[1.0, 2, 3], [4.0, 0]]) == [1.0, 2, 3, 4, 0]
 }
 
 fn test__scalar_multiply() {
-	assert scalar_multiply(f64(3), [f64(1), 6, 7, 8]) == [f64(3), 18, 21, 24]
+	assert scalar_multiply(3, [1, 6, 7, 8]) == [3, 18, 21, 24]
 }
 
 fn test__vector_mean() {
-	assert vector_mean([[f64(1), 2], [f64(3), 4], [f64(5), 6]]) == [f64(3), 4]
+	assert vector_mean([[1, 2], [3, 4], [5, 6]]) == [3, 4]
 }
 
 fn test__dot() {
-	assert dot([f64(1), 2, 3], [f64(4), 5, 6]) == f64(32)
+	assert dot([1, 2, 3], [4, 5, 6]) == 32
 }
 
 fn test__sum_of_squares() {
-	assert sum_of_squares([f64(1), 2, 3]) == f64(14)
+	assert sum_of_squares([1, 2, 3]) == 14
 }
 
 fn test__magnitude() {
-	assert magnitude([f64(3), 4]) == f64(5)
+	assert magnitude([3, 4]) == 5
 }
 
 fn test__arange() {
-	assert arange(10) == [0.0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+	assert arange[int](10) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 }
 
 fn test__reshape() {
-	v := arange(9)
+	v := arange[int](9)
 	matrix := [
-		[0.0, 1, 2],
-		[3.0, 4, 5],
-		[6.0, 7, 8],
+		[0, 1, 2],
+		[3, 4, 5],
+		[6, 7, 8],
 	]
-	assert reshape[f64](v, 3, 3) == matrix
+	assert reshape(v, 3, 3) == matrix
 	unit_array := [1.0, 0, 0, 0.0, 1, 0, 0.0, 0, 1]
-	assert reshape[f64](unit_array, 3, 3) == identity_matrix(3)
+	assert reshape[f64](unit_array, 3, 3) ==  [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
 }
