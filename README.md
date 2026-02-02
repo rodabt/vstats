@@ -2,12 +2,18 @@
 
 A dependency-free Linear Algebra, Statistics, and Machine Learning library written from scratch in V.
 
+## Installation
+
+```bash
+v install https://github.com/rodabt/vstats
+```
+
 ## Quick Start
 
 ```v
-import stats
-import utils
-import linalg
+import vstats.stats
+import vstats.utils
+import vstats.linalg
 
 // Statistics with generic types (int or f64)
 mean_val := stats.mean([1, 2, 3, 4, 5])  // Works with int or f64
@@ -340,8 +346,8 @@ All regression functions support generic numeric types with automatic conversion
 
 ### Generic Types Support
 ```v
-import stats
-import nn
+import vstats.stats
+import vstats.nn
 
 // Statistical functions accept both int and f64
 int_mean := stats.mean([1, 2, 3, 4, 5])  // Returns f64
@@ -357,7 +363,7 @@ loss := nn.mse_loss(y_true, y_pred)  // Works with int arrays
 
 ### ANOVA Test
 ```v
-import stats
+import vstats.stats
 
 // Compare three treatment groups
 control := [1.0, 2.0, 3.0, 2.5]
@@ -372,7 +378,7 @@ if p_val < 0.05 {
 
 ### Model Evaluation
 ```v
-import utils
+import vstats.utils
 
 y_true := [1, 1, 0, 0, 1, 0]
 y_pred := [1, 0, 0, 1, 1, 0]
@@ -392,7 +398,7 @@ for name, value in metrics {
 
 ### ROC-AUC Score
 ```v
-import utils
+import vstats.utils
 
 y_true := [1, 1, 0, 1, 0, 0]
 y_proba := [0.9, 0.8, 0.3, 0.7, 0.2, 0.1]
@@ -403,7 +409,7 @@ println("AUC: ${roc.auc:.4f}")  // Closer to 1.0 is better
 
 ### Training with Early Stopping and LR Decay
 ```v
-import utils
+import vstats.utils
 
 mut losses := []f64{}
 for epoch in 0..100 {
@@ -425,7 +431,7 @@ for epoch in 0..100 {
 
 ### Grid Search for Hyperparameters
 ```v
-import utils
+import vstats.utils
 
 param_ranges := {
     'learning_rate': [0.001, 0.01, 0.1]
@@ -442,7 +448,7 @@ for combo in grid {
 
 ### Feature Normalization for ML
 ```v
-import utils
+import vstats.utils
 
 // Load dataset
 iris := utils.load_iris()!
@@ -466,7 +472,7 @@ metrics := utils.binary_classification_metrics(y_test, predictions)
 
 ### Dataset Loading
 ```v
-import utils
+import vstats.utils
 
 // Load iris dataset
 iris := utils.load_iris()!

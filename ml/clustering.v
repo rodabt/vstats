@@ -4,12 +4,14 @@ import linalg
 import math
 
 pub struct KMeansModel {
+pub mut:
 	centroids [][]f64
 	labels    []int
 	iterations int
 }
 
 pub struct HierarchicalClustering {
+pub mut:
 	clusters [][]int
 	distances []f64
 }

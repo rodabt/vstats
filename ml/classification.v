@@ -8,6 +8,7 @@ import rand
 // Classification Model Definitions
 
 pub struct LogisticClassifier[T] {
+pub mut:
 	coefficients  []T
 	intercept     T
 	classes       []T
@@ -17,6 +18,7 @@ pub struct LogisticClassifier[T] {
 }
 
 pub struct NaiveBayesClassifier {
+pub mut:	
 	class_priors      map[int]f64
 	feature_means     map[int][][]f64
 	feature_stds      map[int][][]f64
@@ -27,6 +29,7 @@ pub struct NaiveBayesClassifier {
 }
 
 pub struct SVMClassifier {
+pub mut:	
 	support_vectors [][]f64
 	support_labels  []f64
 	alphas          []f64
@@ -37,6 +40,7 @@ pub struct SVMClassifier {
 }
 
 pub struct RandomForestClassifier {
+pub mut:
 	trees        []TreeNode
 	num_trees    int
 	num_features int
@@ -44,6 +48,7 @@ pub struct RandomForestClassifier {
 }
 
 pub struct TreeNode {
+pub mut:	
 	feature    int
 	threshold  f64
 	left       ?&TreeNode
@@ -885,6 +890,7 @@ fn get_index(arr []int, val int) int {
 // ============================================================================
 
 pub struct ClassificationSetup {
+pub mut:
 	estimator   string
 	train_data  [][]f64
 	test_data   [][]f64

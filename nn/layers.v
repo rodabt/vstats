@@ -4,20 +4,21 @@ import math
 import rand
 
 pub struct DenseLayer {
-mut:
+pub mut:
 	weights     [][]f64
 	bias        []f64
-pub:
 	input_size  int
 	output_size int
 }
 
 pub struct ActivationLayer {
+pub mut:
 	activation fn(f64) f64 @[required]
 	derivative fn(f64) f64 @[required]
 }
 
 pub struct BatchNormLayer {
+pub mut:
 	gamma []f64
 	beta  []f64
 	mean  []f64

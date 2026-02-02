@@ -1,4 +1,4 @@
-module ml
+import ml
 
 fn test__kmeans() {
 	// Simple 2D data with 2 clear clusters
@@ -9,7 +9,7 @@ fn test__kmeans() {
 		[10.5, 10.5],
 	]
 	
-	model := kmeans(data, 2, 100)
+	model := ml.kmeans(data, 2, 100)
 	
 	// Should have 2 centroids
 	assert model.centroids.len == 2
@@ -29,7 +29,7 @@ fn test__kmeans_single_cluster() {
 		[1.02, 1.02],
 	]
 	
-	model := kmeans(data, 1, 100)
+	model := ml.kmeans(data, 1, 100)
 	
 	assert model.centroids.len == 1
 	assert model.labels.len == 3
@@ -47,11 +47,11 @@ fn test__kmeans_predict() {
 		[10.5, 10.5],
 	]
 	
-	model := kmeans(data, 2, 100)
+	model := ml.kmeans(data, 2, 100)
 	
 	// Predict on new point
 	new_point := [1.2, 1.3]
-	label := kmeans_predict(model, [new_point])
+	label := ml.kmeans_predict(model, [new_point])
 	
 	// Should have same cluster as first point
 	assert label[0] == model.labels[0]
@@ -65,8 +65,8 @@ fn test__kmeans_inertia() {
 		[10.5, 10.5],
 	]
 	
-	model := kmeans(data, 2, 100)
-	inertia := kmeans_inertia(model, data)
+	model := ml.kmeans(data, 2, 100)
+	inertia := ml.kmeans_inertia(model, data)
 	
 	// Inertia should be non-negative
 	assert inertia >= 0.0
@@ -81,7 +81,7 @@ fn test__silhouette_coefficient() {
 	]
 	
 	labels := [0, 0, 1, 1]
-	silhouette := silhouette_coefficient(data, labels)
+	silhouette := ml.silhouette_coefficient(data, labels)
 	
 	// Silhouette should be between -1 and 1
 	assert silhouette >= -1.0 && silhouette <= 1.0
@@ -97,7 +97,7 @@ fn test__hierarchical_clustering() {
 		[10.5, 10.5],
 	]
 	
-	result := hierarchical_clustering(data, 2)
+	result := ml.hierarchical_clustering(data, 2)
 	
 	// Should have 2 clusters
 	assert result.clusters.len == 2
@@ -117,7 +117,7 @@ fn test__dbscan() {
 		[10.1, 10.1],
 	]
 	
-	labels := dbscan(data, 0.5, 2)
+	labels := ml.dbscan(data, 0.5, 2)
 	
 	// Should have labels for all points
 	assert labels.len == 4
@@ -135,7 +135,7 @@ fn test__dbscan_no_clusters() {
 		[200.0, 200.0],
 	]
 	
-	labels := dbscan(data, 1.0, 2)
+	labels := ml.dbscan(data, 1.0, 2)
 	
 	assert labels.len == 3
 }

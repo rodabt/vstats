@@ -1,4 +1,4 @@
-module stats
+import stats
 
 fn test__mean() {
 	assert stats.mean([f64(1), 2 , 3]) == f64(2.0)
