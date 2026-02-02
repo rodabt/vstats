@@ -3,22 +3,27 @@ module ml
 import math
 import linalg
 import stats
+import rand
 
 // Classification Model Definitions
 
 pub struct LogisticClassifier[T] {
-	coefficients []T
-	intercept    T
-	classes      []T
-	trained      bool
+	coefficients  []T
+	intercept     T
+	classes       []T
+	trained       bool
+	feature_means []f64
+	feature_stds  []f64
 }
 
 pub struct NaiveBayesClassifier {
-	class_priors    map[int]f64
-	feature_means   map[int][][]f64
-	feature_stds    map[int][][]f64
-	classes         []int
-	trained         bool
+	class_priors      map[int]f64
+	feature_means     map[int][][]f64
+	feature_stds      map[int][][]f64
+	classes           []int
+	trained           bool
+	global_means      []f64  // For feature normalization
+	global_stds       []f64  // For feature normalization
 }
 
 pub struct SVMClassifier {
@@ -57,16 +62,53 @@ pub fn logistic_classifier(x [][]f64, y []f64, iterations int, learning_rate f64
 	n := f64(x.len)
 	p := x[0].len
 	
+	// Calculate feature means and standard deviations for normalization
+	mut feature_means := []f64{len: p, init: 0.0}
+	mut feature_stds := []f64{len: p, init: 0.0}
+	
+	// Compute means
+	for j in 0 .. p {
+		mut sum := 0.0
+		for i in 0 .. x.len {
+			sum += x[i][j]
+		}
+		feature_means[j] = sum / n
+	}
+	
+	// Compute standard deviations
+	for j in 0 .. p {
+		mut sum_sq := 0.0
+		for i in 0 .. x.len {
+			diff := x[i][j] - feature_means[j]
+			sum_sq += diff * diff
+		}
+		feature_stds[j] = math.sqrt(sum_sq / n)
+		// Avoid division by zero
+		if feature_stds[j] == 0.0 {
+			feature_stds[j] = 1.0
+		}
+	}
+	
+	// Normalize features (z-score normalization)
+	mut x_normalized := [][]f64{len: x.len}
+	for i in 0 .. x.len {
+		mut row := []f64{len: p}
+		for j in 0 .. p {
+			row[j] = (x[i][j] - feature_means[j]) / feature_stds[j]
+		}
+		x_normalized[i] = row
+	}
+	
 	mut coefficients := []f64{len: p, init: 0.0}
 	mut intercept := 0.0
 	
-	// Gradient descent
+	// Gradient descent on normalized data
 	for _ in 0 .. iterations {
 		mut pred := []f64{len: x.len}
 		for i in 0 .. x.len {
 			mut z := intercept
 			for j in 0 .. p {
-				z += coefficients[j] * x[i][j]
+				z += coefficients[j] * x_normalized[i][j]
 			}
 			pred[i] = sigmoid_f64(z)
 		}
@@ -79,7 +121,7 @@ pub fn logistic_classifier(x [][]f64, y []f64, iterations int, learning_rate f64
 			error := pred[i] - y[i]
 			intercept_grad += error
 			for j in 0 .. p {
-				coeff_grad[j] += error * x[i][j]
+				coeff_grad[j] += error * x_normalized[i][j]
 			}
 		}
 		
@@ -95,6 +137,8 @@ pub fn logistic_classifier(x [][]f64, y []f64, iterations int, learning_rate f64
 		intercept: intercept
 		classes: [0.0, 1.0]
 		trained: true
+		feature_means: feature_means
+		feature_stds: feature_stds
 	}
 }
 
@@ -109,7 +153,9 @@ pub fn logistic_classifier_predict_proba(model LogisticClassifier[f64], x [][]f6
 		mut z := model.intercept
 		for j in 0 .. model.coefficients.len {
 			if j < x[i].len {
-				z += model.coefficients[j] * x[i][j]
+				// Normalize the feature using the training data statistics
+				normalized_feature := (x[i][j] - model.feature_means[j]) / model.feature_stds[j]
+				z += model.coefficients[j] * normalized_feature
 			}
 		}
 		predictions[i] = sigmoid_f64(z)
@@ -143,18 +189,65 @@ pub fn naive_bayes_classifier(x [][]f64, y []int) NaiveBayesClassifier {
 	n := f64(x.len)
 	num_features := x[0].len
 	
-	// Calculate class priors and feature statistics
+	// Calculate global feature statistics for normalization
+	mut global_means := []f64{len: num_features, init: 0.0}
+	mut global_stds := []f64{len: num_features, init: 0.0}
+	
+	// Compute global means
+	for j in 0 .. num_features {
+		mut sum := 0.0
+		for i in 0 .. x.len {
+			sum += x[i][j]
+		}
+		global_means[j] = sum / n
+	}
+	
+	// Compute global standard deviations
+	for j in 0 .. num_features {
+		mut sum_sq := 0.0
+		for i in 0 .. x.len {
+			diff := x[i][j] - global_means[j]
+			sum_sq += diff * diff
+		}
+		global_stds[j] = math.sqrt(sum_sq / n)
+		if global_stds[j] == 0.0 {
+			global_stds[j] = 1.0
+		}
+	}
+	
+	// Normalize features for statistics calculation
+	mut x_normalized := [][]f64{len: x.len}
+	for i in 0 .. x.len {
+		mut row := []f64{len: num_features}
+		for j in 0 .. num_features {
+			row[j] = (x[i][j] - global_means[j]) / global_stds[j]
+		}
+		x_normalized[i] = row
+	}
+	
+	// Pre-calculate global feature variances for smoothing
+	mut global_variances := []f64{len: num_features, init: 0.0}
+	for j in 0 .. num_features {
+		mut sum_sq := 0.0
+		for i in 0 .. x_normalized.len {
+			diff := x_normalized[i][j] - global_means[j]
+			sum_sq += diff * diff
+		}
+		global_variances[j] = sum_sq / n
+	}
+	
+	// Calculate class priors and feature statistics on normalized data
 	for class in classes {
 		mut class_samples := [][]f64{}
 		for i in 0 .. x.len {
 			if y[i] == class {
-				class_samples << x[i]
+				class_samples << x_normalized[i]
 			}
 		}
 		
 		class_priors[class] = f64(class_samples.len) / n
 		
-		// Calculate mean and std for each feature in this class
+		// Calculate mean and std for each feature in this class (on normalized data)
 		for feature_idx in 0 .. num_features {
 			mut feature_values := []f64{}
 			for sample in class_samples {
@@ -163,7 +256,22 @@ pub fn naive_bayes_classifier(x [][]f64, y []int) NaiveBayesClassifier {
 			
 			mean := stats.mean(feature_values)
 			variance := stats.variance(feature_values)
-			std := math.sqrt(variance)
+			mut std := math.sqrt(variance)
+			
+			// Variance smoothing: blend class and global variance for stability
+			// This regularizes the estimates and improves generalization
+			mut global_std := math.sqrt(global_variances[feature_idx])
+			if global_std < 0.05 {
+				global_std = 0.05
+			}
+			
+			// Weighted average: 85% class variance, 15% global variance
+			smoothing_weight := 0.15
+			std = (1.0 - smoothing_weight) * std + smoothing_weight * global_std
+			
+			if std < 0.01 {
+				std = 0.01
+			}
 			
 			feature_means[class] << [mean]
 			feature_stds[class] << [std]
@@ -176,6 +284,8 @@ pub fn naive_bayes_classifier(x [][]f64, y []int) NaiveBayesClassifier {
 		feature_stds: feature_stds
 		classes: classes
 		trained: true
+		global_means: global_means
+		global_stds: global_stds
 	}
 }
 
@@ -186,15 +296,21 @@ pub fn naive_bayes_predict(model NaiveBayesClassifier, x [][]f64) []int {
 		mut max_prob := f64(-1e10)
 		mut predicted_class := model.classes[0]
 		
+		// Normalize test features using global statistics
+		mut x_normalized := []f64{len: x[i].len}
+		for j in 0 .. x[i].len {
+			x_normalized[j] = (x[i][j] - model.global_means[j]) / model.global_stds[j]
+		}
+		
 		for class in model.classes {
 			mut prob := math.log(model.class_priors[class])
 			
-			for feature_idx in 0 .. x[i].len {
+			for feature_idx in 0 .. x_normalized.len {
 				mean := model.feature_means[class][feature_idx][0]
 				std := model.feature_stds[class][feature_idx][0]
 				
 				if std > 0 {
-					numerator := -(x[i][feature_idx] - mean) * (x[i][feature_idx] - mean)
+					numerator := -(x_normalized[feature_idx] - mean) * (x_normalized[feature_idx] - mean)
 					denominator := 2 * std * std
 					prob += numerator / denominator - math.log(std * math.sqrt(2 * math.pi))
 				}
@@ -405,6 +521,33 @@ pub fn random_forest_predict(model RandomForestClassifier, x [][]f64) []int {
 	return predictions
 }
 
+pub fn random_forest_classifier_predict(model RandomForestClassifier, x [][]f64) []int {
+	return random_forest_predict(model, x)
+}
+
+pub fn random_forest_classifier_predict_proba(model RandomForestClassifier, x [][]f64) []f64 {
+	mut probabilities := []f64{len: x.len}
+	
+	for i in 0 .. x.len {
+		mut votes := map[int]int{}
+		
+		for tree in model.trees {
+			pred := predict_tree(tree, x[i])
+			if pred in votes {
+				votes[pred]++
+			} else {
+				votes[pred] = 1
+			}
+		}
+		
+		// Calculate probability as fraction of votes for class 1
+		class_1_votes := votes[1] or { 0 }
+		probabilities[i] = f64(class_1_votes) / f64(model.num_trees)
+	}
+	
+	return probabilities
+}
+
 fn build_decision_tree(x [][]f64, y []int, depth int, max_depth int, num_features int) TreeNode {
 	// Check termination conditions
 	if x.len == 0 || depth >= max_depth {
@@ -445,12 +588,8 @@ fn build_decision_tree(x [][]f64, y []int, depth int, max_depth int, num_feature
 	mut best_left_idx := []int{}
 	mut best_right_idx := []int{}
 	
-	// Sample features (random forest uses sqrt(num_features))
-	num_try := int(math.ceil(math.sqrt(f64(num_features))))
-	
-	for _ in 0 .. num_try {
-		feature := int(f64(num_features) * rand_f64())
-		
+	// Try all features (essential for small datasets like Titanic)
+	for feature in 0 .. num_features {
 		// Get unique values
 		mut values := []f64{}
 		for sample in x {
@@ -458,12 +597,14 @@ fn build_decision_tree(x [][]f64, y []int, depth int, max_depth int, num_feature
 				values << sample[feature]
 			}
 		}
+		if values.len < 2 {
+			continue
+		}
 		values.sort()
 		
-		// Try splits
+		// Try all thresholds
 		for i in 0 .. (values.len - 1) {
 			threshold := (values[i] + values[i + 1]) / 2.0
-			
 			mut left_idx := []int{}
 			mut right_idx := []int{}
 			
@@ -782,5 +923,5 @@ fn sigmoid_f64(x f64) f64 {
 }
 
 fn rand_f64() f64 {
-	return f64(int(math.abs(f64(i64(0))))) / 1e18
+	return rand.f64()
 }

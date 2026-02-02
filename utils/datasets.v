@@ -249,6 +249,67 @@ pub fn load_boston_housing() !RegressionDataset {
 	}
 }
 
+// Load Titanic dataset (binary classification - survival prediction)
+// Features: Pclass, Age, SibSp, Parch, Fare
+// Target: Survived (0=No, 1=Yes)
+pub fn load_titanic() !Dataset {
+	data_dir := get_data_dir()
+	csv_path := os.join_path(data_dir, "titanic.csv")
+	
+	content := os.read_file(csv_path) !
+	lines := content.split('\n')
+	
+	mut features := [][]f64{}
+	mut target := []int{}
+	
+	// Skip header
+	for i in 1 .. lines.len {
+		line := lines[i].trim_space()
+		if line.len == 0 {
+			continue
+		}
+		
+		parts := parse_csv_line(line)
+		if parts.len < 6 {
+			continue
+		}
+		
+		// Survived is at index 1, Pclass=2, Age=5, SibSp=6, Parch=7, Fare=9
+		// Parse target (Survived)
+		survived := parts[1].int()
+		
+		// Parse features: Pclass, Age, SibSp, Parch, Fare
+		pclass := parts[2].f64()
+		sibsp := parts[6].f64()
+		parch := parts[7].f64()
+		
+		// Handle missing Age and Fare values
+		age := if parts[5].len > 0 && parts[5] != "" {
+			parts[5].f64()
+		} else {
+			29.0  // Use median age for missing values
+		}
+		
+		fare := if parts[9].len > 0 && parts[9] != "" {
+			parts[9].f64()
+		} else {
+			0.0  // Use 0 for missing fares
+		}
+		
+		features << [pclass, age, sibsp, parch, fare]
+		target << survived
+	}
+	
+	return Dataset{
+		name: "Titanic"
+		features: features
+		target: target
+		feature_names: ["Pclass", "Age", "SibSp", "Parch", "Fare"]
+		target_name: "Survived"
+		description: "Titanic survival prediction: 891 samples, 5 features, binary classification (0=Did not survive, 1=Survived)"
+	}
+}
+
 // Load synthetic linear regression dataset (generated programmatically)
 pub fn load_linear_regression() RegressionDataset {
 	mut features := [][]f64{}
