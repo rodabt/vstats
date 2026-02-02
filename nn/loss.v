@@ -1,18 +1,11 @@
 module nn
 
 import math
+import utils
 
-// Mean Squared Error Loss
+// Mean Squared Error Loss (delegates to utils)
 pub fn mse_loss[T](y_true []T, y_pred []T) f64 {
-	assert y_true.len == y_pred.len, "arrays must have same length"
-	
-	mut sum := 0.0
-	for i in 0 .. y_true.len {
-		error := f64(y_true[i]) - f64(y_pred[i])
-		sum += error * error
-	}
-	
-	return sum / f64(y_true.len)
+	return utils.mse(y_true, y_pred)
 }
 
 // MSE Loss Gradient
@@ -110,16 +103,9 @@ pub fn huber_loss[T](y_true []T, y_pred []T, delta f64) f64 {
 	return sum / f64(y_true.len)
 }
 
-// Mean Absolute Error Loss
+// Mean Absolute Error Loss (delegates to utils)
 pub fn mae_loss[T](y_true []T, y_pred []T) f64 {
-	assert y_true.len == y_pred.len, "arrays must have same length"
-	
-	mut sum := 0.0
-	for i in 0 .. y_true.len {
-		sum += math.abs(f64(y_true[i]) - f64(y_pred[i]))
-	}
-	
-	return sum / f64(y_true.len)
+	return utils.mae(y_true, y_pred)
 }
 
 // MAE Loss Gradient

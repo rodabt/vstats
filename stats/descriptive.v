@@ -4,16 +4,12 @@ import math
 import arrays
 import linalg
 
-pub fn sum[T](x []T) f64 {
+pub fn mean[T](x []T) f64 {
 	mut result := 0.0
 	for val in x {
 		result += f64(val)
 	}
-	return result
-}
-
-pub fn mean[T](x []T) f64 {
-	return sum(x) / f64(x.len)
+	return result / f64(x.len)
 }
 
 fn median_odd(x []f64) f64 {

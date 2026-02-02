@@ -4,6 +4,7 @@ import math
 import linalg
 import stats
 import rand
+import utils
 
 // Classification Model Definitions
 
@@ -922,10 +923,9 @@ pub fn setup(x [][]f64, y []int, test_size f64, estimator string) Classification
 // Helper Functions
 // ============================================================================
 
-// Sigmoid is defined in regression.v, reuse it
-// For classification module, we use the generic version from regression
+// Sigmoid from utils
 fn sigmoid_f64(x f64) f64 {
-	return sigmoid(x)
+	return utils.sigmoid(x)
 }
 
 fn rand_f64() f64 {

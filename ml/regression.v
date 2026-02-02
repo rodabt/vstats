@@ -2,6 +2,7 @@ module ml
 
 import math
 import stats
+import utils
 
 pub struct LinearModel[T] {
 	coefficients []T
@@ -124,7 +125,7 @@ pub fn logistic_regression[T](x [][]T, y []T, iterations int, learning_rate T) L
 			}
 			
 			// Prediction via sigmoid
-			pred := sigmoid(z)
+			pred := utils.sigmoid(z)
 			
 			// Gradient of loss: (pred - y[i])
 			grad := pred - y[i]
@@ -166,7 +167,7 @@ pub fn logistic_predict_proba[T](model LogisticModel[T], x [][]T) []T {
 				z += model.coefficients[j] * x[i][j]
 			}
 		}
-		predictions[i] = sigmoid(z)
+		predictions[i] = utils.sigmoid(z)
 	}
 	return predictions
 }
@@ -181,33 +182,21 @@ pub fn logistic_predict[T](model LogisticModel[T], x [][]T, threshold T) []T {
 	return predictions
 }
 
-// Mean Squared Error - Generic input, f64 output (precision)
+// Wrapper functions that delegate to utils
+pub fn sigmoid[T](x T) T {
+	return utils.sigmoid(x)
+}
+
 pub fn mse[T](y_true []T, y_pred []T) f64 {
-	assert y_true.len == y_pred.len, "arrays must have same length"
-	
-	mut sum := 0.0
-	for i in 0 .. y_true.len {
-		error := f64(y_true[i]) - f64(y_pred[i])
-		sum += error * error
-	}
-	return sum / f64(y_true.len)
+	return utils.mse(y_true, y_pred)
 }
 
-// Root Mean Squared Error - Generic input, f64 output
 pub fn rmse[T](y_true []T, y_pred []T) f64 {
-	return math.sqrt(mse(y_true, y_pred))
+	return utils.rmse(y_true, y_pred)
 }
 
-// Mean Absolute Error - Generic input, f64 output (precision)
 pub fn mae[T](y_true []T, y_pred []T) f64 {
-	assert y_true.len == y_pred.len, "arrays must have same length"
-	
-	mut sum := 0.0
-	for i in 0 .. y_true.len {
-		diff := f64(y_true[i]) - f64(y_pred[i])
-		sum += math.abs(diff)
-	}
-	return sum / f64(y_true.len)
+	return utils.mae(y_true, y_pred)
 }
 
 // R-squared coefficient of determination - Generic input, f64 output
@@ -337,9 +326,4 @@ fn gaussian_elimination_f64(a [][]f64, b []f64) []f64 {
 	return solution
 }
 
-// Helper: Sigmoid function (converts to f64 internally for numerical stability)
-fn sigmoid[T](x T) T {
-	x_f64 := f64(x)
-	result := 1.0 / (1.0 + math.exp(-x_f64))
-	return T(result)
-}
+

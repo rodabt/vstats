@@ -4,6 +4,39 @@ import math
 import arrays
 
 // ============================================================================
+// Core Metrics
+// ============================================================================
+
+// Mean Squared Error
+pub fn mse[T](y_true []T, y_pred []T) f64 {
+	assert y_true.len == y_pred.len, "arrays must have same length"
+	
+	mut sum := 0.0
+	for i in 0 .. y_true.len {
+		error := f64(y_true[i]) - f64(y_pred[i])
+		sum += error * error
+	}
+	return sum / f64(y_true.len)
+}
+
+// Root Mean Squared Error
+pub fn rmse[T](y_true []T, y_pred []T) f64 {
+	return math.sqrt(mse(y_true, y_pred))
+}
+
+// Mean Absolute Error
+pub fn mae[T](y_true []T, y_pred []T) f64 {
+	assert y_true.len == y_pred.len, "arrays must have same length"
+	
+	mut sum := 0.0
+	for i in 0 .. y_true.len {
+		diff := f64(y_true[i]) - f64(y_pred[i])
+		sum += math.abs(diff)
+	}
+	return sum / f64(y_true.len)
+}
+
+// ============================================================================
 // Classification Metrics
 // ============================================================================
 

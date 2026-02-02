@@ -87,15 +87,6 @@ pub fn matmul[T](a [][]T, b [][]T) [][]T {
 	return res
 }
 
-// sum: sum all elements in an array
-fn sum[T](arr []T) T {
-	mut sum := T(0)
-	for element in arr {
-		sum += element
-	}
-	return sum
-}
-
 // rotation in z
 @[heap]
 pub fn rotation_z[T](alpha T) [][]T {

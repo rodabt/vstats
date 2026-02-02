@@ -2,6 +2,7 @@ module nn
 
 import math
 import rand
+import utils
 
 pub struct DenseLayer {
 pub mut:
@@ -105,15 +106,14 @@ pub fn relu_derivative(x f64) f64 {
 	return if x > 0 { 1 } else { 0 }
 }
 
-// Sigmoid Activation Function
+// Sigmoid Activation Function (delegates to utils)
 pub fn sigmoid(x f64) f64 {
-	return 1.0 / (1.0 + math.exp(-x))
+	return utils.sigmoid(x)
 }
 
-// Sigmoid Derivative
+// Sigmoid Derivative (delegates to utils)
 pub fn sigmoid_derivative(x f64) f64 {
-	s := sigmoid(x)
-	return s * (1 - s)
+	return utils.sigmoid_derivative(x)
 }
 
 // Tanh Activation Function
@@ -209,7 +209,7 @@ pub fn dropout(input []f64, dropout_rate f64) []f64 {
 	)
 }
 
-// Flatten 2D array to 1D
+// Flatten 2D array to 1D (use linalg.flatten for generic version)
 pub fn flatten(data [][]f64) []f64 {
 	mut result := []f64{}
 	for row in data {

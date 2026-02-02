@@ -41,6 +41,15 @@ pub fn vector_mean[T](vector_list [][]T) []T {
 	return scalar_multiply[T](1.0 / f64(n), vector_sum(vector_list))
 }
 
+// Sum all elements in an array
+pub fn sum[T](arr []T) T {
+	mut sum := T(0)
+	for element in arr {
+		sum += element
+	}
+	return sum
+}
+
 // 1/n sum_j (v[j])
 // Dot product of two vectors, v and w of math type f64
 pub fn dot[T](v []T, w []T) T {
