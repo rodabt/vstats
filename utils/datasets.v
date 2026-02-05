@@ -26,22 +26,7 @@ pub struct RegressionDataset {
 
 // Helper to locate data directory
 fn get_data_dir() string {
-	// Try different paths for data directory
-	paths := [
-		"./utils/data",
-		"./data",
-		"../data",
-		"utils/data",
-	]
-	
-	for path in paths {
-		if os.is_dir(path) {
-			return path
-		}
-	}
-	
-	// Return default if not found (will fail at file read)
-	return "utils/data"
+	return os.join_path(@VMODROOT,"utils","data")
 }
 
 // Helper to parse CSV line
