@@ -4,6 +4,10 @@ import math
 import arrays
 import linalg
 
+pub fn sum[T](x []T) T {
+	return arrays.sum[T](x) or { T(0) }
+}
+
 pub fn mean[T](x []T) f64 {
 	mut result := 0.0
 	for val in x {
