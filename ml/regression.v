@@ -7,11 +7,13 @@ import utils
 import linalg
 
 pub struct LinearModel[T] {
+	pub:
 	coefficients []T
 	intercept    T
 }
 
 pub struct LogisticModel[T] {
+	pub:
 	coefficients []T
 	intercept    T
 }

@@ -4,7 +4,7 @@ import rand
 import utils
 
 pub struct NeuralNetwork {
-mut:
+pub mut:
 	dense_layers []DenseLayer
 	activation_layers []ActivationLayer
 	num_layers int
@@ -58,7 +58,7 @@ pub fn (mut net NeuralNetwork) forward(input []f64) []f64 {
 // backward - Backward pass through network
 pub fn (mut net NeuralNetwork) backward(grad_output []f64, input []f64, learning_rate f64) []f64 {
 	mut grad := grad_output.clone()
-	mut activations := [][]f64{len: net.num_layers}
+	mut activations := [][]f64{len: net.num_layers + 1}
 	
 	// Forward pass to store activations
 	mut x := input.clone()
@@ -66,19 +66,17 @@ pub fn (mut net NeuralNetwork) backward(grad_output []f64, input []f64, learning
 	
 	for i in 0 .. net.num_layers {
 		x = net.dense_layers[i].forward(x)
+		activations[i + 1] = x.clone()
 		
 		if i < net.activation_layers.len {
 			x = net.activation_layers[i].forward(x)
-			if i + 1 < net.num_layers {
-				activations[i + 1] = x
-			}
 		}
 	}
 	
 	// Backward pass
 	for i := net.num_layers - 1; i >= 0; i-- {
 		if i < net.activation_layers.len {
-			grad = net.activation_layers[i].backward(grad, activations[i])
+			grad = net.activation_layers[i].backward(grad, activations[i + 1])
 		}
 
 		grad = net.dense_layers[i].backward(grad, activations[i], learning_rate, 0.0)
@@ -90,7 +88,7 @@ pub fn (mut net NeuralNetwork) backward(grad_output []f64, input []f64, learning
 // backward_with_accumulation - Backward pass for mini-batch training with momentum
 pub fn (mut net NeuralNetwork) backward_with_accumulation(grad_output []f64, input []f64, learning_rate f64, momentum f64) []f64 {
 	mut grad := grad_output.clone()
-	mut activations := [][]f64{len: net.num_layers}
+	mut activations := [][]f64{len: net.num_layers + 1}
 
 	// Forward pass to store activations
 	mut x := input.clone()
@@ -98,19 +96,18 @@ pub fn (mut net NeuralNetwork) backward_with_accumulation(grad_output []f64, inp
 
 	for i in 0 .. net.num_layers {
 		x = net.dense_layers[i].forward(x)
+		activations[i + 1] = x.clone()
 
 		if i < net.activation_layers.len {
 			x = net.activation_layers[i].forward(x)
-			if i + 1 < net.num_layers {
-				activations[i + 1] = x
-			}
 		}
 	}
 
 	// Backward pass with momentum
 	for i := net.num_layers - 1; i >= 0; i-- {
 		if i < net.activation_layers.len {
-			grad = net.activation_layers[i].backward(grad, activations[i])
+			// Use activations[i+1] (output of dense layer, input to activation)
+			grad = net.activation_layers[i].backward(grad, activations[i + 1])
 		}
 
 		grad = net.dense_layers[i].backward(grad, activations[i], learning_rate, momentum)

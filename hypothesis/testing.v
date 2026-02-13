@@ -48,8 +48,45 @@ pub fn t_test_two_sample(x []f64, y []f64, tp TestParams) (f64, f64) {
 	return t_stat, p_val
 }
 
+// Chi-squared test for independence (contingency table) - main function for categorical data
+pub fn chi_squared_test(contingency [][]int) (f64, f64) {
+	assert contingency.len >= 2, "contingency table must have at least 2 rows"
+	assert contingency[0].len >= 2, "contingency table must have at least 2 columns"
+	
+	rows := contingency.len
+	cols := contingency[0].len
+	
+	mut row_totals := []f64{len: rows}
+	mut col_totals := []f64{len: cols}
+	mut total := 0.0
+	
+	for i in 0..rows {
+		for j in 0..cols {
+			row_totals[i] += f64(contingency[i][j])
+			col_totals[j] += f64(contingency[i][j])
+			total += f64(contingency[i][j])
+		}
+	}
+	
+	mut chi2 := 0.0
+	for i in 0..rows {
+		for j in 0..cols {
+			expected := (row_totals[i] * col_totals[j]) / total
+			if expected > 0 {
+				observed := f64(contingency[i][j])
+				chi2 += (observed - expected) * (observed - expected) / expected
+			}
+		}
+	}
+	
+	df := (rows - 1) * (cols - 1)
+	p_val := 1.0 - chi_squared_cdf_approx(chi2, df)
+	
+	return chi2, p_val
+}
+
 // Chi-squared goodness of fit test
-pub fn chi_squared_test(observed []f64, expected []f64) (f64, f64) {
+pub fn chi_squared_gof_test(observed []f64, expected []f64) (f64, f64) {
 	assert observed.len == expected.len, "observed and expected must have same length"
 	assert observed.len > 0, "arrays cannot be empty"
 	
@@ -198,4 +235,59 @@ fn normal_cdf_approx(z f64) f64 {
 // Helper: chi-squared CDF approximation
 fn chi_squared_cdf_approx(x f64, df int) f64 {
 	return prob.gamma_pdf(x, f64(df) / 2, 2)
+}
+
+// Alias for one_sample_t_test (old name)
+pub fn one_sample_t_test(x []f64, mu f64) (f64, f64) {
+	return t_test_one_sample(x, mu, TestParams{})
+}
+
+// Alias for two_sample_t_test (old name)
+pub fn two_sample_t_test(x []f64, y []f64) (f64, f64) {
+	return t_test_two_sample(x, y, TestParams{})
+}
+
+// Kolmogorov-Smirnov test
+pub fn ks_test(sample1 []f64, sample2 []f64) (f64, f64) {
+	mut all_vals := []f64{}
+	all_vals << sample1
+	all_vals << sample2
+	all_vals.sort()
+	
+	n1 := f64(sample1.len)
+	n2 := f64(sample2.len)
+	
+	mut d_max := 0.0
+	
+	for val in all_vals {
+		// CDF for sample1
+		mut count1 := 0
+		for v in sample1 {
+			if v <= val {
+				count1++
+			}
+		}
+		cdf1 := f64(count1) / n1
+		
+		// CDF for sample2
+		mut count2 := 0
+		for v in sample2 {
+			if v <= val {
+				count2++
+			}
+		}
+		cdf2 := f64(count2) / n2
+		
+		d := math.abs(cdf1 - cdf2)
+		if d > d_max {
+			d_max = d
+		}
+	}
+	
+	// Approximate p-value using standard KS distribution
+	n := (n1 * n2) / (n1 + n2)
+	lambda := d_max * math.sqrt(n)
+	p_val := 2.0 * math.exp(-2.0 * lambda * lambda)
+	
+	return d_max, p_val
 }

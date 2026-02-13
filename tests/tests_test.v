@@ -45,7 +45,7 @@ fn test__chi_squared_test() {
 	// Fair die: observed = [10, 10, 10, 10, 10, 10], expected uniform
 	observed := [10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
 	expected := [10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
-	chi2, p_val := hypothesis.chi_squared_test(observed, expected)
+	chi2, p_val := hypothesis.chi_squared_gof_test(observed, expected)
 	
 	// Chi-squared should be 0 (perfect fit)
 	assert chi2 == 0.0, "chi-squared should be 0 for perfect fit"
@@ -55,7 +55,7 @@ fn test__chi_squared_test_deviate() {
 	// Biased die: observed deviates from expected
 	observed := [5.0, 15.0, 10.0, 10.0, 10.0, 10.0]
 	expected := [10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
-	chi2, p_val := hypothesis.chi_squared_test(observed, expected)
+	chi2, p_val := hypothesis.chi_squared_gof_test(observed, expected)
 	
 	// Chi-squared should be > 0
 	assert chi2 > 0.0, "chi-squared should be positive for deviate distribution"

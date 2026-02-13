@@ -707,7 +707,7 @@ fn main() {
     layer_sizes := [5, 10, 10, 2]
     activation_fn := "relu"  // or "sigmoid", "tanh"
     
-    net := nn.sequential(layer_sizes, activation_fn)
+    mut net := nn.sequential(layer_sizes, activation_fn)
     println("Network created with ${net.num_layers} layers")
     
     // Forward pass
@@ -725,8 +725,8 @@ import nn
 fn main() {
     // Create network for binary classification
     // Input: 3 features, Hidden: 8 neurons, Output: 1 neuron
-    layer_sizes := [3, 8, 1]
-    net := nn.sequential(layer_sizes, "relu")
+    mut layer_sizes := [3, 8, 1]
+    mut net := nn.sequential(layer_sizes, "relu")
     
     // Training data
     x_train := [
@@ -883,7 +883,7 @@ fn main() {
 import nn
 
 fn main() {
-    net := nn.sequential([3, 5, 2], "relu")
+    mut net := nn.sequential([3, 5, 2], "relu")
     
     // Get current weights
     weights := net.get_weights()

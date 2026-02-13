@@ -18,6 +18,18 @@ pub fn combinations(n int, k int) f64 {
     return factorial(n) / (factorial(k) * factorial(n - k))
 }
 
+pub fn permutations(n int, k int) f64 {
+    return factorial(n) / factorial(n - k)
+}
+
+pub fn ipow(base int, exp int) int {
+    mut result := 1
+    for _ in 0..exp {
+        result *= base
+    }
+    return result
+}
+
 pub fn range(n int) []int {
     mut r := []int{}
     for i in 0..n {
