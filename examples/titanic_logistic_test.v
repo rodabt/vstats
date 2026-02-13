@@ -1,5 +1,4 @@
-module ml
-
+import ml
 import utils
 
 // Test Titanic dataset loading
@@ -50,12 +49,12 @@ fn test__logistic_regression_on_titanic() {
 	y_test_int := dataset.target[split_idx..dataset.target.len]
 	
 	// Train model with 1000 iterations and 0.01 learning rate
-	model := logistic_classifier(x_train, y_train, 1000, 0.01)
+	model := ml.logistic_classifier(x_train, y_train, 1000, 0.01)
 	assert model.trained == true, "model should be trained"
-	assert model.coefficients.len == 5, "should have 5 coefficients"
+	assert model.coefficients.len == 5, "should have 5 coefficients (features)"
 	
-	// Make predictions
-	predictions := logistic_classifier_predict(model, x_test, 0.5)
+	// Make predictions with threshold 0.5
+	predictions := ml.logistic_classifier_predict(model, x_test, 0.5)
 	assert predictions.len == x_test.len, "predictions should match test set size"
 	
 	// Validate predictions are binary
@@ -64,10 +63,10 @@ fn test__logistic_regression_on_titanic() {
 	}
 	
 	// Calculate metrics
-	acc := accuracy(y_test_int, predictions)
-	prec := precision(y_test_int, predictions, 1)
-	rec := recall(y_test_int, predictions, 1)
-	f1 := f1_score(y_test_int, predictions, 1)
+	acc := ml.accuracy(y_test_int, predictions)
+	prec := ml.precision(y_test_int, predictions, 1)
+	rec := ml.recall(y_test_int, predictions, 1)
+	f1 := ml.f1_score(y_test_int, predictions, 1)
 	
 	// Standard benchmark expectation for Logistic Regression on Titanic
 	// Community benchmarks show 70-78% accuracy
@@ -102,8 +101,8 @@ fn test__logistic_regression_probabilities() {
 	y_train := y_f64[0..split_idx]
 	x_test := dataset.features[split_idx..dataset.features.len]
 	
-	model := logistic_classifier(x_train, y_train, 1000, 0.01)
-	proba := logistic_classifier_predict_proba(model, x_test)
+	model := ml.logistic_classifier(x_train, y_train, 1000, 0.01)
+	proba := ml.logistic_classifier_predict_proba(model, x_test)
 	
 	assert proba.len == x_test.len, "probability output size should match test set"
 	
@@ -143,10 +142,10 @@ fn test__logistic_regression_confusion_matrix() {
 	x_test := dataset.features[split_idx..dataset.features.len]
 	y_test := dataset.target[split_idx..dataset.target.len]
 	
-	model := logistic_classifier(x_train, y_train, 1000, 0.01)
-	predictions := logistic_classifier_predict(model, x_test, 0.5)
+	model := ml.logistic_classifier(x_train, y_train, 1000, 0.01)
+	predictions := ml.logistic_classifier_predict(model, x_test, 0.5)
 	
-	cm := confusion_matrix(y_test, predictions)
+	cm := ml.confusion_matrix(y_test, predictions)
 	assert cm.len == 2, "confusion matrix should be 2x2"
 	assert cm[0].len == 2, "confusion matrix should be 2x2"
 	
@@ -181,12 +180,12 @@ fn test__logistic_regression_threshold_sensitivity() {
 	y_train := y_f64[0..split_idx]
 	x_test := dataset.features[split_idx..dataset.features.len]
 	
-	model := logistic_classifier(x_train, y_train, 1000, 0.01)
+	model := ml.logistic_classifier(x_train, y_train, 1000, 0.01)
 	
 	// Test different thresholds
-	pred_03 := logistic_classifier_predict(model, x_test, 0.3)
-	pred_05 := logistic_classifier_predict(model, x_test, 0.5)
-	pred_07 := logistic_classifier_predict(model, x_test, 0.7)
+	pred_03 := ml.logistic_classifier_predict(model, x_test, 0.3)
+	pred_05 := ml.logistic_classifier_predict(model, x_test, 0.5)
+	pred_07 := ml.logistic_classifier_predict(model, x_test, 0.7)
 	
 	count_1_03 := pred_03.filter(it == 1).len
 	count_1_05 := pred_05.filter(it == 1).len
@@ -218,7 +217,7 @@ fn test__logistic_regression_coefficients() {
 	x_train := dataset.features[0..split_idx]
 	y_train := y_f64[0..split_idx]
 	
-	model := logistic_classifier(x_train, y_train, 1000, 0.01)
+	model := ml.logistic_classifier(x_train, y_train, 1000, 0.01)
 	
 	// Check that coefficients are learned (not all zero)
 	mut any_nonzero := false

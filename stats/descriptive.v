@@ -81,7 +81,7 @@ pub fn interquartile_range(x []f64) f64 {
 	return quantile(x, 0.75) - quantile(x, 0.25)
 }
 
-// Convariance
+// Covariance
 pub fn covariance[T](x []T, y []T) f64 {
 	assert x.len == y.len, "x and y should have the same number of elements"
 	return linalg.dot(dev_mean(x), dev_mean(y)) / f64(x.len - 1)
@@ -276,5 +276,3 @@ pub fn kurtosis[T](x []T) f64 {
 	
 	return (m4 / n) - 3.0 // Excess kurtosis
 }
-
-

@@ -3,12 +3,12 @@ module optim
 import linalg
 
 pub fn difference_quotient(f fn (f64) f64, x f64, h f64) f64 {
-	assert h != 0,"h must be possitive"
+	assert h != 0,"h must be positive"
 	return (f(x+h)-f(x))/h
 }
 
 pub fn partial_difference_quotient(f fn([]f64) f64, v []f64, i int, h f64) f64 {
-	assert h != 0, "h must be possitive"
+	assert h != 0, "h must be positive"
 	mut w := []f64{}
 	for j, v_j in v {
 		w << if j == i { h + v_j } else { v_j } 

@@ -1,5 +1,4 @@
-module ml
-
+import ml
 import utils
 
 // Test Titanic dataset loading and class distribution
@@ -50,12 +49,12 @@ fn test__naive_bayes_on_titanic() {
 	y_test := dataset.target[split_idx..dataset.target.len]
 	
 	// Train model
-	model := naive_bayes_classifier(x_train, y_train)
+	model := ml.naive_bayes_classifier(x_train, y_train)
 	assert model.trained == true, "model should be trained"
 	assert model.classes.len == 2, "should have 2 classes"
 	
 	// Make predictions
-	predictions := naive_bayes_predict(model, x_test)
+	predictions := ml.naive_bayes_predict(model, x_test)
 	assert predictions.len == x_test.len, "predictions should match test set size"
 	
 	// Validate predictions are binary
@@ -64,10 +63,10 @@ fn test__naive_bayes_on_titanic() {
 	}
 	
 	// Calculate metrics
-	acc := accuracy(y_test, predictions)
-	prec := precision(y_test, predictions, 1)
-	rec := recall(y_test, predictions, 1)
-	f1 := f1_score(y_test, predictions, 1)
+	acc := ml.accuracy(y_test, predictions)
+	prec := ml.precision(y_test, predictions, 1)
+	rec := ml.recall(y_test, predictions, 1)
+	f1 := ml.f1_score(y_test, predictions, 1)
 	
 	// Community benchmark: Naive Bayes on Titanic typically achieves 70-77% accuracy
 	println("\n=== Naive Bayes on Titanic ===")
@@ -95,25 +94,26 @@ fn test__naive_bayes_class_priors() {
 	x_train := dataset.features[0..split_idx]
 	y_train := dataset.target[0..split_idx]
 	
-	model := naive_bayes_classifier(x_train, y_train)
+	model := ml.naive_bayes_classifier(x_train, y_train)
 	
 	// Check class priors exist and sum to ~1.0
 	assert model.class_priors.len == 2, "should have priors for 2 classes"
-	
+
 	mut prior_sum := 0.0
-	for class_id in [0, 1] {
-		if class_id in model.class_priors {
-			prior := model.class_priors[class_id]
-			assert prior > 0.0 && prior < 1.0, "prior should be between 0 and 1"
-			prior_sum += prior
-		}
+	for c in 0 .. model.classes.len {
+		class_label := model.classes[c]
+		prior := model.class_priors[class_label]
+		assert prior > 0.0 && prior < 1.0, "prior should be between 0 and 1"
+		prior_sum += prior
 	}
-	
+
 	assert prior_sum > 0.99 && prior_sum <= 1.01, "priors should sum to 1.0"
-	
+
 	println("\nClass Priors:")
-	println("  Class 0: ${model.class_priors[0]:.4f}")
-	println("  Class 1: ${model.class_priors[1]:.4f}")
+	for c in 0 .. model.classes.len {
+		class_label := model.classes[c]
+		println("  Class ${class_label}: ${model.class_priors[class_label]:.4f}")
+	}
 	println("  Sum:     ${prior_sum:.4f}")
 }
 
@@ -128,27 +128,30 @@ fn test__naive_bayes_feature_statistics() {
 	x_train := dataset.features[0..split_idx]
 	y_train := dataset.target[0..split_idx]
 	
-	model := naive_bayes_classifier(x_train, y_train)
-	
+	model := ml.naive_bayes_classifier(x_train, y_train)
+
 	// Check feature means are stored for both classes
-	for class in [0, 1] {
-		assert class in model.feature_means, "should have feature means for class ${class}"
-		assert class in model.feature_stds, "should have feature stds for class ${class}"
-		
-		means := model.feature_means[class]
-		stds := model.feature_stds[class]
-		
+	assert model.classes.len == 2, "should have 2 classes"
+	assert model.feature_means.len == 2, "should have feature means for 2 classes"
+	assert model.feature_stds.len == 2, "should have feature stds for 2 classes"
+
+	for c in 0 .. model.classes.len {
+		class_label := model.classes[c]
+		means := model.feature_means[class_label]
+		stds := model.feature_stds[class_label]
+
 		// Should have statistics for all 5 features
-		assert means.len == 5, "should have means for 5 features (class ${class})"
-		assert stds.len == 5, "should have stds for 5 features (class ${class})"
+		assert means.len == 5, "should have means for 5 features (class ${c})"
+		assert stds.len == 5, "should have stds for 5 features (class ${c})"
 	}
 	
 	println("\nFeature Statistics Learned:")
-	for class in [0, 1] {
-		println("  Class ${class}:")
+	for c in 0 .. model.classes.len {
+		class_label := model.classes[c]
+		println("  Class ${class_label}:")
 		for feat_idx in 0 .. 5 {
-			mean := model.feature_means[class][feat_idx][0]
-			std := model.feature_stds[class][feat_idx][0]
+			mean := model.feature_means[class_label][feat_idx][0]
+			std := model.feature_stds[class_label][feat_idx][0]
 			feature_names := ["Pclass", "Age", "SibSp", "Parch", "Fare"]
 			println("    ${feature_names[feat_idx]:8}: μ=${mean:7.2f}, σ=${std:7.2f}")
 		}
@@ -168,10 +171,10 @@ fn test__naive_bayes_confusion_matrix() {
 	x_test := dataset.features[split_idx..dataset.features.len]
 	y_test := dataset.target[split_idx..dataset.target.len]
 	
-	model := naive_bayes_classifier(x_train, y_train)
-	predictions := naive_bayes_predict(model, x_test)
+	model := ml.naive_bayes_classifier(x_train, y_train)
+	predictions := ml.naive_bayes_predict(model, x_test)
 	
-	cm := confusion_matrix(y_test, predictions)
+	cm := ml.confusion_matrix(y_test, predictions)
 	assert cm.len == 2, "confusion matrix should be 2x2"
 	assert cm[0].len == 2, "confusion matrix should be 2x2"
 	
@@ -212,11 +215,11 @@ fn test__naive_bayes_prediction_consistency() {
 	x_test := dataset.features[split_idx..dataset.features.len]
 	
 	// Train model
-	model := naive_bayes_classifier(x_train, y_train)
+	model := ml.naive_bayes_classifier(x_train, y_train)
 	
 	// Make predictions twice
-	pred1 := naive_bayes_predict(model, x_test)
-	pred2 := naive_bayes_predict(model, x_test)
+	pred1 := ml.naive_bayes_predict(model, x_test)
+	pred2 := ml.naive_bayes_predict(model, x_test)
 	
 	// Predictions should be identical
 	assert pred1.len == pred2.len, "predictions should have same length"
@@ -244,10 +247,10 @@ fn test__naive_bayes_multiple_splits() {
 		x_test := dataset.features[split_idx..dataset.features.len]
 		y_test := dataset.target[split_idx..dataset.target.len]
 		
-		model := naive_bayes_classifier(x_train, y_train)
-		predictions := naive_bayes_predict(model, x_test)
+		model := ml.naive_bayes_classifier(x_train, y_train)
+		predictions := ml.naive_bayes_predict(model, x_test)
 		
-		acc := accuracy(y_test, predictions)
+		acc := ml.accuracy(y_test, predictions)
 		accuracies << acc
 		
 		println("Split ${(split_pct*100):.0f}% train: accuracy = ${acc:.4f}")
@@ -272,14 +275,14 @@ fn test__naive_bayes_on_training_data() {
 	x_test := dataset.features[split_idx..dataset.features.len]
 	y_test := dataset.target[split_idx..dataset.target.len]
 	
-	model := naive_bayes_classifier(x_train, y_train)
+	model := ml.naive_bayes_classifier(x_train, y_train)
 	
 	// Predict on training and test data
-	train_pred := naive_bayes_predict(model, x_train)
-	test_pred := naive_bayes_predict(model, x_test)
+	train_pred := ml.naive_bayes_predict(model, x_train)
+	test_pred := ml.naive_bayes_predict(model, x_test)
 	
-	train_acc := accuracy(y_train, train_pred)
-	test_acc := accuracy(y_test, test_pred)
+	train_acc := ml.accuracy(y_train, train_pred)
+	test_acc := ml.accuracy(y_test, test_pred)
 	
 	println("Training accuracy: ${train_acc:.4f}")
 	println("Test accuracy:     ${test_acc:.4f}")
@@ -306,11 +309,11 @@ fn test__naive_bayes_robustness() {
 	y := dataset.target[0..subset_size]
 	
 	// Should not crash on small dataset
-	model := naive_bayes_classifier(x, y)
+	model := ml.naive_bayes_classifier(x, y)
 	assert model.trained == true, "should train on small dataset"
 	
 	// Should make predictions without crashing
-	predictions := naive_bayes_predict(model, x)
+	predictions := ml.naive_bayes_predict(model, x)
 	assert predictions.len == x.len, "should make predictions"
 	
 	println("Robustness test: PASS (small dataset handling)")
@@ -341,20 +344,30 @@ fn test__naive_bayes_prior_accuracy() {
 	expected_prior_1 := f64(count_1) / f64(y_train.len)
 	
 	// Train and check priors
-	model := naive_bayes_classifier(dataset.features[0..split_idx], y_train)
-	
-	assert model.class_priors[0] > 0.0, "prior for class 0 should be positive"
-	assert model.class_priors[1] > 0.0, "prior for class 1 should be positive"
-	
+	model := ml.naive_bayes_classifier(dataset.features[0..split_idx], y_train)
+
+	// Find class indices
+	mut idx_0 := -1
+	mut idx_1 := -1
+	for i, class in model.classes {
+		if class == 0 { idx_0 = i }
+		if class == 1 { idx_1 = i }
+	}
+
+	assert idx_0 >= 0, "should have class 0"
+	assert idx_1 >= 0, "should have class 1"
+	assert model.class_priors[idx_0] > 0.0, "prior for class 0 should be positive"
+	assert model.class_priors[idx_1] > 0.0, "prior for class 1 should be positive"
+
 	// Priors should match data distribution closely
-	diff_0 := model.class_priors[0] - expected_prior_0
-	diff_1 := model.class_priors[1] - expected_prior_1
+	diff_0 := model.class_priors[idx_0] - expected_prior_0
+	diff_1 := model.class_priors[idx_1] - expected_prior_1
 	assert diff_0 * diff_0 < 0.0001, "class 0 prior should match distribution"
 	assert diff_1 * diff_1 < 0.0001, "class 1 prior should match distribution"
-	
+
 	println("Prior Accuracy Test: PASS")
-	println("  Expected prior[0]: ${expected_prior_0:.4f}, Actual: ${model.class_priors[0]:.4f}")
-	println("  Expected prior[1]: ${expected_prior_1:.4f}, Actual: ${model.class_priors[1]:.4f}")
+	println("  Expected prior[0]: ${expected_prior_0:.4f}, Actual: ${model.class_priors[idx_0]:.4f}")
+	println("  Expected prior[1]: ${expected_prior_1:.4f}, Actual: ${model.class_priors[idx_1]:.4f}")
 }
 
 // Comprehensive metrics summary
@@ -370,17 +383,17 @@ fn test__naive_bayes_comprehensive_metrics() {
 	x_test := dataset.features[split_idx..dataset.features.len]
 	y_test := dataset.target[split_idx..dataset.target.len]
 	
-	model := naive_bayes_classifier(x_train, y_train)
-	predictions := naive_bayes_predict(model, x_test)
+	model := ml.naive_bayes_classifier(x_train, y_train)
+	predictions := ml.naive_bayes_predict(model, x_test)
 	
-	// Calculate all metrics
-	acc := accuracy(y_test, predictions)
-	prec_0 := precision(y_test, predictions, 0)
-	prec_1 := precision(y_test, predictions, 1)
-	rec_0 := recall(y_test, predictions, 0)
-	rec_1 := recall(y_test, predictions, 1)
-	f1_0 := f1_score(y_test, predictions, 0)
-	f1_1 := f1_score(y_test, predictions, 1)
+    // Calculate all metrics
+    acc := ml.accuracy(y_test, predictions)
+    prec_0 := ml.precision(y_test, predictions, 0)
+    prec_1 := ml.precision(y_test, predictions, 1)
+    rec_0 := ml.recall(y_test, predictions, 0)
+    rec_1 := ml.recall(y_test, predictions, 1)
+    f1_0 := ml.f1_score(y_test, predictions, 0)
+    f1_1 := ml.f1_score(y_test, predictions, 1)
 	
 	println("\n=== Naive Bayes Comprehensive Metrics ===")
 	println("Overall Accuracy: ${acc:.4f}")

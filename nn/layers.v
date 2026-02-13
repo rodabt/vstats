@@ -3,13 +3,20 @@ module nn
 import math
 import rand
 import utils
+import arrays
 
 pub struct DenseLayer {
 pub mut:
-	weights     [][]f64
+	weights     [][]f64  // Stored as [output_size][input_size] for cache efficiency
 	bias        []f64
 	input_size  int
 	output_size int
+	// Pre-allocated buffers for performance
+	output_buffer []f64
+	grad_input_buffer []f64
+	// Momentum buffers for accelerated convergence
+	weight_velocity [][]f64  // [output_size][input_size]
+	bias_velocity   []f64    // [output_size]
 }
 
 pub struct ActivationLayer {
@@ -27,107 +34,128 @@ pub mut:
 	epsilon f64
 }
 
-// Initialize Dense Layer with random weights
+// dense_layer - Initialize Dense Layer with random weights
+// Weights stored as [output_size][input_size] for cache-efficient row-major access
 pub fn dense_layer(input_size int, output_size int) DenseLayer {
-	mut weights := [][]f64{len: input_size}
-	for i in 0 .. input_size {
-		weights[i] = []f64{len: output_size}
-		for j in 0 .. output_size {
+	// Initialize weights as [output_size][input_size] (transposed for cache efficiency)
+	mut weights := [][]f64{len: output_size}
+	mut weight_velocity := [][]f64{len: output_size}
+	for j in 0 .. output_size {
+		weights[j] = []f64{len: input_size}
+		weight_velocity[j] = []f64{len: input_size, init: 0}
+		for i in 0 .. input_size {
 			// Xavier initialization
-			weights[i][j] = (rand.f64() - 0.5) / math.sqrt(f64(input_size))
+			weights[j][i] = (rand.f64() - 0.5) / math.sqrt(f64(input_size))
 		}
 	}
-	
+
 	mut bias := []f64{len: output_size}
+	mut bias_velocity := []f64{len: output_size, init: 0}
 	for j in 0 .. output_size {
 		bias[j] = 0.01
 	}
-	
+
+	// Pre-allocate buffers to avoid repeated allocations
 	return DenseLayer{
 		weights: weights
 		bias: bias
 		input_size: input_size
 		output_size: output_size
+		output_buffer: []f64{len: output_size}
+		grad_input_buffer: []f64{len: input_size}
+		weight_velocity: weight_velocity
+		bias_velocity: bias_velocity
 	}
 }
 
-// Forward pass through dense layer
-pub fn (layer DenseLayer) forward(input []f64) []f64 {
+// forward - Forward pass through dense layer
+// Uses row-major weight access pattern for cache efficiency
+pub fn (mut layer DenseLayer) forward(input []f64) []f64 {
 	assert input.len == layer.input_size, "input size mismatch"
-	
-	mut output := []f64{len: layer.output_size}
+
+	// Write directly to pre-allocated buffer
 	for j in 0 .. layer.output_size {
 		mut sum := layer.bias[j]
+		// Sequential access: weights[j][i] is row-major (cache-friendly)
 		for i in 0 .. layer.input_size {
-			sum += input[i] * layer.weights[i][j]
+			sum += input[i] * layer.weights[j][i]
 		}
-		output[j] = sum
+		layer.output_buffer[j] = sum
 	}
-	
-	return output
+
+	return layer.output_buffer
 }
 
-// Backward pass through dense layer (returns only gradient, layer updates in-place)
-pub fn (mut layer DenseLayer) backward(grad_output []f64, input []f64, learning_rate f64) []f64 {
+// backward - Backward pass through dense layer (returns only gradient, layer updates in-place)
+// Optimized with pre-allocated buffer, cache-efficient memory access, and momentum
+pub fn (mut layer DenseLayer) backward(grad_output []f64, input []f64, learning_rate f64, momentum f64) []f64 {
 	assert grad_output.len == layer.output_size, "output gradient size mismatch"
-	
-	// Compute input gradient
-	mut grad_input := []f64{len: layer.input_size}
+
+	// Clear pre-allocated buffer
 	for i in 0 .. layer.input_size {
-		mut sum := 0.0
-		for j in 0 .. layer.output_size {
-			sum += grad_output[j] * layer.weights[i][j]
-		}
-		grad_input[i] = sum
+		layer.grad_input_buffer[i] = 0.0
 	}
-	
-	// Update weights
-	for i in 0 .. layer.input_size {
-		for j in 0 .. layer.output_size {
-			layer.weights[i][j] -= learning_rate * grad_output[j] * input[i]
-		}
-	}
-	
-	// Update bias
+
+	// Compute input gradient with cache-efficient access
 	for j in 0 .. layer.output_size {
-		layer.bias[j] -= learning_rate * grad_output[j]
+		for i in 0 .. layer.input_size {
+			layer.grad_input_buffer[i] += grad_output[j] * layer.weights[j][i]
+		}
 	}
-	
-	return grad_input
+
+	// Update weights with momentum and cache-efficient sequential access
+	for j in 0 .. layer.output_size {
+		for i in 0 .. layer.input_size {
+			// Compute gradient
+			grad := grad_output[j] * input[i]
+			// Update velocity: v = momentum * v - learning_rate * grad
+			layer.weight_velocity[j][i] = momentum * layer.weight_velocity[j][i] - learning_rate * grad
+			// Update weight: w = w + v
+			layer.weights[j][i] += layer.weight_velocity[j][i]
+		}
+	}
+
+	// Update bias with momentum
+	for j in 0 .. layer.output_size {
+		layer.bias_velocity[j] = momentum * layer.bias_velocity[j] - learning_rate * grad_output[j]
+		layer.bias[j] += layer.bias_velocity[j]
+	}
+
+	return layer.grad_input_buffer
 }
 
-// ReLU Activation Function
+// relu - ReLU Activation Function
 pub fn relu(x f64) f64 {
 	return if x > 0 { x } else { 0 }
 }
 
-// ReLU Derivative
+// relu_derivative - ReLU Derivative
 pub fn relu_derivative(x f64) f64 {
 	return if x > 0 { 1 } else { 0 }
 }
 
-// Sigmoid Activation Function (delegates to utils)
+// sigmoid - Sigmoid Activation Function (delegates to utils)
 pub fn sigmoid(x f64) f64 {
 	return utils.sigmoid(x)
 }
 
-// Sigmoid Derivative (delegates to utils)
+// sigmoid_derivative - Sigmoid Derivative (delegates to utils)
 pub fn sigmoid_derivative(x f64) f64 {
 	return utils.sigmoid_derivative(x)
 }
 
-// Tanh Activation Function
+// tanh - Tanh Activation Function
 pub fn tanh(x f64) f64 {
 	return math.tanh(x)
 }
 
-// Tanh Derivative
+// tanh_derivative - Tanh Derivative
 pub fn tanh_derivative(x f64) f64 {
 	t := math.tanh(x)
 	return 1 - t * t
 }
 
-// Softmax activation (for output layer)
+// softmax - Softmax activation (for output layer)
 pub fn softmax(x []f64) []f64 {
 	// Subtract max for numerical stability
 	mut max_val := x[0]
@@ -147,7 +175,7 @@ pub fn softmax(x []f64) []f64 {
 	return exp_vals.map(it / sum)
 }
 
-// Create activation layer
+// activation_layer - Create activation layer
 pub fn activation_layer(activation_fn string) ActivationLayer {
 	return match activation_fn {
 		'relu' { ActivationLayer{activation: relu, derivative: relu_derivative} }
@@ -157,12 +185,12 @@ pub fn activation_layer(activation_fn string) ActivationLayer {
 	}
 }
 
-// Forward pass through activation layer
+// forward - Forward pass through activation layer
 pub fn (layer ActivationLayer) forward(input []f64) []f64 {
 	return input.map(layer.activation(it))
 }
 
-// Backward pass through activation layer
+// backward - Backward pass through activation layer
 pub fn (layer ActivationLayer) backward(grad_output []f64, input []f64) []f64 {
 	mut grad_input := []f64{len: grad_output.len}
 	for i in 0 .. grad_output.len {
@@ -171,7 +199,7 @@ pub fn (layer ActivationLayer) backward(grad_output []f64, input []f64) []f64 {
 	return grad_input
 }
 
-// Batch Normalization Layer
+// batch_norm_layer - Create Batch Normalization Layer
 pub fn batch_norm_layer(input_size int) BatchNormLayer {
 	return BatchNormLayer{
 		gamma: []f64{len: input_size, init: 1.0}
@@ -182,7 +210,7 @@ pub fn batch_norm_layer(input_size int) BatchNormLayer {
 	}
 }
 
-// Forward pass through batch norm
+// forward - Forward pass through batch norm
 pub fn (layer BatchNormLayer) forward(input []f64) []f64 {
 	mut output := []f64{len: input.len}
 	
@@ -196,7 +224,7 @@ pub fn (layer BatchNormLayer) forward(input []f64) []f64 {
 	return output
 }
 
-// Dropout Layer (regularization)
+// dropout - Apply Dropout regularization
 pub fn dropout(input []f64, dropout_rate f64) []f64 {
 	if dropout_rate <= 0 {
 		return input.clone()
@@ -209,7 +237,7 @@ pub fn dropout(input []f64, dropout_rate f64) []f64 {
 	)
 }
 
-// Flatten 2D array to 1D (use linalg.flatten for generic version)
+// flatten - Flatten 2D array to 1D (use linalg.flatten for generic version)
 pub fn flatten(data [][]f64) []f64 {
 	mut result := []f64{}
 	for row in data {
@@ -218,7 +246,7 @@ pub fn flatten(data [][]f64) []f64 {
 	return result
 }
 
-// Reshape 1D array to 2D
+// reshape - Reshape 1D array to 2D
 pub fn reshape(data []f64, rows int, cols int) [][]f64 {
 	assert data.len == rows * cols, "size mismatch for reshape"
 	
@@ -232,7 +260,7 @@ pub fn reshape(data []f64, rows int, cols int) [][]f64 {
 	return result
 }
 
-// Convolution 1D (simplified)
+// conv1d - 1D Convolution (simplified)
 pub fn conv1d(input []f64, kernel []f64, stride int) []f64 {
 	output_len := (input.len - kernel.len) / stride + 1
 	mut output := []f64{len: output_len}
@@ -248,34 +276,28 @@ pub fn conv1d(input []f64, kernel []f64, stride int) []f64 {
 	return output
 }
 
-// Max Pooling 1D
+// max_pool1d - 1D Max Pooling
 pub fn max_pool1d(input []f64, pool_size int, stride int) []f64 {
 	output_len := (input.len - pool_size) / stride + 1
 	mut output := []f64{len: output_len}
 	
 	for i in 0 .. output_len {
-		mut max_val := input[i * stride]
-		for j in 1 .. pool_size {
-			if input[i * stride + j] > max_val {
-				max_val = input[i * stride + j]
-			}
-		}
-		output[i] = max_val
+		window := input[i * stride..i * stride + pool_size]
+		max_idx := arrays.idx_max(window) or { 0 }
+		output[i] = window[max_idx]
 	}
 	
 	return output
 }
 
-// Average Pooling 1D
+// avg_pool1d - 1D Average Pooling
 pub fn avg_pool1d(input []f64, pool_size int, stride int) []f64 {
 	output_len := (input.len - pool_size) / stride + 1
 	mut output := []f64{len: output_len}
 	
 	for i in 0 .. output_len {
-		mut sum := 0.0
-		for j in 0 .. pool_size {
-			sum += input[i * stride + j]
-		}
+		window := input[i * stride..i * stride + pool_size]
+		sum := arrays.sum(window) or { 0.0 }
 		output[i] = sum / f64(pool_size)
 	}
 	

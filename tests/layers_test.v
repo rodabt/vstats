@@ -2,21 +2,25 @@ import nn
 import math
 
 fn test__dense_layer_init() {
-	layer := nn.dense_layer(3, 2)
-	
+	mut layer := nn.dense_layer(3, 2)
+
 	assert layer.input_size == 3
 	assert layer.output_size == 2
-	assert layer.weights.len == 3
-	assert layer.weights[0].len == 2
+	// Weights stored as [output_size][input_size] for cache efficiency
+	assert layer.weights.len == 2
+	assert layer.weights[0].len == 3
 	assert layer.bias.len == 2
+	// Verify pre-allocated buffers
+	assert layer.output_buffer.len == 2
+	assert layer.grad_input_buffer.len == 3
 }
 
 fn test__dense_layer_forward() {
-	layer := nn.dense_layer(2, 2)
+	mut layer := nn.dense_layer(2, 2)
 	input := [1.0, 2.0]
-	
+
 	output := layer.forward(input)
-	
+
 	assert output.len == 2
 }
 

@@ -3,12 +3,12 @@ module nn
 import math
 import utils
 
-// Mean Squared Error Loss (delegates to utils)
+// mse_loss - Calculate Mean Squared Error Loss (delegates to utils)
 pub fn mse_loss[T](y_true []T, y_pred []T) f64 {
 	return utils.mse(y_true, y_pred)
 }
 
-// MSE Loss Gradient
+// mse_loss_gradient - Calculate MSE Loss Gradient
 pub fn mse_loss_gradient[T](y_true []T, y_pred []T) []f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
@@ -22,21 +22,21 @@ pub fn mse_loss_gradient[T](y_true []T, y_pred []T) []f64 {
 	return grad
 }
 
-// Binary Crossentropy Loss
+// binary_crossentropy_loss - Calculate Binary Crossentropy Loss
 pub fn binary_crossentropy_loss(y_true []f64, y_pred []f64) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
-	
+
 	mut sum := 0.0
 	for i in 0 .. y_true.len {
 		// Clip predictions to avoid log(0)
 		y_clipped := math.max(1e-7, math.min(1 - 1e-7, y_pred[i]))
 		sum += y_true[i] * math.log(y_clipped) + (1 - y_true[i]) * math.log(1 - y_clipped)
 	}
-	
+
 	return -sum / f64(y_true.len)
 }
 
-// Binary Crossentropy Loss Gradient
+// binary_crossentropy_loss_gradient - Calculate Binary Crossentropy Loss Gradient
 pub fn binary_crossentropy_loss_gradient(y_true []f64, y_pred []f64) []f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
@@ -51,12 +51,12 @@ pub fn binary_crossentropy_loss_gradient(y_true []f64, y_pred []f64) []f64 {
 	return grad
 }
 
-// Categorical Crossentropy Loss
+// categorical_crossentropy_loss - Calculate Categorical Crossentropy Loss
 pub fn categorical_crossentropy_loss(y_true [][]f64, y_pred [][]f64) f64 {
 	assert y_true.len == y_pred.len, "batch sizes must match"
-	
+
 	mut sum := 0.0
-	
+
 	for i in 0 .. y_true.len {
 		for j in 0 .. y_true[i].len {
 			// Clip predictions to avoid log(0)
@@ -66,11 +66,11 @@ pub fn categorical_crossentropy_loss(y_true [][]f64, y_pred [][]f64) f64 {
 			}
 		}
 	}
-	
+
 	return -sum / f64(y_true.len)
 }
 
-// Sparse Categorical Crossentropy Loss
+// sparse_categorical_crossentropy_loss - Calculate Sparse Categorical Crossentropy Loss
 pub fn sparse_categorical_crossentropy_loss(y_true []int, y_pred [][]f64) f64 {
 	assert y_true.len == y_pred.len, "batch sizes must match"
 	
@@ -85,7 +85,7 @@ pub fn sparse_categorical_crossentropy_loss(y_true []int, y_pred [][]f64) f64 {
 	return -sum / f64(y_true.len)
 }
 
-// Huber Loss (robust to outliers)
+// huber_loss - Calculate Huber Loss (robust to outliers)
 pub fn huber_loss[T](y_true []T, y_pred []T, delta f64) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
@@ -103,12 +103,12 @@ pub fn huber_loss[T](y_true []T, y_pred []T, delta f64) f64 {
 	return sum / f64(y_true.len)
 }
 
-// Mean Absolute Error Loss (delegates to utils)
+// mae_loss - Calculate Mean Absolute Error Loss (delegates to utils)
 pub fn mae_loss[T](y_true []T, y_pred []T) f64 {
 	return utils.mae(y_true, y_pred)
 }
 
-// MAE Loss Gradient
+// mae_loss_gradient - Calculate MAE Loss Gradient
 pub fn mae_loss_gradient[T](y_true []T, y_pred []T) []f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
@@ -123,7 +123,7 @@ pub fn mae_loss_gradient[T](y_true []T, y_pred []T) []f64 {
 	return grad
 }
 
-// Hinge Loss (for SVM-like classifiers)
+// hinge_loss - Calculate Hinge Loss (for SVM-like classifiers)
 pub fn hinge_loss[T](y_true []T, y_pred []T) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
@@ -137,7 +137,7 @@ pub fn hinge_loss[T](y_true []T, y_pred []T) f64 {
 	return sum / f64(y_true.len)
 }
 
-// Squared Hinge Loss
+// squared_hinge_loss - Calculate Squared Hinge Loss
 pub fn squared_hinge_loss[T](y_true []T, y_pred []T) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
@@ -150,7 +150,7 @@ pub fn squared_hinge_loss[T](y_true []T, y_pred []T) f64 {
 	return sum / f64(y_true.len)
 }
 
-// Kullback-Leibler Divergence Loss
+// kl_divergence_loss - Calculate Kullback-Leibler Divergence Loss
 pub fn kl_divergence_loss(y_true []f64, y_pred []f64) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
@@ -166,7 +166,7 @@ pub fn kl_divergence_loss(y_true []f64, y_pred []f64) f64 {
 	return sum
 }
 
-// Cosine Similarity Loss
+// cosine_similarity_loss - Calculate Cosine Similarity Loss
 pub fn cosine_similarity_loss[T](y_true []T, y_pred []T) f64 {
 	assert y_true.len == y_pred.len, "arrays must have same length"
 	
@@ -190,7 +190,7 @@ pub fn cosine_similarity_loss[T](y_true []T, y_pred []T) f64 {
 	return 1 - cosine_sim
 }
 
-// Contrastive Loss (for siamese networks)
+// contrastive_loss - Calculate Contrastive Loss (for siamese networks)
 pub fn contrastive_loss(y_true f64, distance f64, margin f64) f64 {
 	if y_true > 0.5 {
 		// Same class
@@ -201,7 +201,7 @@ pub fn contrastive_loss(y_true f64, distance f64, margin f64) f64 {
 	}
 }
 
-// Triplet Loss (for metric learning)
+// triplet_loss - Calculate Triplet Loss (for metric learning)
 pub fn triplet_loss[T](anchor []T, positive []T, negative []T, margin f64) f64 {
 	// Compute euclidean distances
 	mut dist_ap := 0.0
