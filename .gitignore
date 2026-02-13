@@ -1,7 +1,9 @@
 dev_docs/
 .tmp/
 .venv/
-examples/*
-!examples/*.v
 *.md
 !README.md
+examples/breast_cancer_classification
+examples/generic_types_example
+examples/iris_logistic_classification
+examples/titanic_random_forest_test
