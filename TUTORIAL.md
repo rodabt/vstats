@@ -45,7 +45,7 @@ The `linalg` module provides vector and matrix operations with generic type supp
 ### Vector Operations
 
 ```v
-import linalg
+import vstats.linalg
 
 fn main() {
     // Basic vector operations
@@ -85,7 +85,7 @@ fn main() {
 ### Vector Aggregation
 
 ```v
-import linalg
+import vstats.linalg
 
 fn main() {
     // Sum multiple vectors
@@ -102,7 +102,7 @@ fn main() {
 ### Matrix Operations
 
 ```v
-import linalg
+import vstats.linalg
 
 fn main() {
     // Matrix creation
@@ -143,7 +143,7 @@ fn main() {
 ### Rotation Matrices
 
 ```v
-import linalg
+import vstats.linalg
 import math
 
 fn main() {
@@ -169,7 +169,7 @@ The `stats` module provides descriptive and inferential statistics.
 ### Descriptive Statistics
 
 ```v
-import stats
+import vstats.stats
 
 fn main() {
     data := [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
@@ -207,7 +207,7 @@ fn main() {
 ### Correlation and Covariance
 
 ```v
-import stats
+import vstats.stats
 
 fn main() {
     x := [1.0, 2.0, 3.0, 4.0, 5.0]
@@ -226,7 +226,7 @@ fn main() {
 ### Advanced Statistical Tests
 
 ```v
-import stats
+import vstats.stats
 
 fn main() {
     // ANOVA - Analysis of Variance
@@ -261,7 +261,7 @@ fn main() {
 ### Cramer's V (Effect Size for Categorical Data)
 
 ```v
-import stats
+import vstats.stats
 
 fn main() {
     // Contingency table: rows = Gender, cols = Preference
@@ -288,7 +288,7 @@ The `prob` module provides probability density functions (PDF) and cumulative di
 ### Normal Distribution
 
 ```v
-import prob
+import vstats.prob
 
 fn main() {
     mu := 0.0    // mean
@@ -310,7 +310,7 @@ fn main() {
 ### Discrete Distributions
 
 ```v
-import prob
+import vstats.prob
 
 fn main() {
     // Bernoulli distribution
@@ -334,7 +334,7 @@ fn main() {
 ### Continuous Distributions
 
 ```v
-import prob
+import vstats.prob
 
 fn main() {
     // Exponential distribution
@@ -376,7 +376,7 @@ fn main() {
 ### Multinomial Distribution
 
 ```v
-import prob
+import vstats.prob
 
 fn main() {
     // Multinomial: 10 trials, 3 categories with probabilities
@@ -391,7 +391,7 @@ fn main() {
 ### Expected Value
 
 ```v
-import prob
+import vstats.prob
 
 fn main() {
     // Expected value of a discrete random variable
@@ -412,7 +412,7 @@ The `optim` module provides numerical optimization utilities.
 ### Gradient Computation
 
 ```v
-import optim
+import vstats.optim
 import math
 
 fn main() {
@@ -444,8 +444,8 @@ fn main() {
 ### Gradient Descent Step
 
 ```v
-import optim
-import linalg
+import vstats.optim
+import vstats.linalg
 
 fn main() {
     // Current position
@@ -475,7 +475,7 @@ The `ml` module provides classification and regression algorithms.
 ### Linear Regression
 
 ```v
-import ml
+import vstats.ml
 
 fn main() {
     // Training data: predict y from x
@@ -509,7 +509,7 @@ fn main() {
 ### Logistic Regression (Binary Classification)
 
 ```v
-import ml
+import vstats.ml
 
 fn main() {
     // Binary classification data
@@ -548,7 +548,7 @@ fn main() {
 ### Logistic Classifier with Feature Normalization
 
 ```v
-import ml
+import vstats.ml
 
 fn main() {
     // Data with different feature scales
@@ -576,8 +576,8 @@ fn main() {
 ### Naive Bayes Classifier
 
 ```v
-import ml
-import utils
+import vstats.ml
+import vstats.utils
 
 fn main() {
     // Load Titanic dataset
@@ -621,7 +621,7 @@ fn main() {
 ### Support Vector Machine (SVM)
 
 ```v
-import ml
+import vstats.ml
 
 fn main() {
     // Training data
@@ -654,8 +654,8 @@ fn main() {
 ### Random Forest Classifier
 
 ```v
-import ml
-import utils
+import vstats.ml
+import vstats.utils
 
 fn main() {
     // Load dataset
@@ -699,7 +699,7 @@ The `nn` module provides neural network layers, loss functions, and training uti
 ### Creating a Neural Network
 
 ```v
-import nn
+import vstats.nn
 
 fn main() {
     // Create a sequential neural network
@@ -720,7 +720,7 @@ fn main() {
 ### Training a Neural Network
 
 ```v
-import nn
+import vstats.nn
 
 fn main() {
     // Create network for binary classification
@@ -756,7 +756,7 @@ fn main() {
 ### Loss Functions
 
 ```v
-import nn
+import vstats.nn
 
 fn main() {
     y_true := [1.0, 0.0, 1.0, 0.0]
@@ -791,7 +791,7 @@ fn main() {
 ### Categorical Cross-Entropy for Multi-class
 
 ```v
-import nn
+import vstats.nn
 
 fn main() {
     // For multi-class classification (one-hot encoded)
@@ -819,7 +819,7 @@ fn main() {
 ### Activation Functions
 
 ```v
-import nn
+import vstats.nn
 
 fn main() {
     x := -2.0
@@ -846,7 +846,7 @@ fn main() {
 ### Advanced Layers
 
 ```v
-import nn
+import vstats.nn
 
 fn main() {
     // Batch Normalization
@@ -880,7 +880,7 @@ fn main() {
 ### Network Weights Management
 
 ```v
-import nn
+import vstats.nn
 
 fn main() {
     mut net := nn.sequential([3, 5, 2], "relu")
@@ -905,7 +905,7 @@ The `utils` module provides helper functions, metrics, and dataset utilities.
 ### Mathematical Functions
 
 ```v
-import utils
+import vstats.utils
 import math
 
 fn main() {
@@ -938,7 +938,7 @@ fn main() {
 ### Regression Metrics
 
 ```v
-import utils
+import vstats.utils
 
 fn main() {
     y_true := [3.0, 5.0, 7.0, 9.0]
@@ -961,7 +961,7 @@ fn main() {
 ### Classification Metrics
 
 ```v
-import utils
+import vstats.utils
 
 fn main() {
     y_true := [0, 1, 1, 0, 1, 1, 0, 0, 1, 0]
@@ -991,7 +991,7 @@ fn main() {
 ### ROC Curve and AUC
 
 ```v
-import utils
+import vstats.utils
 
 fn main() {
     y_true := [0, 0, 1, 1, 0, 1, 0, 1, 1, 0]
@@ -1013,7 +1013,7 @@ fn main() {
 ### Batch Metrics Calculation
 
 ```v
-import utils
+import vstats.utils
 
 fn main() {
     y_true := [0, 1, 1, 0, 1]
@@ -1036,7 +1036,7 @@ fn main() {
 ### Datasets
 
 ```v
-import utils
+import vstats.utils
 
 fn main() {
     // Load built-in Titanic dataset
@@ -1078,7 +1078,7 @@ fn main() {
 ### Data Splitting
 
 ```v
-import utils
+import vstats.utils
 
 fn main() {
     // Load dataset
@@ -1098,7 +1098,7 @@ fn main() {
 ### Training Utilities
 
 ```v
-import utils
+import vstats.utils
 
 fn main() {
     // Track training progress
@@ -1130,7 +1130,7 @@ fn main() {
 ### Hyperparameter Grid Search
 
 ```v
-import utils
+import vstats.utils
 
 fn main() {
     // Define parameter grid
@@ -1156,7 +1156,7 @@ fn main() {
 The `hypothesis` module provides statistical hypothesis testing.
 
 ```v
-import hypothesis
+import vstats.hypothesis
 
 fn main() {
     // One-sample t-test
@@ -1215,10 +1215,10 @@ Here's a complete example demonstrating a full machine learning workflow:
 ```v
 module main
 
-import utils
-import ml
-import linalg
-import stats
+import vstats.utils
+import vstats.ml
+import vstats.linalg
+import vstats.stats
 
 fn main() {
     println("=== VStats Complete Workflow Demo ===\n")
