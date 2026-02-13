@@ -429,3 +429,146 @@ pub fn linear_regression_fast[T](x [][]T, y []T) LinearModel[T] {
 	}
 }
 
+// ============================================================================
+// Phase 3: Parallel Mini-batch Gradient Descent
+// ============================================================================
+
+// BatchGradient - Stores gradients from a single batch
+struct BatchGradient {
+mut:
+	grad_coef    []f64
+	grad_intercept f64
+}
+
+// logistic_regression_parallel - Parallel mini-batch logistic regression
+// Processes multiple batches concurrently and averages gradients
+// Expected speedup: 2-4x on multi-core systems
+pub fn logistic_regression_parallel(x [][]f64, y []f64, config OptimLogisticConfig) LogisticModel[f64] {
+	assert x.len == y.len, "number of samples must match"
+	assert x.len > 0, "must have at least one sample"
+
+	n := x.len
+	p := x[0].len
+	batch_size := if config.batch_size > n { n } else { config.batch_size }
+	num_batches := (n + batch_size - 1) / batch_size
+
+	// Skip parallelization for small datasets
+	if num_batches < 4 || utils.get_num_workers() < 2 {
+		return logistic_regression_fast(x, y, config)
+	}
+
+	// Initialize parameters
+	mut coefficients := []f64{len: p, init: 0.0}
+	mut intercept := 0.0
+
+	// Momentum velocity terms
+	mut v_coef := []f64{len: p, init: 0.0}
+	mut v_intercept := 0.0
+
+	for epoch in 0 .. config.iterations {
+		// Shuffle indices for SGD
+		mut indices := []int{len: n, init: index}
+		if config.shuffle {
+			for i := n - 1; i > 0; i-- {
+				j := int(rand.f64() * f64(i + 1))
+				indices[i], indices[j] = indices[j], indices[i]
+			}
+		}
+
+		// Create channel for batch results
+		result_chan := chan BatchGradient{cap: num_batches}
+
+		// Launch batch processing concurrently
+		for batch_idx in 0 .. num_batches {
+			go fn (batch_idx int, x_tr [][]f64, y_tr []f64, idxs []int,
+			       coefs []f64, inter f64, cfg OptimLogisticConfig, ch chan BatchGradient) {
+				result := process_logistic_batch(batch_idx, x_tr, y_tr, idxs, coefs, inter, cfg)
+				ch <- result
+			}(batch_idx, x, y, indices, coefficients, intercept, config, result_chan)
+		}
+
+		// Collect and average gradients from all batches
+		mut total_grad_coef := []f64{len: p, init: 0.0}
+		mut total_grad_intercept := 0.0
+
+		for _ in 0 .. num_batches {
+			result := <-result_chan
+			for j in 0 .. p {
+				total_grad_coef[j] += result.grad_coef[j]
+			}
+			total_grad_intercept += result.grad_intercept
+		}
+
+		// Average gradients
+		for j in 0 .. p {
+			total_grad_coef[j] /= f64(num_batches)
+		}
+		total_grad_intercept /= f64(num_batches)
+
+		// Adaptive learning rate with decay
+		decay_factor := 1.0 + f64(epoch) * 0.0005
+		current_lr := config.learning_rate / decay_factor
+
+		// Update with momentum
+		v_intercept = config.momentum * v_intercept - current_lr * total_grad_intercept
+		intercept += v_intercept
+
+		for j in 0 .. p {
+			// Add L2 regularization to gradient
+			reg_grad := total_grad_coef[j] + config.lambda * coefficients[j]
+			v_coef[j] = config.momentum * v_coef[j] - current_lr * reg_grad
+			coefficients[j] += v_coef[j]
+		}
+	}
+
+	return LogisticModel[f64]{
+		coefficients: coefficients
+		intercept: intercept
+	}
+}
+
+// process_logistic_batch - Process a single batch and return gradients
+fn process_logistic_batch(batch_idx int, x [][]f64, y []f64, indices []int,
+                        coefficients []f64, intercept f64, config OptimLogisticConfig) BatchGradient {
+	start := batch_idx * config.batch_size
+	end := if start + config.batch_size > x.len { x.len } else { start + config.batch_size }
+	current_batch_size := end - start
+	p := x[0].len
+
+	mut grad_intercept := 0.0
+	mut grad_coef := []f64{len: p, init: 0.0}
+
+	// Accumulate gradients over the batch
+	for b in start .. end {
+		i := indices[b]
+
+		// Compute prediction using current parameters
+		mut z := intercept
+		for j in 0 .. p {
+			z += coefficients[j] * x[i][j]
+		}
+
+		// Clamp for numerical stability
+		if z > 100.0 { z = 100.0 } else if z < -100.0 { z = -100.0 }
+
+		pred := utils.sigmoid(z)
+		error := pred - y[i]
+
+		grad_intercept += error
+		for j in 0 .. p {
+			grad_coef[j] += error * x[i][j]
+		}
+	}
+
+	// Average gradients over batch
+	grad_intercept /= f64(current_batch_size)
+	for j in 0 .. p {
+		grad_coef[j] /= f64(current_batch_size)
+	}
+
+	return BatchGradient{
+		grad_coef: grad_coef
+		grad_intercept: grad_intercept
+	}
+}
+
