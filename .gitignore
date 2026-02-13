@@ -1,9 +1,7 @@
-main.v
-example_new_features.v
-AGENTS.md
-DEV.md
 dev_docs/
 .tmp/
 .venv/
+examples/*
+!examples/*.v
 *.md
 !README.md
