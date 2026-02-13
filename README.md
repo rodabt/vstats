@@ -507,7 +507,7 @@ metrics := utils.regression_metrics(y_test, predictions)
 
 ## Contributing
 
-Contributions are welcome! The library structure is modular and easy to extend. See `AGENTS.md` for development guidelines.
+Contributions are welcome!
 
 ## References
 

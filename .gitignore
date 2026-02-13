@@ -5,3 +5,5 @@ DEV.md
 dev_docs/
 .tmp/
 .venv/
+*.md
+!README.md
