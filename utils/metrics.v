@@ -276,54 +276,35 @@ pub struct GridSearchResult {
 	param_grids []map[string]f64
 }
 
-// Generate parameter grid combinations (for simple numeric parameters)
+// Generate parameter grid combinations for any number of parameters
+// Uses an iterative cartesian product approach
 pub fn generate_param_grid(param_ranges map[string][]f64) []map[string]f64 {
 	if param_ranges.len == 0 {
 		return []map[string]f64{}
 	}
-	
-	// Get parameter names and ranges
+
 	mut param_names := []string{}
 	mut ranges := [][]f64{}
-	
+
 	for name, values in param_ranges {
 		param_names << name
 		ranges << values
 	}
-	
-	// Generate all combinations (brute force for small grids)
-	mut combinations := []map[string]f64{}
-	
-	// Recursive helper would be better, but using nested loops for simplicity
-	if param_names.len == 1 {
-		for val in ranges[0] {
-			mut combo := map[string]f64{}
-			combo[param_names[0]] = val
-			combinations << combo
-		}
-	} else if param_names.len == 2 {
-		for val1 in ranges[0] {
-			for val2 in ranges[1] {
-				mut combo := map[string]f64{}
-				combo[param_names[0]] = val1
-				combo[param_names[1]] = val2
-				combinations << combo
+
+	// Build cartesian product iteratively: start with one empty combo, extend one param at a time
+	mut combinations := [map[string]f64{}]
+	for i in 0 .. param_names.len {
+		mut new_combinations := []map[string]f64{}
+		for combo in combinations {
+			for val in ranges[i] {
+				mut new_combo := combo.clone()
+				new_combo[param_names[i]] = val
+				new_combinations << new_combo
 			}
 		}
-	} else if param_names.len == 3 {
-		for val1 in ranges[0] {
-			for val2 in ranges[1] {
-				for val3 in ranges[2] {
-					mut combo := map[string]f64{}
-					combo[param_names[0]] = val1
-					combo[param_names[1]] = val2
-					combo[param_names[2]] = val3
-					combinations << combo
-				}
-			}
-		}
+		combinations = new_combinations.clone()
 	}
-	
+
 	return combinations
 }
 

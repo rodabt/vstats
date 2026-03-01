@@ -18,6 +18,23 @@ pub struct LogisticModel[T] {
 	intercept    T
 }
 
+// build_normal_equations - Shared setup: augments X with intercept column and computes X^T X and X^T y
+fn build_normal_equations(x_f64 [][]f64, y_f64 []f64) ([][]f64, []f64) {
+	p := x_f64[0].len
+	mut x_mat := [][]f64{len: x_f64.len}
+	for i in 0 .. x_f64.len {
+		x_mat[i] = []f64{len: p + 1}
+		x_mat[i][0] = 1.0
+		for j in 0 .. p {
+			x_mat[i][j + 1] = x_f64[i][j]
+		}
+	}
+	xt := linalg.transpose(x_mat)
+	xtx := linalg.matmul(xt, x_mat)
+	xty := linalg.matvec_mul(xt, y_f64)
+	return xtx, xty
+}
+
 // linear_regression - Linear Regression using Ordinary Least Squares (converts to f64 internally for numerical stability)
 pub fn linear_regression[T](x [][]T, y []T) LinearModel[T] {
 	assert x.len == y.len, "number of samples must match"
@@ -35,25 +52,11 @@ pub fn linear_regression[T](x [][]T, y []T) LinearModel[T] {
 		y_f64[i] = f64(y[i])
 	}
 	
-	p := x_f64[0].len
-	
-	// Add intercept term (column of 1s)
-	mut x_mat := [][]f64{len: x_f64.len}
-	for i in 0 .. x_f64.len {
-		x_mat[i] = []f64{len: p + 1}
-		x_mat[i][0] = 1.0
-		for j in 0 .. p {
-			x_mat[i][j + 1] = x_f64[i][j]
-		}
-	}
-	
 	// Normal equations: β = (X^T X)^(-1) X^T y
-	xt := linalg.transpose_f64(x_mat)
-	xtx := linalg.matmul_f64(xt, x_mat)
-	xty := linalg.matvec_mul_f64(xt, y_f64)
-	
+	xtx, xty := build_normal_equations(x_f64, y_f64)
+
 	// Solve using Gaussian elimination
-	beta := linalg.gaussian_elimination_f64(xtx, xty)
+	beta := linalg.gaussian_elimination(xtx, xty)
 	
 	// Convert results back to T
 	mut coeffs := []T{len: beta.len - 1}
@@ -399,22 +402,8 @@ pub fn linear_regression_fast[T](x [][]T, y []T) LinearModel[T] {
 		y_f64[i] = f64(y[i])
 	}
 
-	p := x_f64[0].len
-
-	// Add intercept term (column of 1s)
-	mut x_mat := [][]f64{len: x_f64.len}
-	for i in 0 .. x_f64.len {
-		x_mat[i] = []f64{len: p + 1}
-		x_mat[i][0] = 1.0
-		for j in 0 .. p {
-			x_mat[i][j + 1] = x_f64[i][j]
-		}
-	}
-
 	// Normal equations: (X^T X) β = X^T y
-	xt := linalg.transpose_f64(x_mat)
-	xtx := linalg.matmul_f64(xt, x_mat)
-	xty := linalg.matvec_mul_f64(xt, y_f64)
+	xtx, xty := build_normal_equations(x_f64, y_f64)
 
 	// Solve using Cholesky (X^T X is always symmetric positive-definite)
 	beta := cholesky_solve(xtx, xty)

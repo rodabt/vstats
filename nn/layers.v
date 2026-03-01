@@ -4,6 +4,7 @@ import math
 import rand
 import utils
 import arrays
+import linalg
 
 pub struct DenseLayer {
 pub mut:
@@ -237,13 +238,9 @@ pub fn dropout(input []f64, dropout_rate f64) []f64 {
 	)
 }
 
-// flatten - Flatten 2D array to 1D (use linalg.flatten for generic version)
+// flatten - Flatten 2D array to 1D (delegates to linalg.flatten)
 pub fn flatten(data [][]f64) []f64 {
-	mut result := []f64{}
-	for row in data {
-		result << row
-	}
-	return result
+	return linalg.flatten(data)
 }
 
 // reshape - Reshape 1D array to 2D

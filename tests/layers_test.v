@@ -123,9 +123,38 @@ fn test__reshape() {
 
 fn test__batch_norm_layer() {
 	layer := nn.batch_norm_layer(3)
-	
+
 	assert layer.gamma.len == 3
 	assert layer.beta.len == 3
 	assert layer.mean.len == 3
 	assert layer.variance.len == 3
+}
+
+fn test__dense_layer_backward() {
+	// Single-step: verify gradient shapes and that a weight update reduces loss
+	mut layer := nn.dense_layer(2, 1)
+	// Force weights and bias to known values so the test is deterministic
+	layer.weights[0][0] = 0.5
+	layer.weights[0][1] = 0.5
+	layer.bias[0] = 0.0
+
+	input := [1.0, 1.0]
+	target := 0.0
+
+	// Forward pass — copy the output value before the buffer is reused
+	out_before := layer.forward(input)[0]
+	assert layer.output_size == 1
+
+	// Compute trivial loss gradient: dL/dout = out - target
+	mut grad_out := [out_before - target]
+
+	// Backward pass: returns gradient w.r.t. input, must match input_size
+	grad_input := layer.backward(grad_out, input, 0.1, 0.0)
+	assert grad_input.len == 2
+
+	// After the update, forward pass loss should be smaller
+	out_after := layer.forward(input)[0]
+	loss_before := (out_before - target) * (out_before - target)
+	loss_after := (out_after - target) * (out_after - target)
+	assert loss_after < loss_before
 }

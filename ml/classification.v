@@ -116,7 +116,7 @@ pub fn logistic_classifier(x [][]f64, y []f64, iterations int, learning_rate f64
 			for j in 0 .. p {
 				z += coefficients[j] * x_normalized[i][j]
 			}
-			pred[i] = sigmoid_f64(z)
+			pred[i] = utils.sigmoid(z)
 		}
 
 		// Calculate gradients
@@ -164,7 +164,7 @@ pub fn logistic_classifier_predict_proba(model LogisticClassifier[f64], x [][]f6
 				z += model.coefficients[j] * normalized_feature
 			}
 		}
-		predictions[i] = sigmoid_f64(z)
+		predictions[i] = utils.sigmoid(z)
 	}
 	return predictions
 }
@@ -930,11 +930,6 @@ pub fn setup(x [][]f64, y []int, test_size f64, estimator string) Classification
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-// Sigmoid from utils
-fn sigmoid_f64(x f64) f64 {
-	return utils.sigmoid(x)
-}
 
 fn rand_f64() f64 {
 	return rand.f64()

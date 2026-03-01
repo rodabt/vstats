@@ -165,8 +165,14 @@ pub fn silhouette_coefficient(data [][]f64, labels []int) f64 {
 		}
 		
 		// Calculate minimum average distance to other clusters
+		mut max_label := 0
+		for lbl in labels {
+			if lbl > max_label {
+				max_label = lbl
+			}
+		}
 		mut b := f64(1e10)
-		for other_label in 0 .. 10 {
+		for other_label in 0 .. max_label + 1 {
 			if other_label != label {
 				mut dist_sum := 0.0
 				mut other_count := 0

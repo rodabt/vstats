@@ -152,22 +152,21 @@ pub fn reshape[T](v []T, rows int, columns int) [][]T {
 	mut matrix := [][]T{len: rows, init: []T{len: columns}}
 	for i in 0 .. rows {
 		for j in 0 .. columns {
-			matrix[i][j] = v[i * rows + j]
+			matrix[i][j] = v[i * columns + j]
 		}
 	}
 	return matrix
 }
 
-// transpose_f64 - Matrix transpose (f64 version for numerical stability)
-pub fn transpose_f64(m [][]f64) [][]f64 {
+// transpose - Matrix transpose (generic)
+pub fn transpose[T](m [][]T) [][]T {
 	if m.len == 0 {
-		return [][]f64{}
+		return [][]T{}
 	}
 	rows := m[0].len
 	cols := m.len
-	mut result := [][]f64{len: rows}
+	mut result := [][]T{len: rows, init: []T{len: cols}}
 	for i in 0 .. rows {
-		result[i] = []f64{len: cols}
 		for j in 0 .. cols {
 			result[i][j] = m[j][i]
 		}
@@ -175,30 +174,11 @@ pub fn transpose_f64(m [][]f64) [][]f64 {
 	return result
 }
 
-// matmul_f64 - Matrix multiply (f64 version)
-pub fn matmul_f64(a [][]f64, b [][]f64) [][]f64 {
-	assert a[0].len == b.len, 'incompatible dimensions'
-	rows := a.len
-	cols := b[0].len
-	mut result := [][]f64{len: rows}
-	for i in 0 .. rows {
-		result[i] = []f64{len: cols}
-		for j in 0 .. cols {
-			mut sum := 0.0
-			for k in 0 .. a[0].len {
-				sum += a[i][k] * b[k][j]
-			}
-			result[i][j] = sum
-		}
-	}
-	return result
-}
-
-// matvec_mul_f64 - Matrix-vector multiply (f64 version)
-pub fn matvec_mul_f64(m [][]f64, v []f64) []f64 {
-	mut result := []f64{len: m.len}
+// matvec_mul - Matrix-vector multiply (generic)
+pub fn matvec_mul[T](m [][]T, v []T) []T {
+	mut result := []T{len: m.len, init: T(0)}
 	for i in 0 .. m.len {
-		mut sum := 0.0
+		mut sum := T(0)
 		for j in 0 .. v.len {
 			sum += m[i][j] * v[j]
 		}
@@ -207,8 +187,8 @@ pub fn matvec_mul_f64(m [][]f64, v []f64) []f64 {
 	return result
 }
 
-// gaussian_elimination_f64 - Gaussian elimination for solving Ax = b (f64 version)
-pub fn gaussian_elimination_f64(a [][]f64, b []f64) []f64 {
+// gaussian_elimination - Gaussian elimination for solving Ax = b
+pub fn gaussian_elimination(a [][]f64, b []f64) []f64 {
 	n := a.len
 	mut matrix := [][]f64{len: n}
 	mut rhs := []f64{len: n}

@@ -24,7 +24,7 @@ pub fn normal_cdf(x f64, mu f64, sigma f64) f64 {
 pub fn inverse_normal_cdf(p f64, mu f64, sigma f64, dp DistribParams) f64 {
 	assert sigma > f64(0), "sigma should always be positive"
 	if mu != f64(0) || sigma != f64(1) {
-		return mu + sigma * inverse_normal_cdf(p, 0, 1)
+		return mu + sigma * inverse_normal_cdf(p, 0, 1, dp)
 	}
 	mut low_z := f64(-10.0)
 	mut hi_z := f64(10.0)

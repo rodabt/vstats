@@ -2,7 +2,6 @@ module hypothesis
 
 import math
 import stats
-import prob
 
 @[params]
 pub struct TestParams {
@@ -232,9 +231,34 @@ fn normal_cdf_approx(z f64) f64 {
 	return (1 + math.erf(z / math.sqrt(2))) / 2
 }
 
-// Helper: chi-squared CDF approximation
+// regularized_lower_gamma - Regularized lower incomplete gamma function P(a, x)
+// Uses series expansion: P(a,x) = exp(-x + a*ln(x) - ln(Γ(a))) * Σ x^k / (a*(a+1)*...*(a+k))
+fn regularized_lower_gamma(a f64, x f64) f64 {
+	if x <= 0.0 {
+		return 0.0
+	}
+	mut term := 1.0 / a
+	mut sum_val := term
+	for n := 1; n <= 400; n++ {
+		term *= x / (a + f64(n))
+		sum_val += term
+		if math.abs(term) < 1e-15 * math.abs(sum_val) {
+			break
+		}
+	}
+	log_result := -x + a * math.log(x) - math.log(math.gamma(a))
+	if log_result < -700.0 {
+		return 0.0
+	}
+	return math.exp(log_result) * sum_val
+}
+
+// Helper: chi-squared CDF approximation using regularized incomplete gamma
 fn chi_squared_cdf_approx(x f64, df int) f64 {
-	return prob.gamma_pdf(x, f64(df) / 2, 2)
+	if x <= 0.0 {
+		return 0.0
+	}
+	return regularized_lower_gamma(f64(df) / 2.0, x / 2.0)
 }
 
 // Alias for one_sample_t_test (old name)

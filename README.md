@@ -47,6 +47,7 @@ distance := linalg.distance(vector_a, vector_b)
 | **ml**         | Machine Learning Algorithms       | ✓ Complete |
 | **nn**         | Neural Networks                   | ✓ Complete |
 | **hypothesis** | Hypothesis Testing                | ✓ Complete |
+| **experiment** | A/B Testing, PSM, DiD             | ✓ Complete |
 | **symbol**     | Symbolic Computation              | 🚧 WIP     |
 
 ## Generic Type Support
@@ -486,6 +487,54 @@ x_train, y_train := train.xy()
 predictions := model.predict(x_test)
 metrics := utils.regression_metrics(y_test, predictions)
 ```
+
+## Experimentation (experiment)
+
+Causal inference and experimentation primitives for industry-grade analysis. Depends on `ml`, `hypothesis`, `stats`, `prob`, and `linalg`.
+
+### A/B Testing (`abtest.v`)
+- `abtest(control, treatment, cfg) ABTestResult` — Welch's two-sample t-test with effect size, CI, and lift
+- `power_analysis(effect_size, alpha, power) PowerAnalysisResult` — Required sample size via normal approximation
+- `cuped_test(y_ctrl, y_treat, pre_ctrl, pre_treat, cfg) CUPEDResult` — Variance reduction using pre-experiment covariates (CUPED)
+
+**Key structs:** `ABTestConfig` (`alpha`, `equal_variance`), `ABTestResult`, `PowerAnalysisResult`, `CUPEDResult`
+
+### Propensity Score Matching (`psm.v`)
+- `estimate_propensity_scores(x, treatment, cfg) PropensityModel` — Fit logistic regression to get p(treatment=1|X)
+- `match_nearest_neighbor(model, cfg) MatchingResult` — Greedy nearest-neighbor matching with optional caliper and replacement
+- `check_balance(x, treatment, result) BalanceResult` — Standardised mean differences before/after matching
+- `ate_matched(y, treatment, result) ATEResult` — Average treatment effect from matched pairs
+
+**Key structs:** `PropensityConfig`, `MatchingConfig`, `MatchedPair`, `MatchingResult`, `BalanceResult`, `ATEResult`
+
+### Difference-in-Differences (`did.v`)
+- `did_2x2(y_treat_pre, y_treat_post, y_ctrl_pre, y_ctrl_post, cfg) DiDResult` — Classic 2×2 DiD estimator with SE and CI
+- `did_regression(y, x, group, time, cfg) DiDRegressionResult` — OLS-based DiD with interaction term and R²
+- `test_parallel_trends(y_treated_pre, y_control_pre, time_pre, cfg) ParallelTrendsResult` — Slope equality test on pre-period data
+- `event_study(y, group, relative_time, cfg) EventStudyResult` — Period-by-period DiD estimates relative to reference period (-1)
+
+**Key structs:** `DiDConfig`, `DiDResult`, `DiDRegressionResult`, `ParallelTrendsResult`, `EventStudyResult`
+
+### Quick Example
+```v
+import vstats.experiment
+
+// A/B test
+ctrl    := [10.1, 9.8, 10.2, 9.9, 10.0]
+treat   := [13.1, 12.8, 13.2, 12.9, 13.0]
+result  := experiment.abtest(ctrl, treat)
+println("p-value: ${result.p_value:.4f}, lift: ${result.relative_lift:.2f}")
+
+// Required sample size for 80% power, Cohen's d = 0.5
+pa := experiment.power_analysis(0.5, 0.05, 0.80)
+println("n per group: ${pa.n_per_group}")  // ~64
+
+// 2×2 Difference-in-Differences
+did := experiment.did_2x2(y_treat_pre, y_treat_post, y_ctrl_pre, y_ctrl_post)
+println("DiD effect: ${did.did_effect:.2f}")
+```
+
+---
 
 ## Roadmap
 

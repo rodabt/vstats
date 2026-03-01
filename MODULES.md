@@ -290,6 +290,69 @@ High-level neural network construction and training.
 
 ---
 
+### Experimentation Module
+
+#### `experiment/` - Causal Inference & Experimentation
+Industry-standard experimentation workflows: A/B testing, propensity score matching, and difference-in-differences.
+
+**Dependencies:** `ml`, `hypothesis`, `stats`, `prob`, `linalg`
+
+**Files:**
+
+##### `abtest.v`
+A/B testing, power analysis, and CUPED variance reduction.
+
+**Structs:**
+- `ABTestConfig` — `alpha` (default 0.05), `equal_variance`
+- `ABTestResult` — means, SDs, lift, Cohen's d, t-stat, df, p-value, CI, significance flag
+- `PowerAnalysisResult` — `n_per_group`, `power`, `alpha`, `effect_size`
+- `CUPEDResult` — `theta`, `variance_reduction`, `adjusted_result`
+
+**Key Functions:**
+- `abtest(control, treatment, cfg)` — Welch's t-test with effect size, relative lift, and CI
+- `power_analysis(effect_size, alpha, power)` — Required n per group via normal approximation
+- `cuped_test(y_ctrl, y_treat, pre_ctrl, pre_treat, cfg)` — CUPED-adjusted A/B test using pre-experiment covariates
+
+---
+
+##### `psm.v`
+Propensity score matching and covariate balance checking.
+
+**Structs:**
+- `PropensityModel` — fitted logistic model, scores, treatment vector
+- `PropensityConfig` — `iterations`, `learning_rate`, `trim`
+- `MatchingConfig` — `caliper`, `replacement`
+- `MatchedPair` — `treated_idx`, `control_idx`, `ps_distance`
+- `MatchingResult` — `pairs`, matched/unmatched counts, average distance
+- `BalanceResult` — SMDs before/after matching, `mean_abs_smd_*`, `balanced` flag
+- `ATEResult` — `ate`, `se`, CI, t-stat, p-value, group sizes
+
+**Key Functions:**
+- `estimate_propensity_scores(x, treatment, cfg)` — Logistic regression for p(T=1|X); optional common-support trimming
+- `match_nearest_neighbor(model, cfg)` — Greedy O(n_T × n_C) nearest-neighbor matching
+- `check_balance(x, treatment, result)` — Standardised mean differences before and after matching
+- `ate_matched(y, treatment, result)` — ATE from matched pairs with two-sample t-test
+
+---
+
+##### `did.v`
+Difference-in-Differences estimation, regression DiD, parallel trends testing, and event studies.
+
+**Structs:**
+- `DiDConfig` — `alpha`
+- `DiDResult` — DiD effect, SE, t-stat, p-value, CI, group changes, cell sizes
+- `DiDRegressionResult` — OLS interaction coefficient, SE, CI, R², n
+- `ParallelTrendsResult` — slopes per group, slope difference, t-stat, p-value, `parallel_trends_hold`
+- `EventStudyResult` — `relative_times`, `effects`, `std_errors`, `t_statistics`, `p_values`, CIs
+
+**Key Functions:**
+- `did_2x2(y_treat_pre, y_treat_post, y_ctrl_pre, y_ctrl_post, cfg)` — Classic 2×2 DiD with delta-method SE
+- `did_regression(y, x, group, time, cfg)` — OLS with treat×post interaction; OLS standard errors via (X'X)⁻¹
+- `test_parallel_trends(y_treated_pre, y_control_pre, time_pre, cfg)` — Tests slope equality in pre-period via pooled OLS
+- `event_study(y, group, relative_time, cfg)` — Period-by-period DiD using period -1 as reference
+
+---
+
 ### Hypothesis Testing Module (NEW)
 
 #### `hypothesis/` - Hypothesis Testing
@@ -390,6 +453,7 @@ if p_val < 0.05 {
   - `nn` depends on `linalg`, `math`
   - `hypothesis` depends on `stats`, `prob`
   - `prob` depends on `linalg`, `math`, `utils`
+  - `experiment` depends on `ml`, `hypothesis`, `stats`, `prob`, `linalg`
 
 ---
 
@@ -404,6 +468,7 @@ if p_val < 0.05 {
 | ml | 3 | 25+ | Machine learning algorithms |
 | nn | 3 | 40+ | Neural networks & layers |
 | hypothesis | 1 | 7+ | Statistical hypothesis tests |
+| experiment | 3 | 12+ | A/B testing, PSM, DiD |
 | symbol | 1 | ? | Symbolic computation |
 | utils | 5 | 35+ | Metrics, utilities, datasets |
 
@@ -411,7 +476,7 @@ if p_val < 0.05 {
 
 ## Architecture Notes
 
-1. **Layered Design**: Each module has clear dependencies, with lower-level modules (linalg, utils) supporting higher-level ones (ml, nn)
+1. **Layered Design**: Each module has clear dependencies, with lower-level modules (linalg, utils) supporting higher-level ones (ml, nn, experiment)
 
 2. **Functional Style**: Emphasizes pure functions with minimal state mutation
 
