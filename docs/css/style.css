@@ -299,26 +299,238 @@ code {
 }
 
 .example-category {
-	margin-bottom: 3rem;
+  margin-bottom: 3rem;
+}
+
+.decision-tree pre.diagram {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  color: #1a1a2e;
+}
+
+.comparison-table table,
+.interpretation-guide table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.comparison-table th,
+.comparison-table td,
+.interpretation-guide th,
+.interpretation-guide td {
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  text-align: left;
+}
+
+.comparison-table th,
+.interpretation-guide th {
+  background: #f5f5f5;
+  color: #1a1a2e;
+}
+
+.comparison-table td,
+.interpretation-guide td {
+  color: #1a1a2e;
+}
+
+.do-dont {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.do {
+  background: #e8f5e9;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #4caf50;
+  color: #1a1a2e;
+}
+
+.dont {
+  background: #ffebee;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #f44336;
+  color: #1a1a2e;
+}
+
+.ci-examples {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.ci-example {
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.ci-example.good {
+  background: #e8f5e9;
+  border: 1px solid #4caf50;
+}
+
+.ci-example.uncertain {
+  background: #fff3e0;
+  border: 1px solid #ff9800;
+}
+
+.ci-example.bad {
+  background: #ffebee;
+  border: 1px solid #f44336;
+}
+
+.ci-example h5,
+.ci-example p {
+  color: #1a1a2e;
+}
+
+.misconception {
+  background: #fff3e0;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #ff9800;
+  color: #1a1a2e;
+}
+
+.misconception h4 {
+  color: #d84315;
+  margin-bottom: 0.5rem;
+}
+
+.anti-pattern {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.bad-example {
+  background: rgba(244, 67, 54, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border-left: 4px solid #f44336;
+}
+
+.good-example {
+  background: rgba(76, 175, 80, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border-left: 4px solid #4caf50;
+}
+
+.example-scenario {
+	background: rgba(255, 152, 0, 0.1);
+	padding: 1rem;
+	border-radius: 8px;
+	margin: 1rem 0;
+	border-left: 4px solid #ff9800;
+}
+
+.reference-card {
+	margin-bottom: 2rem;
+	padding: 1.5rem;
+	background: var(--bg-secondary);
+	border-radius: 8px;
+	border: 1px solid var(--border);
+}
+
+.reference-card h3 {
+	margin-top: 0;
+	color: var(--accent);
+}
+
+.reference-card table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.reference-card th, .reference-card td {
+	padding: 0.75rem;
+	border: 1px solid var(--border);
+	text-align: left;
+}
+
+.reference-card th {
+	background: var(--bg-tertiary);
+	font-weight: 600;
+}
+
+.pattern-group {
+	margin-bottom: 1.5rem;
+}
+
+.pattern-group h4 {
+	margin-bottom: 0.5rem;
+	color: var(--text-secondary);
+}
+
+.checklist h4 {
+	margin-top: 1rem;
+	margin-bottom: 0.5rem;
+	color: var(--accent);
+}
+
+.checklist ul {
+	list-style: none;
+	padding-left: 0;
+}
+
+.checklist li {
+	padding: 0.25rem 0;
+	font-family: 'Fira Code', 'Consolas', monospace;
+}
+
+.workflow-steps {
+	margin: 1.5rem 0;
+}
+
+.workflow-step {
+	margin-bottom: 1.5rem;
+	padding: 1rem;
+	background: var(--bg-tertiary);
+	border-radius: 8px;
 }
 
 @media (max-width: 768px) {
-    .sidebar {
-        width: 100%;
-        position: relative;
-        height: auto;
-    }
+  .sidebar {
+    width: 100%;
+    position: relative;
+    height: auto;
+  }
 
-    .content {
-        margin-left: 0;
-        padding: 1.5rem;
-    }
+  .content {
+    margin-left: 0;
+    padding: 1.5rem;
+  }
 
-    .layout {
-        flex-direction: column;
-    }
+  .layout {
+    flex-direction: column;
+  }
 
-    .hero h1 {
-        font-size: 2rem;
-    }
+  .hero h1 {
+    font-size: 2rem;
+  }
+
+  .do-dont {
+    grid-template-columns: 1fr;
+  }
+
+  .ci-examples {
+    grid-template-columns: 1fr;
+  }
 }
