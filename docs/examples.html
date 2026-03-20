@@ -1049,16 +1049,304 @@ fn main() {
 </div>
 </section>
 
-<section class="example-category">
-<h2>Complete Workflows</h2>
-                <p>See <a href="tutorials/examples.md">tutorials/examples.md</a> for full end-to-end pipelines including:</p>
-                <ul>
-                    <li>End-to-End ML Pipeline (Titanic Survival Prediction)</li>
-                    <li>Statistical Analysis of Experiment Results</li>
-                    <li>Time Series Anomaly Detection</li>
-                </ul>
-            </section>
-        </main>
+<section class="example-category" id="workflows">
+<h2>4. Complete Workflows</h2>
+<p class="lead">End-to-end pipelines from raw data to actionable insights.</p>
+
+<div class="workflow">
+<h3>Workflow 1: Product Analytics Pipeline</h3>
+<p>From raw event data to executive dashboard.</p>
+
+<div class="workflow-steps">
+<div class="workflow-step">
+<h4>Step 1: Data Aggregation</h4>
+<pre><code>import vstats.{stats, growth}
+
+// Aggregate events to user-day level
+struct UserDay {
+user_id int
+date string
+sessions int
+page_views int
+feature_usage int
+revenue f64
+}
+
+fn aggregate_events(events []Event) []UserDay {
+// Group by user and date
+// Sum sessions, page_views, feature_usage
+// Return aggregated data
+}</code></pre>
+</div>
+
+<div class="workflow-step">
+<h4>Step 2: Metric Calculation</h4>
+<pre><code>fn calculate_metrics(user_days []UserDay) Metrics {
+// DAU: count distinct users per day
+// Retention: users who returned next day
+// Revenue: sum of daily revenue
+// Feature adoption: % using key features
+}</code></pre>
+</div>
+
+<div class="workflow-step">
+<h4>Step 3: Cohort Analysis</h4>
+<pre><code>fn analyze_cohorts(users []User) CohortAnalysis {
+// Group by signup month
+// Calculate retention curves
+// Compare cohort performance
+}</code></pre>
+</div>
+
+<div class="workflow-step">
+<h4>Step 4: Reporting</h4>
+<pre><code>fn generate_report(metrics Metrics, cohorts CohortAnalysis) Report {
+// Format key metrics
+// Highlight trends
+// Generate recommendations
+}</code></pre>
+</div>
+</div>
+</div>
+
+<div class="workflow">
+<h3>Workflow 2: Experiment Analysis Pipeline</h3>
+<p>From raw experiment data to business recommendation.</p>
+
+<div class="workflow-steps">
+<div class="workflow-step">
+<h4>Step 1: Data Validation</h4>
+<pre><code>fn validate_experiment_data(data ExperimentData) ValidationResult {
+// Check sample size
+// Verify randomization
+// Identify data quality issues
+}</code></pre>
+</div>
+
+<div class="workflow-step">
+<h4>Step 2: Statistical Analysis</h4>
+<pre><code>fn analyze_experiment(control []f64, treatment []f64) ExperimentResult {
+// Descriptive statistics
+// Run appropriate test
+// Calculate confidence intervals
+// Compute effect size
+}</code></pre>
+</div>
+
+<div class="workflow-step">
+<h4>Step 3: Interpretation</h4>
+<pre><code>fn interpret_results(result ExperimentResult) Interpretation {
+// Statistical significance
+// Practical significance
+// Segment-level effects
+}</code></pre>
+</div>
+
+<div class="workflow-step">
+<h4>Step 4: Recommendation</h4>
+<pre><code>fn make_recommendation(result ExperimentResult, config BusinessConfig) Recommendation {
+// Ship / Don't Ship / Need More Data
+// Confidence level
+// Business impact estimate
+}</code></pre>
+</div>
+</div>
+</div>
+</section>
+
+<section class="example-category" id="statistical-guidance">
+<h2>5. Statistical Guidance</h2>
+<p class="lead">When to use which test, and how to interpret results correctly.</p>
+
+<h3>Choosing the Right Statistical Test</h3>
+
+<div class="decision-tree">
+<h4>Decision Tree</h4>
+<pre class="diagram">
+What type of data do you have?
+
+├── CONTINUOUS (revenue, time, ratings)
+│   │
+│   ├── One group?
+│   │   └── One-sample t-test
+│   │       "Is our NPS significantly > 50?"
+│   │
+│   ├── Two groups?
+│   │   ├── Paired (same users before/after)
+│   │   │   └── Paired t-test
+│   │   │       "Did the treatment change user behavior?"
+│   │   │
+│   │   └── Independent (different users)
+│   │       └── Two-sample t-test
+│   │           "Is variant A different from variant B?"
+│   │
+│   └── 3+ groups?
+│       └── ANOVA
+│           "Do three pricing tiers have different conversion rates?"
+│
+├── CATEGORICAL (converted/didn't, device type)
+│   │
+│   ├── One variable?
+│   │   └── Chi-squared goodness of fit
+│   │       "Is our user base 50/50 mobile/desktop?"
+│   │
+│   └── Two variables?
+│       └── Chi-squared test of independence
+│           "Is device type associated with conversion?"
+│
+└── RANKINGS/SKEWED (revenue often skewed)
+    │
+    ├── Two groups?
+    │   └── Mann-Whitney U test
+    │       "Compare revenue between groups (non-normal)"
+    │
+    └── Paired?
+        └── Wilcoxon signed-rank test
+            "Before/after with non-normal distribution"
+</pre>
+</div>
+
+<div class="comparison-table">
+<h4>Test Comparison Table</h4>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Use When</th>
+<th>Example Question</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>One-sample t</td>
+<td>Compare group to known value</td>
+<td>Is our conversion rate > 3%?</td>
+</tr>
+<tr>
+<td>Two-sample t</td>
+<td>Compare two independent groups</td>
+<td>Is variant A different from B?</td>
+</tr>
+<tr>
+<td>Paired t</td>
+<td>Before/after same subjects</td>
+<td>Did users spend more time after feature?</td>
+</tr>
+<tr>
+<td>ANOVA</td>
+<td>Compare 3+ groups</td>
+<td>Do three pricing tiers differ?</td>
+</tr>
+<tr>
+<td>Chi-squared</td>
+<td>Categorical association</td>
+<td>Is device type related to conversion?</td>
+</tr>
+<tr>
+<td>Mann-Whitney</td>
+<td>Non-normal distributions</td>
+<td>Compare revenue (skewed) between groups</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h3>Interpreting Results</h3>
+
+<div class="interpretation-guide">
+<h4>p-values</h4>
+<div class="do-dont">
+<div class="do">
+<h5>✓ Correct Interpretation</h5>
+<p>"If there were no real effect, we'd see results this extreme by chance alone."</p>
+<p>p < 0.05 means: "The data would be unlikely under the null hypothesis."</p>
+</div>
+<div class="dont">
+<h5>✗ Common Misinterpretation</h5>
+<p>"There's a 95% chance the effect is real."</p>
+<p>"p < 0.05 means the effect is definitely real."</p>
+<p>These are WRONG. p-value is about the data, not the hypothesis.</p>
+</div>
+</div>
+
+<h4>Effect Sizes</h4>
+<p><strong>Why it matters:</strong> Statistical significance ≠ practical significance.</p>
+<p>With enough data, tiny effects become "significant." Always report effect size.</p>
+
+<table>
+<thead>
+<tr>
+<th>Cohen's d</th>
+<th>Interpretation</th>
+<th>Business Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.2</td>
+<td>Small</td>
+<td>Noticeable but may not justify change</td>
+</tr>
+<tr>
+<td>0.5</td>
+<td>Medium</td>
+<td>Meaningful improvement</td>
+</tr>
+<tr>
+<td>0.8</td>
+<td>Large</td>
+<td>Clear business impact</td>
+</tr>
+</tbody>
+</table>
+
+<h4>Confidence Intervals</h4>
+<p><strong>Interpretation:</strong> "We are 95% confident the true effect lies in [lower, upper]."</p>
+
+<div class="ci-examples">
+<div class="ci-example good">
+<h5>✓ Clear Result</h5>
+<p>CI: [+5%, +15%]</p>
+<p>Doesn't include 0, effect is positive, range is narrow.</p>
+</div>
+<div class="ci-example uncertain">
+<h5>? Inconclusive</h5>
+<p>CI: [-2%, +18%]</p>
+<p>Includes 0, could be positive or negative. Need more data.</p>
+</div>
+<div class="ci-example bad">
+<h5>✗ No Effect</h5>
+<p>CI: [-8%, +4%]</p>
+<p>Centered near 0, effect is likely null or very small.</p>
+</div>
+</div>
+</div>
+
+<h3>Common Misconceptions in A/B Testing</h3>
+
+<div class="misconceptions">
+<div class="misconception">
+<h4>❌ "p < 0.05 means 95% chance the effect is real"</h4>
+<p><strong>Reality:</strong> p-value doesn't tell you the probability the hypothesis is true. It tells you how surprising the data would be if there were no effect.</p>
+</div>
+
+<div class="misconception">
+<h4>❌ "No significant difference means the variants are the same"</h4>
+<p><strong>Reality:</strong> Absence of evidence ≠ evidence of absence. You might just need more data. Check the confidence interval.</p>
+</div>
+
+<div class="misconception">
+<h4>❌ "We can stop the test once p < 0.05"</h4>
+<p><strong>Reality:</strong> This is "peeking" and it inflates your false positive rate. Pre-register your sample size and stopping criteria.</p>
+</div>
+
+<div class="misconception">
+<h4>❌ "More data always gives better results"</h4>
+<p><strong>Reality:</strong> More data finds smaller effects, but tiny effects may not matter. Balance statistical power with practical significance.</p>
+</div>
+</div>
+</section>
+</main>
     </div>
     <script src="js/script.js"></script>
 </body>
