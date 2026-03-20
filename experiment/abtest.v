@@ -8,7 +8,7 @@ import prob
 pub struct ABTestConfig {
 pub:
 	alpha          f64 = 0.05
-	equal_variance bool = false
+	equal_variance bool
 }
 
 pub struct ABTestResult {
