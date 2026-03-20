@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examples - VStats</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="index.html" class="logo">VStats</a>
+            </div>
+	<nav class="sidebar-nav">
+			<ul class="nav-list">
+				<li><a href="index.html">Home</a></li>
+				<li><a href="concepts.html">Concepts</a></li>
+				<li><a href="examples.html" class="active">Examples</a></li>
+				<li><a href="api.html">API Reference</a></li>
+			</ul>
+		</nav>
+		<div class="toc">
+			<h3>On This Page</h3>
+			<ul class="toc-list">
+				<li><a href="#product-analytics">Product Analytics</a></li>
+				<li><a href="#experimentation">Experimentation</a></li>
+				<li><a href="#case-studies">Case Studies</a></li>
+				<li><a href="#workflows">Complete Workflows</a></li>
+				<li><a href="#statistical-guidance">Statistical Guidance</a></li>
+				<li><a href="#anti-patterns">Anti-Patterns</a></li>
+				<li><a href="#quick-reference">Quick Reference</a></li>
+			</ul>
+		</div>
+	</aside>
+        <main class="content">
+            <h1>Real-World Examples</h1>
+            <p class="lead">Practical applications of VStats for data science and product analytics.</p>
+
+            <section class="example-category">
+                <h2>Data Science</h2>
+                
+                <div class="example-item">
+                    <h3>Customer Churn Prediction</h3>
+                    <p>Predict which customers are likely to churn using logistic regression.</p>
+                    <pre><code>import vstats.{ml, utils, stats}
+
+fn main() {
+    dataset := utils.load_breast_cancer() or { return }
+    model := ml.logistic_classifier(x_train, y_train, 1000, 0.01)
+    predictions := ml.logistic_classifier_predict(model, x_test, 0.5)
+    cm := ml.confusion_matrix(y_test, predictions)
+    println("Accuracy: ${(cm.accuracy() * 100):.1f}%")
+}</code></pre>
+                </div>
+
+                <div class="example-item">
+                    <h3>Sales Forecasting</h3>
+                    <p>Forecast future sales using polynomial regression.</p>
+                    <pre><code>import vstats.{ml, stats}
+
+fn main() {
+    mut x := [][]f64{}
+    for m in months {
+        x << [m, m * m]  // Polynomial features
+    }
+    model := ml.linear_regression(x, sales)
+    forecast := ml.linear_predict(model, future_x)
+}</code></pre>
+                </div>
+
+                <div class="example-item">
+                    <h3>User Segmentation</h3>
+                    <p>Segment users using K-means clustering.</p>
+                    <pre><code>import vstats.{ml, stats}
+
+fn main() {
+    normalized := normalize_data(user_data)
+    model := ml.kmeans(normalized, 4, 100)
+    silhouette := ml.silhouette_coefficient(normalized, model.labels)
+}</code></pre>
+                </div>
+            </section>
+
+            <section class="example-category">
+                <h2>Product Analytics</h2>
+
+                <div class="example-item">
+                    <h3>SaaS Metrics Dashboard</h3>
+                    <p>Track key business metrics.</p>
+                    <pre><code>import vstats.growth
+
+fn main() {
+    mrr := growth.monthly_recurring_revenue([85000.0, 120000.0])
+    cac := growth.cac(85000.0, 125)
+    ltv := growth.ltv(235000.0, 3400.0, 18.0)
+    churn := growth.churn_rate(38, 1250)
+    nrr := growth.net_revenue_retention(100000.0, 115000.0, 8000.0, 23000.0)
+}</code></pre>
+                </div>
+
+                <div class="example-item">
+                    <h3>E-commerce Funnel Optimization</h3>
+                    <p>Analyze conversion funnels to identify drop-off points.</p>
+                    <pre><code>import vstats.growth
+
+fn main() {
+    funnel := growth.create_funnel(
+        ["Visitor", "Add to Cart", "Purchase"],
+        [150000, 45000, 4500]
+    )
+    worst := funnel.highest_drop_off()
+    println("Biggest drop-off: ${worst.from_name}")
+}</code></pre>
+                </div>
+
+                <div class="example-item">
+                    <h3>Marketing Attribution</h3>
+                    <p>Compare attribution models to optimize marketing spend.</p>
+                    <pre><code>import vstats.growth
+
+fn main() {
+    first := growth.first_touch_attributes(channels, conversions, revenue)
+    linear := growth.linear_attributes(touchpoints, conversions, revenue)
+    roi := growth.channel_roi(linear, channel_costs)
+    roas := growth.blended_roas(total_revenue, total_spend)
+}</code></pre>
+                </div>
+
+                <div class="example-item">
+                    <h3>Cohort Retention Analysis</h3>
+                    <p>Track user retention over time.</p>
+                    <pre><code>import vstats.growth
+
+fn main() {
+    mut ca := growth.create_cohort_analysis(cohorts, sizes, retention)
+    ca.set_cohort_revenue(revenue_data)
+    jan_ret, may_ret := ca.compare_cohorts("Jan", "May")
+}</code></pre>
+                </div>
+            </section>
+
+            <section class="example-category">
+                <h2>Experimentation</h2>
+
+                <div class="example-item">
+                    <h3>A/B Testing</h3>
+                    <p>Statistical analysis of experiment results.</p>
+                    <pre><code>import vstats.experiment
+
+fn main() {
+    result := experiment.abtest(control, treatment, experiment.ABTestConfig{alpha: 0.05})
+    println("Lift: ${(result.relative_lift * 100):.1f}%")
+    println("p-value: ${result.p_value:.4f}")
+    println("Significant: ${result.significant}")
+}</code></pre>
+                </div>
+
+                <div class="example-item">
+                    <h3>Anomaly Detection</h3>
+                    <p>Detect anomalies using statistical thresholds.</p>
+                    <pre><code>import vstats.{stats}
+
+fn main() {
+    baseline_mean := stats.mean(baseline_data)
+    baseline_std := stats.standard_deviation(baseline_data)
+    threshold := baseline_mean + 2 * baseline_std
+}</code></pre>
+                </div>
+            </section>
+
+            <section class="example-category">
+                <h2>Complete Workflows</h2>
+                <p>See <a href="tutorials/examples.md">tutorials/examples.md</a> for full end-to-end pipelines including:</p>
+                <ul>
+                    <li>End-to-End ML Pipeline (Titanic Survival Prediction)</li>
+                    <li>Statistical Analysis of Experiment Results</li>
+                    <li>Time Series Anomaly Detection</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+    <script src="js/script.js"></script>
+</body>
+</html>
