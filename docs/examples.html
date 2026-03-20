@@ -1346,8 +1346,356 @@ What type of data do you have?
 </div>
 </div>
 </section>
+
+<section class="example-category" id="anti-patterns">
+<h2>6. Anti-Patterns & Pitfalls</h2>
+<p class="lead">Common mistakes and how to avoid them.</p>
+
+<div class="anti-pattern">
+<h3>Anti-Pattern 1: Peeking at Results</h3>
+
+<div class="bad-example">
+<h4>Wrong: Checking p-value Daily</h4>
+<pre><code>// WRONG: Stopping when p &lt; 0.05
+for day in 0..30 {
+    result := experiment.abtest(control_so_far, treatment_so_far)
+    if result.p_value &lt; 0.05 {
+        println("Significant! Stopping experiment.")
+        break // This inflates false positive rate!
+    }
+    // collect more data...
+}</code></pre>
+<p><strong>Problem:</strong> With 10 peeks, your actual false positive rate is ~20%, not 5%.</p>
+</div>
+
+<div class="good-example">
+<h4>Correct: Pre-register Sample Size</h4>
+<pre><code>// RIGHT: Calculate sample size first
+pa := experiment.power_analysis(effect_size: 0.1, alpha: 0.05, power: 0.8)
+n_required := pa.n_per_group
+
+// Wait until sample size reached before analyzing
+if current_sample &gt;= n_required {
+    result := experiment.abtest(control, treatment)
+    // Now interpret results
+}</code></pre>
+<p><strong>Solution:</strong> Pre-register your stopping criteria. Only analyze when you hit the target sample size.</p>
+</div>
+</div>
+
+<div class="anti-pattern">
+<h3>Anti-Pattern 2: Data Leakage in ML</h3>
+
+<div class="bad-example">
+<h4>Wrong: Normalize Before Split</h4>
+<pre><code>// WRONG: Uses test data statistics!
+normalized := utils.normalize_features(all_data)
+train := normalized[0..split_idx]
+test := normalized[split_idx..]
+
+// Problem: mean/std include test data
+// This is "cheating" - model sees test info during training</code></pre>
+</div>
+
+<div class="good-example">
+<h4>Correct: Split First, Then Normalize</h4>
+<pre><code>// RIGHT: Split first
+train_data := all_data[0..split_idx]
+test_data := all_data[split_idx..]
+
+// Normalize using ONLY training statistics
+train_norm, means, stds := utils.normalize_features(train_data)
+test_norm := utils.apply_normalization(test_data, means, stds)
+
+// Now train on train_norm, evaluate on test_norm</code></pre>
+</div>
+</div>
+
+<div class="anti-pattern">
+<h3>Anti-Pattern 3: Multiple Comparisons</h3>
+
+<div class="bad-example">
+<h4>Wrong: Testing Many Metrics Uncorrected</h4>
+<pre><code>// WRONG: Testing 20 metrics
+metrics := ["conversion", "revenue", "time_on_site", ...] // 20 metrics
+for m in metrics {
+    if m.p_value &lt; 0.05 {
+        println("Significant on ${m}!")
+        // Expect ~1 false positive by chance!
+    }
+}</code></pre>
+<p><strong>Problem:</strong> With 20 tests at alpha=0.05, expect 1 false positive even if all null hypotheses are true.</p>
+</div>
+
+<div class="good-example">
+<h4>Correct: Apply Multiple Comparison Correction</h4>
+<pre><code>// RIGHT: Bonferroni correction
+alpha_corrected := 0.05 / metrics.len // 0.0025 for 20 metrics
+
+for m in metrics {
+    if m.p_value &lt; alpha_corrected {
+        println("Significant on ${m} after correction!")
+    }
+}
+
+// Alternative: False Discovery Rate (FDR) control for less conservative</code></pre>
+</div>
+</div>
+
+<div class="anti-pattern">
+<h3>Anti-Pattern 4: Simpson's Paradox</h3>
+
+<div class="example-scenario">
+<h4>Scenario</h4>
+<p>Overall: Treatment +5% conversion</p>
+<p>Mobile users: Treatment -3% conversion</p>
+<p>Desktop users: Treatment -2% conversion</p>
+<p><strong>Paradox:</strong> Treatment looks good overall but bad in every segment!</p>
+<p><strong>Explanation:</strong> Treatment attracted more mobile users (who have lower baseline conversion).</p>
+</div>
+
+<div class="good-example">
+<h4>Correct: Always Check Segments</h4>
+<pre><code>// Check segment-level effects
+segments := ["mobile", "desktop", "tablet"]
+for seg in segments {
+    seg_control := filter(control, segment == seg)
+    seg_treatment := filter(treatment, segment == seg)
+    result := experiment.abtest(seg_control, seg_treatment)
+    println("${seg}: ${(result.relative_lift * 100):.1f}%")
+}</code></pre>
+</div>
+</div>
+
+<div class="anti-pattern">
+<h3>Anti-Pattern 5: Optimizing Wrong Metric</h3>
+
+<div class="bad-example">
+<h4>Wrong: Accuracy on Imbalanced Data</h4>
+<pre><code>// WRONG: 95% accuracy sounds great!
+// But if 95% of users don't convert,
+// predicting "no conversion" for everyone gives 95% accuracy
+
+baseline := 0.95 // 95% don't convert
+dummy_accuracy := baseline // "Predict all negative" accuracy
+println("Dummy model accuracy: ${dummy_accuracy * 100:.0f}%") // 95%!</code></pre>
+</div>
+
+<div class="good-example">
+<h4>Correct: Use Appropriate Metrics</h4>
+<pre><code>// For imbalanced data, use:
+// - Precision, Recall, F1
+// - AUC-ROC
+// - Precision-Recall AUC
+
+cm := ml.confusion_matrix(y_test, predictions)
+println("Precision: ${cm.precision():.3f}") // TP / (TP + FP)
+println("Recall: ${cm.recall():.3f}") // TP / (TP + FN)
+println("F1: ${cm.f1_score():.3f}") // Harmonic mean
+
+// For ranking quality:
+roc := utils.roc_curve(y_test, probas)
+println("AUC: ${roc.auc:.3f}")</code></pre>
+</div>
+</div>
+</section>
+
+<section class="example-category" id="quick-reference">
+<h2>7. Quick Reference Cards</h2>
+<p class="lead">Fast answers to common questions.</p>
+
+<div class="reference-card">
+<h3>ML Algorithm Selection</h3>
+<table>
+<thead>
+<tr>
+	<th>Problem Type</th>
+	<th>Recommended</th>
+	<th>When to Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>Binary Classification</td>
+	<td>Logistic Regression</td>
+	<td>Baseline, interpretable, linear decision boundary</td>
+</tr>
+<tr>
+	<td>Binary Classification</td>
+	<td>Random Forest</td>
+	<td>Non-linear, feature importance needed</td>
+</tr>
+<tr>
+	<td>Multi-class</td>
+	<td>Naive Bayes</td>
+	<td>Baseline, small data, independent features</td>
+</tr>
+<tr>
+	<td>Regression</td>
+	<td>Linear Regression</td>
+	<td>Baseline, interpretable, linear relationship</td>
+</tr>
+<tr>
+	<td>Clustering</td>
+	<td>K-Means</td>
+	<td>Known K, spherical clusters, fast</td>
+</tr>
+<tr>
+	<td>Clustering</td>
+	<td>DBSCAN</td>
+	<td>Unknown K, arbitrary shapes, noise handling</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div class="reference-card">
+<h3>Statistical Test Quick Guide</h3>
+<table>
+<thead>
+<tr>
+	<th>Question</th>
+	<th>Test</th>
+	<th>VStats Function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>Compare two groups</td>
+	<td>Two-sample t-test</td>
+	<td>hypothesis.t_test_two_sample(a, b)</td>
+</tr>
+<tr>
+	<td>Before/after same subjects</td>
+	<td>Paired t-test</td>
+	<td>hypothesis.t_test_paired(before, after)</td>
+</tr>
+<tr>
+	<td>Compare to known value</td>
+	<td>One-sample t-test</td>
+	<td>hypothesis.t_test_one_sample(x, mu)</td>
+</tr>
+<tr>
+	<td>Compare 3+ groups</td>
+	<td>ANOVA</td>
+	<td>stats.anova_one_way([g1, g2, g3])</td>
+</tr>
+<tr>
+	<td>Categorical association</td>
+	<td>Chi-squared</td>
+	<td>hypothesis.chi_squared_test(observed)</td>
+</tr>
+<tr>
+	<td>Correlation significance</td>
+	<td>Correlation test</td>
+	<td>hypothesis.correlation_test(x, y)</td>
+</tr>
+<tr>
+	<td>A/B test</td>
+	<td>Welch's t-test</td>
+	<td>experiment.abtest(control, treatment)</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div class="reference-card">
+<h3>Common VStats Patterns</h3>
+
+<div class="pattern-group">
+<h4>Data Loading & Splitting</h4>
+<pre><code>import vstats.utils
+
+dataset := utils.load_iris()!
+train, test := dataset.train_test_split(0.2)
+x_train, y_train := train.xy()</code></pre>
+</div>
+
+<div class="pattern-group">
+<h4>A/B Testing</h4>
+<pre><code>import vstats.experiment
+
+result := experiment.abtest(control, treatment, experiment.ABTestConfig{alpha: 0.05})
+println("Lift: ${result.relative_lift * 100:.1f}%")
+println("Significant: ${result.significant}")</code></pre>
+</div>
+
+<div class="pattern-group">
+<h4>Power Analysis</h4>
+<pre><code>import vstats.experiment
+
+pa := experiment.power_analysis(effect_size: 0.5, alpha: 0.05, power: 0.8)
+println("Need ${pa.n_per_group} per group")</code></pre>
+</div>
+
+<div class="pattern-group">
+<h4>Cohort Analysis</h4>
+<pre><code>import vstats.growth
+
+mut ca := growth.create_cohort_analysis(names, sizes, retention)
+jan_ret, may_ret := ca.compare_cohorts("Jan", "May")</code></pre>
+</div>
+
+<div class="pattern-group">
+<h4>Funnel Analysis</h4>
+<pre><code>import vstats.growth
+
+funnel := growth.create_funnel(["Visit", "Cart", "Purchase"], [1000, 500, 100])
+worst := funnel.highest_drop_off()</code></pre>
+</div>
+
+<div class="pattern-group">
+<h4>Classification Metrics</h4>
+<pre><code>import vstats.utils
+
+cm := utils.build_confusion_matrix(y_true, y_pred)
+println("Accuracy: ${cm.accuracy():.3f}")
+println("F1: ${cm.f1_score():.3f}")</code></pre>
+</div>
+
+<div class="pattern-group">
+<h4>Feature Normalization</h4>
+<pre><code>import vstats.utils
+
+train_norm, means, stds := utils.normalize_features(x_train)
+test_norm := utils.apply_normalization(x_test, means, stds)</code></pre>
+</div>
+</div>
+
+<div class="reference-card">
+<h3>Experiment Checklist</h3>
+<div class="checklist">
+<h4>Pre-Experiment</h4>
+<ul>
+<li>☐ Define hypothesis and success metric</li>
+<li>☐ Calculate required sample size (power analysis)</li>
+<li>☐ Define minimum detectable effect</li>
+<li>☐ Set significance level (α) and power (1-β)</li>
+<li>☐ Pre-register stopping criteria</li>
+</ul>
+
+<h4>During Experiment</h4>
+<ul>
+<li>☐ Verify randomization is working</li>
+<li>☐ Monitor sample ratio mismatch</li>
+<li>☐ Don't peek at p-values</li>
+<li>☐ Check guardrail metrics</li>
+</ul>
+
+<h4>Post-Experiment</h4>
+<ul>
+<li>☐ Run appropriate statistical test</li>
+<li>☐ Calculate confidence intervals</li>
+<li>☐ Report effect size (Cohen's d)</li>
+<li>☐ Check segment-level effects</li>
+<li>☐ Assess practical significance</li>
+<li>☐ Document and share results</li>
+</ul>
+</div>
+</div>
+</section>
 </main>
-    </div>
-    <script src="js/script.js"></script>
+</div>
+<script src="js/script.js"></script>
 </body>
 </html>
