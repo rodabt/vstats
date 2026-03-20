@@ -37,50 +37,392 @@
             <h1>Real-World Examples</h1>
             <p class="lead">Practical applications of VStats for data science and product analytics.</p>
 
-            <section class="example-category">
-                <h2>Data Science</h2>
-                
-                <div class="example-item">
-                    <h3>Customer Churn Prediction</h3>
-                    <p>Predict which customers are likely to churn using logistic regression.</p>
-                    <pre><code>import vstats.{ml, utils, stats}
+<section class="example-category" id="product-analytics">
+<h2>1. Product Analytics</h2>
+<p class="lead">Comprehensive examples for SaaS metrics, cohort analysis, funnel optimization, and growth analytics.</p>
+
+<h3>Growth Metrics Deep Dive</h3>
+
+<div class="example-item">
+<h4>SaaS Metrics Suite</h4>
+<p>Track key subscription business metrics: MRR, ARR, ARPA, ARPU, and retention rates.</p>
+
+<div class="business-context">
+<strong>Business Context:</strong> A B2B SaaS company needs to monitor revenue health, customer acquisition efficiency, and retention trends for monthly executive reviews.
+</div>
+
+<pre><code>import vstats.growth
 
 fn main() {
-    dataset := utils.load_breast_cancer() or { return }
-    model := ml.logistic_classifier(x_train, y_train, 1000, 0.01)
-    predictions := ml.logistic_classifier_predict(model, x_test, 0.5)
-    cm := ml.confusion_matrix(y_test, predictions)
-    println("Accuracy: ${(cm.accuracy() * 100):.1f}%")
-}</code></pre>
-                </div>
+    // Revenue by plan tier
+    mrr_by_tier := [85000.0, 120000.0, 65000.0] // Starter, Pro, Enterprise
+    mrr := growth.monthly_recurring_revenue(mrr_by_tier)
+    arr := growth.annual_recurring_revenue(mrr)
 
-                <div class="example-item">
-                    <h3>Sales Forecasting</h3>
-                    <p>Forecast future sales using polynomial regression.</p>
-                    <pre><code>import vstats.{ml, stats}
+    println("Revenue Metrics:")
+    println("  MRR: \$${mrr:,.0f}")
+    println("  ARR: \$${arr:,.0f}")
 
-fn main() {
-    mut x := [][]f64{}
-    for m in months {
-        x << [m, m * m]  // Polynomial features
+    // Per-customer metrics
+    accounts := 1250
+    users := 3400
+    arpa := growth.arpa(mrr, accounts) // Average Revenue Per Account
+    arpu := growth.arpu(mrr, users) // Average Revenue Per User
+    println("\nPer-Customer Metrics:")
+    println("  ARPA: \$${arpa:.2f}")
+    println("  ARPU: \$${arpu:.2f}")
+
+    // Retention metrics
+    churned := 38
+    total_customers := 1250
+    churn := growth.churn_rate(churned, total_customers)
+    retention := growth.retention_rate(churned, total_customers)
+    println("\nRetention:")
+    println("  Churn Rate: ${(churn * 100):.2f}%")
+    println("  Retention Rate: ${(retention * 100):.2f}%")
+
+    // Net Revenue Retention (NRR) - expansion minus churn
+    mrr_start := 100000.0
+    mrr_end := 115000.0
+    churn_mrr := 8000.0
+    expansion_mrr := 23000.0
+    nrr := growth.net_revenue_retention(mrr_start, mrr_end, churn_mrr, expansion_mrr)
+    grr := growth.gross_revenue_retention(mrr_start, churn_mrr)
+    println("\nRevenue Retention:")
+    println("  Net Revenue Retention: ${(nrr * 100):.1f}%")
+    println("  Gross Revenue Retention: ${(grr * 100):.1f}%")
+
+    // Unit economics
+    acquisition_spend := 85000.0
+    new_customers := 125
+    cac := growth.cac(acquisition_spend, new_customers)
+    avg_lifespan := 18.0 // months
+    ltv := growth.ltv(mrr, users, avg_lifespan)
+    ltv_cac_ratio := growth.ltv_cac_ratio(mrr, users, avg_lifespan, acquisition_spend, new_customers)
+
+    println("\nUnit Economics:")
+    println("  CAC: \$${cac:.2f}")
+    println("  LTV: \$${ltv:.2f}")
+    println("  LTV:CAC Ratio: ${ltv_cac_ratio:.2f}x")
+
+    // Payback period
+    payback := growth.payback_period(cac, arpu)
+    println("  Payback Period: ${payback:.1f} months")
+
+    // Magic number (growth efficiency)
+    magic := growth.magic_number(180000.0, 0.75, 85000.0)
+    println("\nGrowth Efficiency:")
+    println("  Magic Number: ${magic:.2f}")
+    if magic > 0.75 {
+        println("  Status: Efficient growth ✓")
+    } else if magic > 0.5 {
+        println("  Status: Moderate efficiency")
+    } else {
+        println("  Status: Inefficient - burning too much for growth")
     }
-    model := ml.linear_regression(x, sales)
-    forecast := ml.linear_predict(model, future_x)
 }</code></pre>
-                </div>
 
-                <div class="example-item">
-                    <h3>User Segmentation</h3>
-                    <p>Segment users using K-means clustering.</p>
-                    <pre><code>import vstats.{ml, stats}
+<div class="interpretation">
+<strong>Key Interpretations:</strong>
+<ul>
+<li><strong>LTV:CAC Ratio:</strong> >3x is healthy, <1x means losing money on acquisition</li>
+<li><strong>NRR > 100%:</strong> Existing customers are expanding (negative churn)</li>
+<li><strong>Magic Number > 0.75:</strong> Efficient growth; < 0.5 means overspending</li>
+</ul>
+</div>
+</div>
+
+<div class="example-item">
+<h4>Cohort Retention Analysis</h4>
+<p>Track user retention over time to identify when and why users churn.</p>
+
+<div class="business-context">
+<strong>Business Context:</strong> Users from Q4 marketing campaigns are churning faster than previous cohorts. Need to identify the retention drop-off points and compare cohort performance.
+</div>
+
+<pre><code>import vstats.growth
 
 fn main() {
-    normalized := normalize_data(user_data)
-    model := ml.kmeans(normalized, 4, 100)
-    silhouette := ml.silhouette_coefficient(normalized, model.labels)
+    // Monthly cohorts with retention data
+    cohort_names := ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+    initial_sizes := [1000, 1100, 1200, 1150, 1300, 1400]
+
+    // Retention by month (absolute users remaining)
+    retention_data := [
+        [1000, 780, 620, 510, 430, 380], // Jan cohort
+        [1100, 850, 680, 560, 470, 0],   // Feb (incomplete)
+        [1200, 920, 740, 610, 0, 0],     // Mar
+        [1150, 880, 700, 0, 0, 0],       // Apr
+        [1300, 1000, 0, 0, 0, 0],        // May
+        [1400, 0, 0, 0, 0, 0],           // Jun (only month 0)
+    ]
+
+    mut ca := growth.create_cohort_analysis(cohort_names, initial_sizes, retention_data)
+
+    // Print retention matrix
+    println("Retention Matrix (%):")
+    println("-".repeat(70))
+    print("Cohort   ")
+    for i in 0..6 {
+        print("  Month ${i}  ")
+    }
+    println("")
+
+    for i, cohort in ca.cohorts {
+        print("${cohort.name:8} ")
+        for j in 0..6 {
+            if j < ca.retention_matrix[i].len {
+                print("  ${(ca.retention_matrix[i][j] * 100):6.1f}%")
+            } else {
+                print("    -")
+            }
+        }
+        println("")
+    }
+
+    // Average retention by month
+    println("\nAverage Retention by Month:")
+    for i, avg in ca.avg_retention {
+        bar_len := int(avg * 40)
+        bar := "*".repeat(bar_len)
+        println("  Month ${i}: ${bar} ${(avg * 100):.1f}%")
+    }
+
+    // Compare specific cohorts
+    println("\nCohort Comparison:")
+    jan_ret, may_ret := ca.compare_cohorts("Jan", "May")
+    println("  Jan cohort M1 retention: ${(jan_ret * 100):.1f}%")
+    println("  May cohort M1 retention: ${(may_ret * 100):.1f}%")
+
+    improvement := (may_ret - jan_ret) / jan_ret * 100
+    if improvement > 0 {
+        println("  Improvement: +${improvement:.1f}% ✓")
+    } else {
+        println("  Decline: ${improvement:.1f}%")
+    }
+
+    // Monthly churn rates
+    println("\nChurn by Period:")
+    churn_rates := ca.churn_by_period()
+    for i, churn in churn_rates {
+        println("  Month ${i} → ${i+1}: ${(churn * 100):.1f}% churn")
+    }
 }</code></pre>
-                </div>
-            </section>
+
+<div class="interpretation">
+<strong>Reading Retention Curves:</strong>
+<ul>
+<li><strong>Linear drop:</strong> Consistent churn, predictable LTV</li>
+<li><strong>Steep early drop:</strong> Onboarding issues, wrong user fit</li>
+<li><strong>Flattening curve:</strong> Loyal core users, healthy product-market fit</li>
+<li><strong>Benchmark:</strong> Good SaaS has 80%+ month 1 retention, 60%+ by month 6</li>
+</ul>
+</div>
+</div>
+
+<div class="example-item">
+<h4>Funnel Analysis & Optimization</h4>
+<p>Analyze conversion funnels to identify the biggest opportunities for improvement.</p>
+
+<div class="business-context">
+<strong>Business Context:</strong> E-commerce site with 68% cart abandonment. Need to identify which funnel stage has the biggest drop-off and quantify the revenue impact.
+</div>
+
+<pre><code>import vstats.growth
+
+fn main() {
+    // Full e-commerce funnel
+    stage_names := ["Visitors", "Product View", "Add to Cart", "Begin Checkout", "Purchase"]
+    stage_users := [150000, 45000, 18000, 9000, 4500]
+
+    funnel := growth.create_funnel(stage_names, stage_users)
+
+    println("Funnel Overview:")
+    println("-".repeat(60))
+    println("  Total Visitors: ${stage_users[0]:,}")
+    println("  Total Purchases: ${stage_users[4]:,}")
+    println("  Overall Conversion: ${(funnel.total_conversion * 100):.2f}%")
+    println("  Overall Drop-off: ${(funnel.drop_off_rate * 100):.1f}%")
+
+    // Stage-by-stage analysis
+    println("\nStage-by-Stage Analysis:")
+    println("-".repeat(60))
+
+    conversions := funnel.get_conversions()
+    for conv in conversions {
+        println("\n${conv.from_name} → ${conv.to_name}:")
+        println("  Conversion Rate: ${(conv.rate * 100):.1f}%")
+        println("  Drop-off Rate: ${(conv.drop_off_rate * 100):.1f}%")
+        println("  Users Lost: ${(conv.from_users - conv.to_users):,}")
+    }
+
+    // Identify biggest opportunity
+    worst := funnel.highest_drop_off()
+    println("\n\nBiggest Opportunity:")
+    println("  Stage: ${worst.from_name} → ${worst.to_name}")
+    println("  Drop-off: ${(worst.drop_off_rate * 100):.1f}%")
+    println("  Users Lost: ${(worst.from_users - worst.to_users):,}")
+
+    // Revenue impact calculation
+    avg_order_value := 85.0
+    potential_recovery := f64(worst.from_users - worst.to_users) * 0.1 * avg_order_value // 10% improvement
+    println("  Potential Revenue (10% fix): \$${potential_recovery:,.0f}/month")
+
+    // Segment comparison
+    println("\n\nSegment Comparison:")
+    println("-".repeat(60))
+
+    platform_data := {
+        "Desktop": [100000, 35000, 14000, 7000, 3500],
+        "Mobile": [50000, 10000, 4000, 2000, 1000]
+    }
+
+    funnels := growth.segment_funnel(platform_data)
+
+    for platform, f in funnels {
+        println("\n${platform}:")
+        println("  Conversion: ${(f.total_conversion * 100):.2f}%")
+
+        convs := f.get_conversions()
+        for c in convs {
+            if c.drop_off_rate > 0.6 {
+                println("  ⚠ ${c.from_name} → ${c.to_name}: ${(c.drop_off_rate * 100):.0f}% drop-off")
+            }
+        }
+    }
+}</code></pre>
+
+<div class="interpretation">
+<strong>Prioritizing Fixes:</strong>
+<ul>
+<li><strong>High volume + high drop-off:</strong> Best ROI for optimization</li>
+<li><strong>Segment differences:</strong> May indicate UX issues on specific platforms</li>
+<li><strong>Benchmark:</strong> Good e-commerce has 2-3% overall conversion, >60% cart-to-purchase</li>
+</ul>
+</div>
+</div>
+
+<div class="example-item">
+<h4>Marketing Attribution Analysis</h4>
+<p>Compare attribution models to understand true channel ROI and optimize budget allocation.</p>
+
+<div class="business-context">
+<strong>Business Context:</strong> Marketing team has \$10M budget across 6 channels. Last-touch attribution shows poor ROI for awareness channels. Need multi-model analysis for better allocation.
+</div>
+
+<pre><code>import vstats.growth
+
+fn main() {
+    // Customer journeys (touchpoint sequences)
+    journeys := [
+        ["Facebook", "Google", "Email", "Direct"],
+        ["Google", "Google", "Referral"],
+        ["Facebook", "Instagram", "Google"],
+        ["Organic", "Email", "Direct"],
+        ["Google", "Facebook", "Email"],
+        ["Referral", "Direct"],
+        ["Instagram", "Facebook", "Google", "Email"],
+        ["Google", "Google", "Direct"],
+    ]
+
+    conversions := [true, true, true, true, true, true, true, false]
+    revenue := [150.0, 200.0, 180.0, 120.0, 175.0, 90.0, 220.0, 0.0]
+
+    channel_costs := {
+        "Facebook": 5000.0,
+        "Google": 8000.0,
+        "Instagram": 3000.0,
+        "Email": 1000.0,
+        "Organic": 500.0,
+        "Referral": 2000.0,
+        "Direct": 0.0
+    }
+
+    // 1. First-Touch Attribution
+    println("1. First-Touch Attribution (awareness focus):")
+    println("-".repeat(50))
+    first_touches := ["Facebook", "Google", "Facebook", "Organic", "Google", "Referral", "Instagram", "Google"]
+    first_touch := growth.first_touch_attributes(first_touches, conversions, revenue)
+    mut first_total := 0.0
+    for r in first_touch {
+        first_total += r.revenue
+        println("  ${r.channel:12} \$${r.revenue:,.0f} (${(r.attribution_score * 100):.1f}%)")
+    }
+    println("  Total: \$${first_total:,.0f}")
+
+    // 2. Last-Touch Attribution
+    println("\n2. Last-Touch Attribution (conversion focus):")
+    println("-".repeat(50))
+    last_touches := ["Direct", "Referral", "Google", "Direct", "Email", "Direct", "Email", "Direct"]
+    last_touch := growth.last_touch_attributes(last_touches, conversions, revenue)
+    mut last_total := 0.0
+    for r in last_touch {
+        last_total += r.revenue
+        println("  ${r.channel:12} \$${r.revenue:,.0f} (${(r.attribution_score * 100):.1f}%)")
+    }
+    println("  Total: \$${last_total:,.0f}")
+
+    // 3. Linear Attribution
+    println("\n3. Linear Attribution (equal credit):")
+    println("-".repeat(50))
+    linear := growth.linear_attributes(journeys, conversions, revenue)
+    mut linear_total := 0.0
+    for r in linear {
+        linear_total += r.revenue
+        println("  ${r.channel:12} \$${r.revenue:,.0f} (${(r.attribution_score * 100):.1f}%)")
+    }
+    println("  Total: \$${linear_total:,.0f}")
+
+    // 4. Time Decay Attribution
+    println("\n4. Time Decay Attribution (recent touchpoints weighted):")
+    println("-".repeat(50))
+    touchpoint_days := [
+        [14, 7, 3, 1],
+        [30, 7, 1],
+        [21, 14, 1],
+        [7, 3, 1],
+        [14, 3, 1],
+        [1, 1],
+        [21, 14, 7, 1],
+        [7, 3, 1],
+    ]
+    time_decay := growth.time_decay_attributes(journeys, touchpoint_days, conversions, revenue, 7.0)
+    mut decay_total := 0.0
+    for r in time_decay {
+        decay_total += r.revenue
+        println("  ${r.channel:12} \$${r.revenue:,.0f} (${(r.attribution_score * 100):.1f}%)")
+    }
+    println("  Total: \$${decay_total:,.0f}")
+
+    // 5. ROI Analysis
+    println("\n5. Channel ROI (using Linear Attribution):")
+    println("-".repeat(50))
+    roi := growth.channel_roi(linear, channel_costs)
+
+    for channel in ["Facebook", "Google", "Instagram", "Email", "Organic", "Referral"] {
+        cost := channel_costs[channel] or { 0.0 }
+        roi_val := roi[channel] or { 0.0 }
+        println("  ${channel:12}: Spend \$${cost:,.0f}, ROI ${(roi_val * 100):.1f}%")
+    }
+
+    // Blended ROAS
+    total_revenue := linear_total
+    total_spend := 19500.0
+    blended_roas := growth.blended_roas(total_revenue, total_spend)
+    println("\nBlended ROAS: ${blended_roas:.2f}x")
+}</code></pre>
+
+<div class="interpretation">
+<strong>Choosing an Attribution Model:</strong>
+<ul>
+<li><strong>First-touch:</strong> Best for awareness campaigns, brand marketing</li>
+<li><strong>Last-touch:</strong> Best for conversion optimization, direct response</li>
+<li><strong>Linear:</strong> Fair distribution, good baseline for comparison</li>
+<li><strong>Time-decay:</strong> Realistic for long sales cycles, recent touchpoints matter</li>
+</ul>
+</div>
+</div>
+</section>
 
             <section class="example-category">
                 <h2>Product Analytics</h2>
