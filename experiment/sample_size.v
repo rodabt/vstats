@@ -28,6 +28,7 @@ pub fn sample_size_proportions(baseline_rate f64, mde f64, alpha f64, power f64)
 	assert mde > 0, 'mde must be positive'
 	assert alpha > 0 && alpha < 1, 'alpha must be in (0, 1)'
 	assert power > 0 && power < 1, 'power must be in (0, 1)'
+	assert baseline_rate + mde < 1.0, 'baseline_rate + mde must be less than 1.0'
 
 	p1 := baseline_rate
 	p2 := baseline_rate + mde
@@ -58,7 +59,7 @@ pub fn sample_size_proportions(baseline_rate f64, mde f64, alpha f64, power f64)
 // sample_size_means computes the required sample size per group to detect
 // a minimum detectable effect in a continuous metric.
 //
-// baseline_mean: current mean value
+// baseline_mean: current mean value (informational only — not used in the formula; echoed into result.baseline)
 // baseline_std:  current standard deviation (must be estimated from historical data)
 // mde_absolute:  absolute change in mean to detect
 // alpha:         significance level (e.g. 0.05)
