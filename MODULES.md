@@ -315,6 +315,55 @@ A/B testing, power analysis, and CUPED variance reduction.
 
 ---
 
+##### `sample_size.v`
+Sample size calculation for experiments before data collection.
+
+**Structs:**
+- `SampleSizeResult` — `n_per_group`, `total_n`, `alpha`, `power`, `mde`, `baseline`, `effect_size`, `baseline_std`, `method`
+
+**Key Functions:**
+- `sample_size_proportions(baseline_rate, mde, alpha, power)` — n per group for conversion/proportion metrics; `mde` is absolute rate change (e.g. 0.01 for +1pp)
+- `sample_size_means(baseline_mean, baseline_std, mde_absolute, alpha, power)` — n per group for continuous metrics; effect size field = Cohen's d
+
+---
+
+##### `proportion_ztest.v`
+Two-proportion z-test for comparing conversion rates.
+
+**Structs:**
+- `ProportionTestConfig` — `alpha` (default 0.05); `@[params]`
+- `ProportionTestResult` — `rate_a`, `rate_b`, `diff`, `relative_lift`, `z_statistic`, `p_value`, `significant`, `ci_lower`, `ci_upper`, `pooled_se`, `n_a`, `n_b`
+
+**Key Functions:**
+- `proportion_test(successes_a, n_a, successes_b, n_b, cfg)` — Pooled z-test under H₀; CI uses unpooled SE and `alpha` from config
+
+---
+
+##### `sequential.v`
+Sequential Probability Ratio Test (SPRT) for safe interim analysis.
+
+**Types:**
+- `SPRTDecision` — enum: `continue_testing`, `reject_null`, `accept_null`
+- `SPRTConfig` — `alpha` (0.05), `beta` (0.20), `mde` (required, no default); NOT `@[params]`
+- `SPRTResult` — `log_likelihood_ratio`, `decision`, `upper_boundary`, `lower_boundary`, `rate_a`, `rate_b`, `n_a`, `n_b`
+
+**Key Functions:**
+- `sprt_test(successes_a, n_a, successes_b, n_b, cfg)` — One-shot Bernoulli SPRT over cumulative totals; call repeatedly at each interim check
+
+---
+
+##### `bayesian.v`
+Bayesian A/B test using Beta-Binomial conjugate model.
+
+**Structs:**
+- `BayesianConfig` — `alpha_prior` (1.0), `beta_prior` (1.0), `n_samples` (10000); `@[params]`
+- `BayesianResult` — `posterior_mean_a/b`, `prob_b_beats_a`, `expected_loss_a/b`, `ci_lower/upper_a/b`, `successes_a/b`, `n_a/b`
+
+**Key Functions:**
+- `bayesian_ab_test(successes_a, n_a, successes_b, n_b, cfg)` — Beta posteriors via Marsaglia-Tsang sampler; Monte Carlo estimates for P(B>A), expected loss, and 95% credible intervals
+
+---
+
 ##### `psm.v`
 Propensity score matching and covariate balance checking.
 
@@ -377,6 +426,93 @@ All tests return `(test_statistic, p_value)` tuple.
 
 **Parameters:**
 - `TestParams` struct with `alpha` (significance level, default 0.05)
+
+---
+
+### Growth & Product Analytics Module (NEW)
+
+#### `growth/` - Growth & Product Analytics
+Industry-standard product and marketing metrics, funnel analysis, cohort analysis, and attribution modeling.
+
+**Files:**
+
+##### `metrics.v`
+Revenue, customer, and retention metrics.
+
+**Revenue Metrics:**
+- `arpa(revenue, accounts)` - Average Revenue Per Account
+- `arpu(revenue, users)` - Average Revenue Per User
+- `monthly_recurring_revenue(plan_revenues)` - MRR calculation
+- `annual_recurring_revenue(mrr)` - ARR from MRR
+
+**Customer Metrics:**
+- `cac(acquisition_spend, new_customers)` - Customer Acquisition Cost
+- `ltv(revenue, users, lifespan)` - Lifetime Value
+- `ltv_cac_ratio(...)` - LTV:CAC ratio (healthy: 3:1+)
+- `payback_period(cac, monthly_arpu)` - Payback period in months
+- `magic_number(net_new_arr, gross_margin, sales_marketing_spend)` - SaaS efficiency
+
+**Retention Metrics:**
+- `churn_rate(customers_lost, total_customers)` - Customer churn rate
+- `retention_rate(customers_lost, total_customers)` - 1 - Churn Rate
+- `net_revenue_retention(mrr_start, mrr_end, churn_mrr, expansion_mrr)` - NRR
+- `gross_revenue_retention(mrr_start, churn_mrr)` - GRR
+
+**Financial Metrics:**
+- `burn_rate(starting_cash, ending_cash, months)` - Monthly burn rate
+- `runway_months(current_cash, monthly_burn)` - Months of runway
+
+##### `funnel.v`
+Conversion funnel analysis and optimization.
+
+**Structs:**
+- `FunnelStage` — name, users, conversions, dropouts
+- `FunnelResult` — stages, conversion_rate, total_conversion
+- `FunnelConversion` — from/to, rate, drop_off_rate
+
+**Key Functions:**
+- `create_funnel(stage_names, stage_users)` - Create funnel from stage data
+- `stage_conversion_rate(from, to)` - Conversion between stages
+- `(FunnelResult).get_conversions()` - Detailed conversion data
+- `(FunnelResult).highest_drop_off()` - Stage with most leakage
+- `funnel_leakage(funnel)` - Users lost at each stage
+- `projected_conversions(funnel, additional_users)` - Project with more traffic
+- `segment_funnel(segment_data)` - Compare funnels across segments
+
+##### `cohort.v`
+Cohort analysis and retention matrix computation.
+
+**Structs:**
+- `CohortPeriod` — period_index, cohort_size, retained, revenue, retention
+- `Cohort` — name, periods
+- `CohortAnalysis` — cohorts, retention_matrix, avg_retention, ltv_by_period
+
+**Key Functions:**
+- `create_cohort_analysis(cohort_names, initial_sizes, retention_data)` - Build cohort analysis
+- `(CohortAnalysis).retention_at_period(cohort, period)` - Retention at specific point
+- `(CohortAnalysis).avg_retention_at_period(period)` - Average across cohorts
+- `(CohortAnalysis).churn_by_period()` - Monthly churn rates
+- `(CohortAnalysis).compare_cohorts(name_a, name_b)` - Compare two cohorts
+- `(CohortAnalysis).ltv_projection(periods, avg_revenue)` - Project LTV
+
+##### `attribution.v`
+Marketing channel attribution modeling.
+
+**Structs:**
+- `AttributionResult` — channel, conversions, revenue, attribution_score
+
+**Attribution Models:**
+- `first_touch_attributes(channels, conversions, revenue)` - 100% to first touch
+- `last_touch_attributes(channels, conversions, revenue)` - 100% to last touch
+- `linear_attributes(touchpoints, conversions, revenue)` - Equal credit
+- `time_decay_attributes(touchpoints, days, conversions, revenue, half_life)` - Recent bias
+- `position_based_attributes(touchpoints, conversions, revenue)` - 40/20/40 split
+
+**Channel Analytics:**
+- `channel_roi(attribution_results, channel_costs)` - ROI per channel
+- `optimal_channel_mix(channel_performance, total_budget)` - Budget allocation
+- `roas(revenue, ad_spend)` - Return on Ad Spend
+- `blended_roas(total_revenue, total_ad_spend)` - Blended ROAS
 
 ---
 
@@ -454,23 +590,25 @@ if p_val < 0.05 {
   - `hypothesis` depends on `stats`, `prob`
   - `prob` depends on `linalg`, `math`, `utils`
   - `experiment` depends on `ml`, `hypothesis`, `stats`, `prob`, `linalg`
+  - `growth` depends on `math` (standalone module)
 
 ---
 
 ## Module Statistics
 
-| Module | Files | Functions | Purpose |
-|--------|-------|-----------|---------|
-| linalg | 4 | 20+ | Vector/matrix operations |
-| stats | 3 | 18+ | Descriptive & advanced statistics |
-| prob | 1 | 20+ | Probability distributions |
-| optim | 1 | 5+ | Optimization algorithms |
-| ml | 3 | 25+ | Machine learning algorithms |
-| nn | 3 | 40+ | Neural networks & layers |
-| hypothesis | 1 | 7+ | Statistical hypothesis tests |
-| experiment | 3 | 12+ | A/B testing, PSM, DiD |
-| symbol | 1 | ? | Symbolic computation |
-| utils | 5 | 35+ | Metrics, utilities, datasets |
+| Module     | Files | Functions | Purpose                                     |
+| ---------- | ----- | --------- | ------------------------------------------- |
+| linalg     | 4     | 20+       | Vector/matrix operations                    |
+| stats      | 3     | 18+       | Descriptive & advanced statistics           |
+| prob       | 1     | 20+       | Probability distributions                   |
+| optim      | 1     | 5+        | Optimization algorithms                     |
+| ml         | 3     | 25+       | Machine learning algorithms                 |
+| nn         | 3     | 40+       | Neural networks & layers                    |
+| hypothesis | 1     | 7+        | Statistical hypothesis tests                |
+| experiment | 7     | 20+       | A/B testing, sample size, proportion z-test, SPRT, Bayesian, PSM, DiD |
+| growth     | 4     | 30+       | Growth metrics, funnel, cohort, attribution |
+| symbol     | 1     | ?         | Symbolic computation                        |
+| utils      | 5     | 35+       | Metrics, utilities, datasets                |
 
 ---
 

@@ -1081,7 +1081,7 @@ for day in 0..30 {
 <div class="good-example">
 <h4>Correct: Pre-register Sample Size</h4>
 <pre><code>// RIGHT: Calculate sample size first
-pa := experiment.power_analysis(effect_size: 0.1, alpha: 0.05, power: 0.8)
+pa := experiment.sample_size_proportions(0.05, 0.01, 0.05, 0.8)
 n_required := pa.n_per_group
 
 // Wait until sample size reached before analyzing
@@ -1334,7 +1334,7 @@ println("Significant: ${result.significant}")</code></pre>
 <h4>Power Analysis</h4>
 <pre><code>import vstats.experiment
 
-pa := experiment.power_analysis(effect_size: 0.5, alpha: 0.05, power: 0.8)
+pa := experiment.sample_size_proportions(0.05, 0.02, 0.05, 0.8)
 println("Need ${pa.n_per_group} per group")</code></pre>
 </div>
 
