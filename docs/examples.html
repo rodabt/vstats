@@ -483,430 +483,140 @@ fn main() {
             </section>
 
 <section class="example-category" id="experimentation">
-<h2>2. Experimentation</h2>
-<p class="lead">Rigorous A/B testing and causal inference methods for product decisions.</p>
+<h2 id="experimentation">2. Experimentation Workflows</h2>
+<p class="lead">End-to-end examples for designing, running, and interpreting A/B experiments.</p>
 
-<h3>A/B Testing Framework</h3>
-
-<div class="example-item">
-<h4>Complete A/B Test: Hypothesis to Decision</h4>
-<p>Run a statistically rigorous A/B test from power analysis to business recommendation.</p>
-
+<h3>Workflow 1: Conversion Rate Test</h3>
 <div class="business-context">
-<strong>Business Context:</strong> Testing a new checkout flow design. Need to determine if the improvement is statistically and practically significant.
+<strong>Business Context:</strong> Your landing page has a 5% signup rate. You want to test a redesigned hero section and need to detect at least a 1 percentage-point improvement (5% &rarr; 6%). You have 80% power budget and use a 5% significance level.
 </div>
 
+<h4>Step 1: Calculate sample size before starting</h4>
 <pre><code>import vstats.experiment
-import vstats.stats
 
 fn main() {
-    // STEP 1: Pre-experiment - Power Analysis
-    println("=== STEP 1: Power Analysis ===")
-
-    // Estimate minimum detectable effect (MDE)
-    baseline_conversion := 3.5 // Current: 3.5% conversion
-    mde_relative := 0.10 // We want to detect 10% relative lift
-    mde_absolute := baseline_conversion * mde_relative
-
-    // Calculate required sample size
-    pa := experiment.power_analysis(
-        effect_size: 0.1, // Cohen's d (small effect)
-        alpha: 0.05, // 5% significance level
-        power: 0.80 // 80% power
-    )
-
-    println("Required sample size per group: ${pa.n_per_group}")
-    println("Total sample needed: ${pa.n_per_group * 2}")
-    println("Minimum detectable effect: ${mde_relative * 100:.0f}% relative lift")
-
-    // STEP 2: Run experiment (simulated data)
-    println("\n=== STEP 2: Experiment Results ===")
-
-    // Control group: time on checkout page (seconds)
-    control := [45.0, 52.0, 38.0, 61.0, 55.0, 48.0, 42.0, 59.0, 63.0, 51.0,
-        47.0, 53.0, 40.0, 58.0, 49.0, 44.0, 56.0, 50.0, 62.0, 54.0,
-        46.0, 41.0, 57.0, 43.0, 60.0, 48.0, 52.0, 45.0, 59.0, 55.0]
-
-    // Treatment group: new checkout flow
-    treatment := [68.0, 72.0, 65.0, 75.0, 71.0, 69.0, 74.0, 67.0, 78.0, 73.0,
-        70.0, 66.0, 72.0, 68.0, 76.0, 71.0, 69.0, 74.0, 67.0, 72.0,
-        75.0, 70.0, 73.0, 68.0, 71.0, 74.0, 69.0, 72.0, 70.0, 76.0]
-
-    // Run A/B test
-    result := experiment.abtest(control, treatment, experiment.ABTestConfig{
-        alpha: 0.05
-    })
-
-    // STEP 3: Results analysis
-    println("\nControl Group:")
-    println("  Mean: ${result.control_mean:.2f}s")
-    println("  Std: ${result.control_std:.2f}s")
-    println("  N: ${result.n_control}")
-
-    println("\nTreatment Group:")
-    println("  Mean: ${result.treatment_mean:.2f}s")
-    println("  Std: ${result.treatment_std:.2f}s")
-    println("  N: ${result.n_treatment}")
-
-    println("\n=== STEP 3: Statistical Analysis ===")
-    println("Relative Lift: ${(result.relative_lift * 100):.1f}%")
-    println("Effect Size (Cohen's d): ${result.effect_size:.3f}")
-    println("t-statistic: ${result.t_statistic:.3f}")
-    println("p-value: ${result.p_value:.4f}")
-    println("95% CI: [${result.ci_lower:.2f}, ${result.ci_upper:.2f}]")
-
-    // STEP 4: Interpretation
-    println("\n=== STEP 4: Interpretation ===")
-
-    if result.significant {
-        println("✓ STATISTICALLY SIGNIFICANT (p < 0.05)")
-    } else {
-        println("✗ NOT SIGNIFICANT (p >= 0.05)")
-    }
-
-    // Effect size interpretation
-    effect_interp := if result.effect_size < 0.2 { "Negligible"
-        } else if result.effect_size < 0.5 { "Small"
-        } else if result.effect_size < 0.8 { "Medium"
-        } else { "Large" }
-    println("Effect Size: ${effect_interp} (${result.effect_size:.2f})")
-
-    // Practical significance
-    absolute_improvement := result.treatment_mean - result.control_mean
-    println("\nPractical Impact:")
-    println("  Absolute improvement: ${absolute_improvement:.1f}s")
-    println("  Relative improvement: ${(result.relative_lift * 100):.1f}%")
-
-    // STEP 5: Business recommendation
-    println("\n=== STEP 5: Recommendation ===")
-
-    if result.significant && result.relative_lift > 0 {
-        println("RECOMMENDATION: Ship the new checkout flow")
-        println("  - Statistically significant with ${result.effect_size:.2f} effect size")
-        println("  - ${(result.relative_lift * 100):.1f}% improvement is practically meaningful")
-        println("  - High confidence: p = ${result.p_value:.4f}")
-    } else if !result.significant {
-        println("RECOMMENDATION: Do not ship - no significant difference detected")
-        println("  - Consider: Larger sample size or different treatment")
-    } else {
-        println("RECOMMENDATION: Do not ship - negative effect")
-    }
+    // How many users do we need per group?
+    // baseline_rate=0.05, mde=+0.01 (5%->6%), alpha=0.05, power=0.80
+    plan := experiment.sample_size_proportions(0.05, 0.01, 0.05, 0.80)
+    println('Need ${plan.n_per_group} users per group (${plan.total_n} total)')
+    println('Implied effect size (h): ${plan.effect_size:.3f}')
+    // Output: Need ~8100 users per group (16200 total)
 }</code></pre>
 
-<div class="interpretation">
-<strong>Key Concepts:</strong>
-<ul>
-<li><strong>Power Analysis:</strong> Calculate sample size BEFORE running the test</li>
-<li><strong>Statistical Significance:</strong> Can we rule out random chance?</li>
-<li><strong>Practical Significance:</strong> Is the effect size meaningful for business?</li>
-<li><strong>Confidence Interval:</strong> Range of plausible effect values</li>
-</ul>
-</div>
-</div>
+<h4>Step 2: Run the experiment, then analyze</h4>
+<pre><code>    // After collecting data:
+    // Control (original): 405 signups from 8100 visitors
+    // Treatment (new design): 520 signups from 8100 visitors
+    result := experiment.proportion_test(405, 8100, 520, 8100)
 
-<div class="example-item">
-<h4>Power Analysis: Sample Size Planning</h4>
-<p>Calculate required sample sizes before running an experiment to ensure reliable results.</p>
+    println('Control rate:   ${(result.rate_a * 100):.2f}%')   // 5.00%
+    println('Treatment rate: ${(result.rate_b * 100):.2f}%')   // 6.42%
+    println('Absolute lift:  +${(result.diff * 100):.2f}pp')   // +1.42pp
+    println('Relative lift:  +${(result.relative_lift * 100):.1f}%') // +28.4%
+    println('p-value:        ${result.p_value:.4f}')
+    println('95% CI on diff: [${(result.ci_lower*100):.2f}pp, ${(result.ci_upper*100):.2f}pp]')
+    println('Significant:    ${result.significant}')
+    // Interpretation: The new design increased signups by 1.42pp (28% relative lift).
+    // This exceeds our MDE of 1pp and is statistically significant. Ship it.</code></pre>
 
+<h3>Workflow 2: Continuous Metric Test (Revenue)</h3>
 <div class="business-context">
-<strong>Business Context:</strong> Product team wants to run an A/B test but doesn't know how many users are needed. Running too few means inconclusive results; too many wastes time.
+<strong>Business Context:</strong> Average revenue per user is $45 with a standard deviation of $20. You want to detect a $3 increase (6.7% lift). Calculate sample size, run the experiment, then analyze with a t-test.
 </div>
 
 <pre><code>import vstats.experiment
 
 fn main() {
-    println("Power Analysis: Sample Size Requirements")
-    println("=".repeat(60))
+    // Step 1: Sample size
+    // baseline_mean=45.0, std=20.0, mde=$3, alpha=0.05, power=0.80
+    plan := experiment.sample_size_means(45.0, 20.0, 3.0, 0.05, 0.80)
+    println('Need ${plan.n_per_group} users per group')
+    println("Cohen's d: ${plan.effect_size:.3f}")  // 0.15 (small effect)
 
-    // Parameters
-    alpha := 0.05 // Significance level (5% false positive rate)
-    power := 0.80 // Power (80% chance of detecting true effect)
+    // Step 2: Analyze after collecting data
+    // (In practice, load your data from a file or database)
+    control   := [43.2, 45.1, 46.8, 44.3, 45.7, 43.9, 47.2, 44.8, 45.5, 46.1]
+    treatment := [47.8, 49.2, 46.5, 50.1, 48.3, 47.9, 49.5, 48.7, 50.2, 47.4]
 
-    // Effect sizes to consider
-    effect_sizes := [0.1, 0.2, 0.3, 0.5, 0.8]
-
-    println("\nEffect Size Guide:")
-    println("  0.1 = Small (hard to detect)")
-    println("  0.2 = Small-medium")
-    println("  0.5 = Medium")
-    println("  0.8 = Large (easy to detect)")
-
-    println("\nSample Size Requirements (per group):")
-    println("-".repeat(60))
-    println("Effect Size | Sample Size | Total Users | Days (1000/day)")
-    println("-".repeat(60))
-
-    for es in effect_sizes {
-        pa := experiment.power_analysis(es, alpha, power)
-        total := pa.n_per_group * 2
-        days := total / 1000 // Assuming 1000 users/day traffic
-        println("     ${es:.1f}     |    ${pa.n_per_group:5}     |    ${total:5}     |    ${days:.1f}")
-    }
-
-    // Trade-off analysis
-    println("\n\nTrade-offs:")
-    println("-".repeat(60))
-    println("Smaller effect (0.1) → Need MORE users → Longer experiment")
-    println("Larger effect (0.5) → Need FEWER users → Faster experiment")
-    println("Higher power (90%) → Need MORE users → More reliable")
-    println("Lower alpha (0.01) → Need MORE users → Fewer false positives")
-
-    // Practical example
-    println("\n\nPractical Example:")
-    println("-".repeat(60))
-    println("Current conversion rate: 5%")
-    println("Want to detect: 10% relative lift (5% → 5.5%)")
-    println("Expected effect size: ~0.2 (small-medium)")
-
-    pa_practical := experiment.power_analysis(0.2, 0.05, 0.80)
-    println("Recommended sample size: ${pa_practical.n_per_group} per group")
-    println("Total users needed: ${pa_practical.n_per_group * 2}")
-
-    // Traffic calculation
-    daily_traffic := 5000
-    test_allocation := 0.20 // 20% traffic to test
-    daily_test_users := int(f64(daily_traffic) * test_allocation)
-    days_needed := (pa_practical.n_per_group * 2) / daily_test_users
-
-    println("\nWith ${daily_traffic} daily users (${test_allocation * 100:.0f}% in test):")
-    println("  Daily test users: ${daily_test_users}")
-    println("  Days to complete: ${days_needed:.0f}")
+    result := experiment.abtest(control, treatment)
+    println('Control mean:   \$${result.control_mean:.2f}')
+    println('Treatment mean: \$${result.treatment_mean:.2f}')
+    println('Lift:           \$${result.treatment_mean - result.control_mean:.2f} (${(result.relative_lift * 100):.1f}%)')
+    println("Cohen's d:      ${result.effect_size:.3f}")
+    println('p-value:        ${result.p_value:.4f}')
+    println('95% CI: [\$${result.ci_lower:.2f}, \$${result.ci_upper:.2f}]')
+    println('Significant:    ${result.significant}')
 }</code></pre>
 
-<div class="interpretation">
-<strong>Power Analysis Rules of Thumb:</strong>
-<ul>
-<li>80% power is standard (detect 80% of true effects)</li>
-<li>Smaller effects need larger samples</li>
-<li>Run power analysis BEFORE the experiment, not after</li>
-<li>Consider business constraints: traffic, time, cost</li>
-</ul>
-</div>
-</div>
-
-<div class="example-item">
-<h4>CUPED: Variance Reduction for Faster Experiments</h4>
-<p>Use pre-experiment data to reduce variance and detect effects with smaller samples.</p>
-
+<h3>Workflow 3: Sequential Testing (Safe Early Stopping)</h3>
 <div class="business-context">
-<strong>Business Context:</strong> Limited traffic means experiments take weeks. CUPED can reduce variance by 30-50%, allowing faster conclusions.
+<strong>Business Context:</strong> You're running a high-traffic experiment where results come in fast. You want to check daily and stop early if a clear winner emerges &mdash; without inflating your false positive rate.
 </div>
 
 <pre><code>import vstats.experiment
 
 fn main() {
-    // Pre-experiment data (baseline)
-    pre_control := [10.1, 9.8, 10.2, 9.9, 10.0, 10.3, 9.7, 10.1]
-    pre_treatment := [10.0, 9.9, 10.1, 10.2, 9.8, 10.0, 10.1, 9.9]
+    cfg := experiment.SPRTConfig{ alpha: 0.05, beta: 0.20, mde: 0.01 }
 
-    // Post-experiment data
-    post_control := [10.5, 10.2, 10.6, 10.3, 10.4, 10.7, 10.1, 10.5]
-    post_treatment := [12.5, 12.2, 12.6, 12.3, 12.4, 12.7, 12.1, 12.5]
+    // Simulate daily checks with cumulative data
+    // Day 1: 500 users per group
+    r1 := experiment.sprt_test(25, 500, 28, 500, cfg)
+    println('Day 1: LLR=${r1.log_likelihood_ratio:.3f}, decision=${r1.decision}')
 
-    // Standard A/B test (without CUPED)
-    println("Standard A/B Test:")
-    println("-".repeat(50))
-    result_standard := experiment.abtest(post_control, post_treatment, experiment.ABTestConfig{alpha: 0.05})
-    println("  Mean difference: ${result_standard.treatment_mean - result_standard.control_mean:.2f}")
-    println("  CI width: ${result_standard.ci_upper - result_standard.ci_lower:.2f}")
-    println("  p-value: ${result_standard.p_value:.4f}")
+    // Day 5: 2500 users per group
+    r5 := experiment.sprt_test(125, 2500, 160, 2500, cfg)
+    println('Day 5: LLR=${r5.log_likelihood_ratio:.3f}, decision=${r5.decision}')
 
-    // CUPED test (with pre-experiment covariate)
-    println("\nCUPED Test (variance reduced):")
-    println("-".repeat(50))
-    result_cuped := experiment.cuped_test(post_control, post_treatment, pre_control, pre_treatment, experiment.CUPEDConfig{alpha: 0.05})
-    println("  Mean difference: ${result_cuped.treatment_mean - result_cuped.control_mean:.2f}")
-    println("  CI width: ${result_cuped.ci_upper - result_cuped.ci_lower:.2f}")
-    println("  p-value: ${result_cuped.p_value:.4f}")
-    println("  Variance reduction: ${(result_cuped.variance_reduction * 100):.0f}%")
+    // Day 10: 5000 users per group — effect is clear
+    r10 := experiment.sprt_test(250, 5000, 340, 5000, cfg)
+    println('Day 10: LLR=${r10.log_likelihood_ratio:.3f}, decision=${r10.decision}')
 
-    println("\nCUPED Benefits:")
-    println("  - Narrower confidence intervals")
-    println("  - Smaller p-values for same effect")
-    println("  - Detect effects faster with smaller samples")
-
-    println("\nWhen CUPED Works Best:")
-    println("  - High correlation between pre and post data")
-    println("  - Stable baseline metrics")
-    println("  - Sufficient pre-experiment data")
+    match r10.decision {
+        .reject_null      { println('Significant — ship the treatment!') }
+        .accept_null      { println('Futile — effect is smaller than your MDE.') }
+        .continue_testing { println('Keep running.') }
+    }
+    // Note: boundaries are log((1-beta)/alpha) and log(beta/(1-alpha))
+    println('Upper boundary: ${r10.upper_boundary:.3f}')  // ~2.77
+    println('Lower boundary: ${r10.lower_boundary:.3f}')  // ~-1.56
 }</code></pre>
 
-<div class="interpretation">
-<strong>CUPED Best Practices:</strong>
-<ul>
-<li>Requires pre-experiment data for all users</li>
-<li>Most effective when pre/post correlation is high (>0.5)</li>
-<li>Use same metric for pre and post periods</li>
-<li>Can reduce required sample size by 30-50%</li>
-</ul>
-</div>
-</div>
-
-<div class="example-item">
-<h4>Propensity Score Matching: Observational Data Analysis</h4>
-<p>Analyze treatment effects when randomization isn't possible.</p>
-
+<h3>Workflow 4: Bayesian A/B Test</h3>
 <div class="business-context">
-<strong>Business Context:</strong> Can't randomize premium tier access - need to estimate its impact using observational data while controlling for confounders.
+<strong>Business Context:</strong> You have a smaller experiment (300 users per group) and want to make a decision even before reaching classical significance. The Bayesian approach gives you a direct probability that variant B is better.
 </div>
 
 <pre><code>import vstats.experiment
 
 fn main() {
-    // User features: [usage_frequency, account_age, support_tickets, feature_adoption]
-    // Treatment: 1 = premium user, 0 = free user
-    // Outcome: retention_rate
+    // 30 conversions / 300 users vs 48 conversions / 300 users
+    result := experiment.bayesian_ab_test(30, 300, 48, 300)
 
-    features := [
-        [15.0, 120.0, 2.0, 0.8], // User 1
-        [8.0, 60.0, 5.0, 0.4], // User 2
-        [20.0, 200.0, 1.0, 0.9], // User 3
-        [5.0, 30.0, 8.0, 0.2], // User 4
-        // ... more users
-    ]
+    println('A conversion rate (posterior mean): ${(result.posterior_mean_a * 100):.1f}%')
+    println('B conversion rate (posterior mean): ${(result.posterior_mean_b * 100):.1f}%')
+    println('')
+    println('P(B beats A):   ${(result.prob_b_beats_a * 100):.1f}%')
+    println('Expected loss (ship B): ${result.expected_loss_b:.5f}')
+    println('Expected loss (ship A): ${result.expected_loss_a:.5f}')
+    println('')
+    println('95% Credible Interval for A: [${result.ci_lower_a:.3f}, ${result.ci_upper_a:.3f}]')
+    println('95% Credible Interval for B: [${result.ci_lower_b:.3f}, ${result.ci_upper_b:.3f}]')
 
-    treatment := [1, 0, 1, 0] // Premium vs Free
-    outcome := [0.95, 0.65, 0.98, 0.55] // Retention rate
-
-    // STEP 1: Estimate propensity scores
-    println("STEP 1: Propensity Score Estimation")
-    println("-".repeat(50))
-
-    model := experiment.estimate_propensity_scores(features, treatment, experiment.PropensityConfig{})
-    println("Propensity scores estimated")
-    println("Model AUC: ${model.auc:.3f}")
-
-    // STEP 2: Match treated to control users
-    println("\nSTEP 2: Nearest Neighbor Matching")
-    println("-".repeat(50))
-
-    match_result := experiment.match_nearest_neighbor(model, experiment.MatchingConfig{
-        caliper: 0.2 // Max distance for matching
-        replacement: false // Each control matched once
-    })
-
-    println("Matched pairs: ${match_result.matched_pairs.len}")
-    println("Unmatched treated: ${match_result.unmatched_treated.len}")
-    println("Unmatched control: ${match_result.unmatched_control.len}")
-
-    // STEP 3: Check balance
-    println("\nSTEP 3: Balance Check")
-    println("-".repeat(50))
-
-    balance := experiment.check_balance(features, treatment, match_result)
-
-    println("Standardized Mean Differences (SMD):")
-    println("  Before matching:")
-    for i, smd in balance.smd_before {
-        println("    Feature ${i}: ${smd:.3f}")
-    }
-    println("  After matching:")
-    for i, smd in balance.smd_after {
-        status := if smd < 0.1 { "✓" } else { "⚠" }
-        println("    Feature ${i}: ${smd:.3f} ${status}")
-    }
-
-    // STEP 4: Estimate treatment effect
-    println("\nSTEP 4: Treatment Effect Estimation")
-    println("-".repeat(50))
-
-    ate := experiment.ate_matched(outcome, treatment, match_result)
-    println("Average Treatment Effect (ATE): ${ate.estimate:.3f}")
-    println("95% CI: [${ate.ci_lower:.3f}, ${ate.ci_upper:.3f}]")
-    println("p-value: ${ate.p_value:.4f}")
-
-    if ate.p_value < 0.05 {
-        println("\nConclusion: Premium tier has significant positive effect")
+    // Decision rule: ship B if expected_loss_b < threshold
+    threshold := 0.001
+    if result.expected_loss_b < threshold {
+        println('\nDecision: Ship B (expected loss ${result.expected_loss_b:.5f} < ${threshold})')
+    } else if result.expected_loss_a < threshold {
+        println('\nDecision: Keep A (expected loss of shipping B is too high)')
     } else {
-        println("\nConclusion: No significant effect detected")
+        println('\nDecision: Collect more data')
     }
+
+    // With an informative prior (you know the baseline is around 10%):
+    informed_cfg := experiment.BayesianConfig{ alpha_prior: 10.0, beta_prior: 90.0 }
+    informed := experiment.bayesian_ab_test(30, 300, 48, 300, informed_cfg)
+    println('\nWith informative prior: P(B beats A) = ${(informed.prob_b_beats_a * 100):.1f}%')
 }</code></pre>
-
-<div class="interpretation">
-<strong>PSM Assumptions & Limitations:</strong>
-<ul>
-<li><strong>Unconfoundedness:</strong> All confounders must be measured (big assumption)</li>
-<li><strong>Overlap:</strong> Treated and control must have similar propensity distributions</li>
-<li><strong>SMD < 0.1:</strong> Good balance after matching</li>
-<li>Cannot control for unobserved confounders</li>
-</ul>
-</div>
-</div>
-
-<div class="example-item">
-<h4>Difference-in-Differences: Policy Impact Analysis</h4>
-<p>Estimate causal effects when you have a treatment group and control group with pre/post data.</p>
-
-<div class="business-context">
-<strong>Business Context:</strong> Pricing change was rolled out in one region. Need to estimate the impact using other regions as control.
-</div>
-
-<pre><code>import vstats.experiment
-
-fn main() {
-    // Pre-treatment metrics
-    y_treat_pre := [100.0, 105.0, 102.0, 108.0, 103.0, 107.0]
-    y_ctrl_pre := [95.0, 98.0, 96.0, 99.0, 97.0, 100.0]
-
-    // Post-treatment metrics
-    y_treat_post := [120.0, 125.0, 122.0, 128.0, 123.0, 127.0]
-    y_ctrl_post := [98.0, 101.0, 99.0, 102.0, 100.0, 103.0]
-
-    // Run DiD analysis
-    println("Difference-in-Differences Analysis")
-    println("=".repeat(50))
-
-    result := experiment.did_2x2(y_treat_pre, y_treat_post, y_ctrl_pre, y_ctrl_post, experiment.DiDConfig{alpha: 0.05})
-
-    println("\nGroup Means:")
-    println("  Treatment group:")
-    println("    Pre: ${result.treat_mean_pre:.1f}")
-    println("    Post: ${result.treat_mean_post:.1f}")
-    println("    Change: ${result.treat_mean_post - result.treat_mean_pre:+.1f}")
-
-    println("\n  Control group:")
-    println("    Pre: ${result.ctrl_mean_pre:.1f}")
-    println("    Post: ${result.ctrl_mean_post:.1f}")
-    println("    Change: ${result.ctrl_mean_post - result.ctrl_mean_pre:+.1f}")
-
-    println("\nDiD Effect:")
-    println("  Effect: ${result.did_effect:.2f}")
-    println("  95% CI: [${result.ci_lower:.2f}, ${result.ci_upper:.2f}]")
-    println("  p-value: ${result.p_value:.4f}")
-
-    if result.p_value < 0.05 {
-        println("\n✓ Significant effect detected")
-    } else {
-        println("\n✗ No significant effect")
-    }
-
-    // Test parallel trends assumption
-    println("\n\nParallel Trends Test:")
-    println("-".repeat(50))
-
-    time_pre := [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
-    pt_result := experiment.test_parallel_trends(y_treat_pre, y_ctrl_pre, time_pre, experiment.ParallelTrendsConfig{})
-
-    println("  Slope difference: ${pt_result.slope_diff:.4f}")
-    println("  p-value: ${pt_result.p_value:.4f}")
-
-    if pt_result.p_value > 0.05 {
-        println("  ✓ Parallel trends assumption holds (p > 0.05)")
-    } else {
-        println("  ⚠ Parallel trends assumption may be violated")
-    }
-}</code></pre>
-
-<div class="interpretation">
-<strong>DiD Key Assumption:</strong>
-<ul>
-<li><strong>Parallel Trends:</strong> Without treatment, both groups would have followed the same trend</li>
-<li>Test with pre-period data if available</li>
-<li>Visual inspection of pre-trends is essential</li>
-<li>Violations lead to biased estimates</li>
-</ul>
-</div>
-</div>
 </section>
 
 <section class="example-category" id="case-studies">

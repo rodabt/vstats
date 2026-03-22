@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concepts - VStats</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="index.html" class="logo">VStats</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="concepts.html" class="active">Concepts</a></li>
+                    <li><a href="examples.html">Examples</a></li>
+                    <li><a href="api.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="content">
+            <h1>Core Concepts</h1>
+
+            <section class="concept">
+                <h2>Linear Algebra Basics</h2>
+                <p>Linear algebra provides the mathematical foundation for machine learning. Vectors represent points in n-dimensional space, while matrices represent linear transformations.</p>
+                
+                <h3>Vectors</h3>
+                <p>A vector is an ordered collection of numbers. Key operations include:</p>
+                <ul>
+                    <li><strong>Addition:</strong> Element-wise sum of two vectors</li>
+                    <li><strong>Dot Product:</strong> a dot b = sum of element-wise products</li>
+                    <li><strong>Magnitude:</strong> Length of vector (L2 norm)</li>
+                </ul>
+
+                <h3>Matrices</h3>
+                <p>A matrix is a 2D array with rows and columns. Key operations:</p>
+                <ul>
+                    <li><strong>Multiplication:</strong> Row-column dot products</li>
+                    <li><strong>Transpose:</strong> Swap rows and columns</li>
+                    <li><strong>Identity:</strong> Matrix that does nothing (1s on diagonal)</li>
+                </ul>
+            </section>
+
+            <section class="concept">
+                <h2>Statistics Fundamentals</h2>
+                
+                <h3>Descriptive Statistics</h3>
+                <ul>
+                    <li><strong>Mean:</strong> Arithmetic average of all values</li>
+                    <li><strong>Median:</strong> Middle value (50th percentile)</li>
+                    <li><strong>Variance:</strong> Average squared deviation from mean</li>
+                    <li><strong>Standard Deviation:</strong> Square root of variance</li>
+                </ul>
+
+                <h3>Hypothesis Testing</h3>
+                <p>Statistical tests determine if observed differences are significant:</p>
+                <ul>
+                    <li><strong>t-test:</strong> Compare means of two groups</li>
+                    <li><strong>ANOVA:</strong> Compare means of 3+ groups</li>
+                    <li><strong>p-value:</strong> Probability of observing results by chance</li>
+                </ul>
+            </section>
+
+            <section class="concept">
+                <h2>Machine Learning Essentials</h2>
+                
+                <h3>Supervised vs Unsupervised</h3>
+                <ul>
+                    <li><strong>Supervised:</strong> Learn from labeled data (regression, classification)</li>
+                    <li><strong>Unsupervised:</strong> Find patterns in unlabeled data (clustering)</li>
+                </ul>
+
+                <h3>Model Evaluation</h3>
+                <ul>
+                    <li><strong>MSE:</strong> Mean squared error (regression)</li>
+                    <li><strong>Accuracy:</strong> Correct predictions / Total</li>
+                    <li><strong>R squared:</strong> Proportion of variance explained</li>
+                </ul>
+            </section>
+
+            <section class="concept">
+                <h2>Growth Metrics Formulas</h2>
+                
+                <table>
+                    <tr><th>Metric</th><th>Formula</th></tr>
+                    <tr><td>ARPA</td><td>Revenue / Accounts</td></tr>
+                    <tr><td>CAC</td><td>Acquisition Spend / New Customers</td></tr>
+                    <tr><td>LTV</td><td>ARPU x Customer Lifespan</td></tr>
+                    <tr><td>Churn Rate</td><td>Customers Lost / Total Customers</td></tr>
+                    <tr><td>NRR</td><td>(MRR_end - Churn_MRR) / MRR_start</td></tr>
+                </table>
+            </section>
+            <section class="concept" id="experimentation">
+                <h2>Experimentation</h2>
+
+                <h3>Statistical Power and Sample Size</h3>
+                <p>Before running an experiment, you must decide how many observations you need. Four numbers determine this:</p>
+                <ul>
+                    <li><strong>Alpha (&alpha;):</strong> The false positive rate &mdash; how often you'll declare a winner when there's no real effect. Typically 0.05 (5%).</li>
+                    <li><strong>Power (1 - &beta;):</strong> The probability of detecting a real effect when one exists. Typically 0.80 (80%). Setting power too low means your experiment may end with no result even when the treatment works.</li>
+                    <li><strong>Minimum Detectable Effect (MDE):</strong> The smallest improvement worth detecting. A tighter MDE (detecting smaller changes) requires more data. Be honest about what effect size would change a business decision &mdash; don't chase tiny effects that aren't actionable.</li>
+                    <li><strong>Baseline variance:</strong> Higher variance in your metric means more noise, requiring more data to see signal. Use historical data to estimate this.</li>
+                </ul>
+                <p>The formula for continuous metrics: <code>n = 2 &times; ((z_&alpha;/2 + z_&beta;) &times; &sigma; / &Delta;)&sup2;</code> per group, where &sigma; is the standard deviation and &Delta; is the MDE.</p>
+
+                <h3>Frequentist vs. Bayesian</h3>
+                <p>Both are valid frameworks with different outputs:</p>
+                <ul>
+                    <li><strong>Frequentist (p-values):</strong> Answers "if there were no effect, how unlikely is this data?" You reject the null hypothesis when p &lt; &alpha;. The result is binary: significant or not. Does not give the probability that B is better.</li>
+                    <li><strong>Bayesian (posteriors):</strong> Answers "given this data, what is the probability that B beats A?" More intuitive for business decisions. Requires specifying a prior &mdash; use Beta(1,1) (uniform) when you have no prior knowledge.</li>
+                </ul>
+                <p>Bayesian is preferable when you need to communicate results to non-statisticians ("94% chance B is better"), when you want to incorporate prior knowledge, or when you need to make a decision before collecting enough data for a frequentist test.</p>
+
+                <h3>The Peeking Problem</h3>
+                <p>A common mistake: checking an experiment's p-value every day and stopping when it first crosses 0.05. This <em>inflates the false positive rate dramatically</em> &mdash; you may declare significance by chance, especially early in an experiment.</p>
+                <p>Two solutions:</p>
+                <ul>
+                    <li><strong>Sequential testing (SPRT):</strong> Uses Wald's likelihood ratio test with boundaries that account for repeated looks. You can check at any time; the false positive rate stays at &alpha;. Use <code>sprt_test</code>.</li>
+                    <li><strong>Pre-commit to a fixed end date:</strong> Calculate your sample size, run the experiment until you have it, then do one final test. Never look at results before the end.</li>
+                </ul>
+
+                <h3>Effect Sizes</h3>
+                <p>A p-value tells you whether an effect exists; effect size tells you how big it is. Always report both.</p>
+                <ul>
+                    <li><strong>Cohen's d:</strong> For continuous metrics. d = (mean_B - mean_A) / pooled_std. Small: 0.2, Medium: 0.5, Large: 0.8.</li>
+                    <li><strong>Absolute lift:</strong> For proportions. "The signup rate increased by 1.2 percentage points (from 5.0% to 6.2%)." Always prefer absolute over relative for communication.</li>
+                    <li><strong>Relative lift:</strong> Percentage change relative to control. "The signup rate increased 24% relative to control." Useful for comparing across metrics with different baselines, but can be misleading for small baselines.</li>
+                </ul>
+
+                <h3>Variance Reduction with CUPED</h3>
+                <p>CUPED (Controlled-experiment Using Pre-Experiment Data) exploits the correlation between a user's pre-experiment behavior and their in-experiment behavior. If last week's revenue predicts this week's revenue, you can "remove" that predictable component from both groups, reducing noise without introducing bias. A correlation of &rho; = 0.7 reduces required sample size by approximately 1 - &rho;&sup2; = 51%.</p>
+            </section>
+        </main>
+    </div>
+    <script src="js/script.js"></script>
+</body>
+</html>

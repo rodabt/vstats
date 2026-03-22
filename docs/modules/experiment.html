@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>experiment - VStats</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="../index.html" class="logo">VStats</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../concepts.html">Concepts</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../api.html">API Reference</a></li>
+                </ul>
+            </nav>
+            <div class="toc">
+                <h3>On This Page</h3>
+                <ul class="toc-list">
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#method-guide">Which Method?</a></li>
+                    <li><a href="#sample-size">Sample Size</a></li>
+                    <li><a href="#proportion-test">Proportion Test</a></li>
+                    <li><a href="#abtest">A/B Test (Continuous)</a></li>
+                    <li><a href="#sequential">Sequential Testing</a></li>
+                    <li><a href="#bayesian">Bayesian Test</a></li>
+                    <li><a href="#cuped">CUPED</a></li>
+                    <li><a href="#causal">Causal Inference</a></li>
+                </ul>
+            </div>
+        </aside>
+        <main class="content">
+            <header class="module-header">
+                <h1>experiment</h1>
+                <p class="module-description">A/B Testing, Causal Inference &amp; Experimentation</p>
+            </header>
+
+            <section id="overview">
+                <h2>Overview</h2>
+                <p>The <code>experiment</code> module provides tools for designing and analyzing controlled experiments. It covers the full lifecycle: calculating required sample size before launch, running statistical tests after the experiment, and applying variance reduction or causal inference methods.</p>
+                <p>Import with: <code>import vstats.experiment</code></p>
+            </section>
+
+            <section id="method-guide">
+                <h2>Which Method Should I Use?</h2>
+                <table>
+                    <tr>
+                        <th>Situation</th>
+                        <th>Function</th>
+                        <th>Why</th>
+                    </tr>
+                    <tr>
+                        <td>Planning: how many users do I need?</td>
+                        <td><a href="#sample-size"><code>sample_size_proportions</code> / <code>sample_size_means</code></a></td>
+                        <td>Always compute sample size <em>before</em> running your experiment</td>
+                    </tr>
+                    <tr>
+                        <td>Comparing click-through, signup, or purchase rates</td>
+                        <td><a href="#proportion-test"><code>proportion_test</code></a></td>
+                        <td>Binary outcomes need a z-test, not a t-test</td>
+                    </tr>
+                    <tr>
+                        <td>Comparing revenue, session length, or other continuous metrics</td>
+                        <td><a href="#abtest"><code>abtest</code></a></td>
+                        <td>Welch's t-test handles unequal variance between groups</td>
+                    </tr>
+                    <tr>
+                        <td>Need to check results early without inflating false positives</td>
+                        <td><a href="#sequential"><code>sprt_test</code></a></td>
+                        <td>SPRT gives statistically valid early-stopping decisions</td>
+                    </tr>
+                    <tr>
+                        <td>Want probability statements, not p-values</td>
+                        <td><a href="#bayesian"><code>bayesian_ab_test</code></a></td>
+                        <td>Bayesian inference gives "P(B beats A)" directly</td>
+                    </tr>
+                    <tr>
+                        <td>High-variance metric; want to reduce required sample size</td>
+                        <td><a href="#cuped"><code>cuped_test</code></a></td>
+                        <td>CUPED uses pre-experiment data to absorb variance</td>
+                    </tr>
+                    <tr>
+                        <td>Treatment was not randomly assigned; observational data</td>
+                        <td><a href="#causal">PSM / DiD</a></td>
+                        <td>Propensity matching and difference-in-differences adjust for confounders</td>
+                    </tr>
+                </table>
+            </section>
+
+            <section id="sample-size">
+                <h2>Sample Size Calculators</h2>
+                <p>Always calculate your required sample size <strong>before</strong> running an experiment. Starting with too few observations leads to underpowered tests that miss real effects.</p>
+
+                <div class="function-item">
+                    <h3 id="sample_size_proportions">
+                        <code>fn sample_size_proportions(baseline_rate f64, mde f64, alpha f64, power f64) SampleSizeResult</code>
+                    </h3>
+                    <p>Computes required observations per group for a binary metric (clicks, signups, purchases).</p>
+                    <table>
+                        <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+                        <tr><td><code>baseline_rate</code></td><td>f64</td><td>Your current conversion rate, e.g. <code>0.05</code> for 5%</td></tr>
+                        <tr><td><code>mde</code></td><td>f64</td><td>Minimum detectable effect as an <em>absolute</em> change, e.g. <code>0.01</code> to detect a 5% &rarr; 6% lift</td></tr>
+                        <tr><td><code>alpha</code></td><td>f64</td><td>Significance level. Use <code>0.05</code> for 95% confidence</td></tr>
+                        <tr><td><code>power</code></td><td>f64</td><td>Desired statistical power. Use <code>0.80</code> (80% chance of detecting a real effect)</td></tr>
+                    </table>
+                    <pre><code>result := experiment.sample_size_proportions(0.05, 0.01, 0.05, 0.80)
+println(result.n_per_group)  // ~8100 — needed per group
+println(result.total_n)      // ~16200 — total experiment size</code></pre>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="sample_size_means">
+                        <code>fn sample_size_means(baseline_mean f64, baseline_std f64, mde_absolute f64, alpha f64, power f64) SampleSizeResult</code>
+                    </h3>
+                    <p>Computes required observations per group for a continuous metric (revenue, latency, engagement).</p>
+                    <table>
+                        <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+                        <tr><td><code>baseline_mean</code></td><td>f64</td><td>Current average value</td></tr>
+                        <tr><td><code>baseline_std</code></td><td>f64</td><td>Current standard deviation (estimate from historical data)</td></tr>
+                        <tr><td><code>mde_absolute</code></td><td>f64</td><td>Absolute change in mean to detect, e.g. <code>5.0</code> to detect a $5 revenue lift</td></tr>
+                        <tr><td><code>alpha</code></td><td>f64</td><td>Significance level</td></tr>
+                        <tr><td><code>power</code></td><td>f64</td><td>Desired power</td></tr>
+                    </table>
+                    <pre><code>result := experiment.sample_size_means(45.0, 20.0, 3.0, 0.05, 0.80)
+println(result.n_per_group)  // observations per group
+println(result.effect_size)  // Cohen's d = mde / std</code></pre>
+                </div>
+
+                <div class="struct-item">
+                    <h3><code>struct SampleSizeResult</code></h3>
+                    <table>
+                        <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+                        <tr><td><code>n_per_group</code></td><td>int</td><td>Required observations per group (ceiling-rounded)</td></tr>
+                        <tr><td><code>total_n</code></td><td>int</td><td><code>n_per_group * 2</code></td></tr>
+                        <tr><td><code>alpha</code></td><td>f64</td><td>Significance level used</td></tr>
+                        <tr><td><code>power</code></td><td>f64</td><td>Power used</td></tr>
+                        <tr><td><code>mde</code></td><td>f64</td><td>MDE used</td></tr>
+                        <tr><td><code>baseline</code></td><td>f64</td><td>Baseline rate or mean used</td></tr>
+                        <tr><td><code>effect_size</code></td><td>f64</td><td>Implied effect size (Cohen's d for means; h-style for proportions)</td></tr>
+                        <tr><td><code>baseline_std</code></td><td>f64</td><td>Std dev used (means only; 0 for proportions)</td></tr>
+                        <tr><td><code>method</code></td><td>string</td><td><code>"proportions"</code> or <code>"means"</code></td></tr>
+                    </table>
+                </div>
+            </section>
+
+            <section id="proportion-test">
+                <h2>Proportion Test</h2>
+                <p>Use this when your outcome is binary: each user either converted or didn't. This is the correct test for click-through rates, signup rates, purchase rates, etc.</p>
+
+                <div class="function-item">
+                    <h3 id="proportion_test">
+                        <code>fn proportion_test(successes_a int, n_a int, successes_b int, n_b int, cfg ProportionTestConfig) ProportionTestResult</code>
+                    </h3>
+                    <p>Two-proportion z-test using a pooled standard error under H&#x2080;. The confidence interval uses the unpooled standard error.</p>
+                    <pre><code>// 30 conversions / 300 users vs 48 conversions / 300 users
+result := experiment.proportion_test(30, 300, 48, 300)
+println(result.rate_a)        // 0.10 (10%)
+println(result.rate_b)        // 0.16 (16%)
+println(result.relative_lift) // 0.60 (60% relative lift)
+println(result.p_value)       // e.g. 0.012
+println(result.significant)   // true
+println('${(result.diff * 100):.1f}% &plusmn; ${((result.ci_upper - result.ci_lower) / 2 * 100):.1f}pp')</code></pre>
+                </div>
+
+                <div class="struct-item">
+                    <h3><code>struct ProportionTestResult</code></h3>
+                    <table>
+                        <tr><th>Field</th><th>Description</th></tr>
+                        <tr><td><code>rate_a / rate_b</code></td><td>Observed conversion rates</td></tr>
+                        <tr><td><code>diff</code></td><td><code>rate_b - rate_a</code> (absolute difference)</td></tr>
+                        <tr><td><code>relative_lift</code></td><td><code>diff / rate_a</code></td></tr>
+                        <tr><td><code>z_statistic</code></td><td>Test statistic (pooled SE)</td></tr>
+                        <tr><td><code>p_value</code></td><td>Two-tailed p-value</td></tr>
+                        <tr><td><code>significant</code></td><td>Whether <code>p_value &lt; alpha</code></td></tr>
+                        <tr><td><code>ci_lower / ci_upper</code></td><td>Confidence interval on the difference (unpooled SE)</td></tr>
+                        <tr><td><code>pooled_se</code></td><td>Standard error under H&#x2080; (used for z-statistic)</td></tr>
+                        <tr><td><code>n_a / n_b</code></td><td>Group sizes</td></tr>
+                    </table>
+                </div>
+            </section>
+
+            <section id="abtest">
+                <h2>A/B Test &mdash; Continuous Metrics</h2>
+                <div class="function-item">
+                    <h3 id="abtest_fn">
+                        <code>fn abtest(control []f64, treatment []f64, cfg ABTestConfig) ABTestResult</code>
+                    </h3>
+                    <p>Welch's t-test for continuous metrics. Handles unequal variances and unequal group sizes. Returns Cohen's d effect size, confidence interval on the mean difference, and relative lift.</p>
+                    <pre><code>control   := [45.2, 43.1, 47.8, 44.3, 46.0]  // revenue per user
+treatment := [48.1, 50.3, 47.9, 51.2, 49.5]
+result := experiment.abtest(control, treatment)
+println(result.p_value)      // e.g. 0.031
+println(result.relative_lift) // e.g. 0.092 (9.2% lift)
+println(result.ci_lower)     // lower bound of CI on difference</code></pre>
+                    <p><strong>ABTestConfig fields:</strong> <code>alpha f64 = 0.05</code></p>
+                </div>
+            </section>
+
+            <section id="sequential">
+                <h2>Sequential Testing (SPRT)</h2>
+                <p>The SPRT lets you check experiment results at any point without inflating the false positive rate. Call it repeatedly with cumulative totals as data comes in.</p>
+
+                <div class="function-item">
+                    <h3 id="sprt_test">
+                        <code>fn sprt_test(successes_a int, n_a int, successes_b int, n_b int, cfg SPRTConfig) SPRTResult</code>
+                    </h3>
+                    <p>Stateless function &mdash; pass cumulative totals each time. Stop the experiment when <code>decision</code> is not <code>.continue_testing</code>.</p>
+                    <pre><code>cfg := experiment.SPRTConfig{ alpha: 0.05, beta: 0.20, mde: 0.02 }
+
+// Check on day 3 (cumulative totals so far)
+r := experiment.sprt_test(120, 2400, 145, 2400, cfg)
+if r.decision == .reject_null {
+    println('Significant! Stop the experiment.')
+} else if r.decision == .accept_null {
+    println('Futile. The effect is smaller than your MDE.')
+} else {
+    println('Keep collecting data.')
+}</code></pre>
+                </div>
+
+                <div class="struct-item">
+                    <h3><code>struct SPRTConfig</code></h3>
+                    <p>Not a <code>@[params]</code> struct &mdash; you must construct it explicitly because <code>mde</code> has no sensible default.</p>
+                    <table>
+                        <tr><th>Field</th><th>Default</th><th>Description</th></tr>
+                        <tr><td><code>alpha</code></td><td>0.05</td><td>Max acceptable false positive rate</td></tr>
+                        <tr><td><code>beta</code></td><td>0.20</td><td>Max acceptable false negative rate (1 - power)</td></tr>
+                        <tr><td><code>mde</code></td><td><em>required</em></td><td>Minimum detectable effect (absolute rate difference)</td></tr>
+                    </table>
+                </div>
+
+                <div class="struct-item">
+                    <h3><code>enum SPRTDecision</code></h3>
+                    <table>
+                        <tr><th>Value</th><th>Meaning</th></tr>
+                        <tr><td><code>.continue_testing</code></td><td>Not enough evidence yet &mdash; keep running</td></tr>
+                        <tr><td><code>.reject_null</code></td><td>Significant effect detected &mdash; safe to stop</td></tr>
+                        <tr><td><code>.accept_null</code></td><td>Effect is below MDE &mdash; futile to continue</td></tr>
+                    </table>
+                </div>
+            </section>
+
+            <section id="bayesian">
+                <h2>Bayesian A/B Test</h2>
+                <p>Instead of a p-value, Bayesian testing gives you direct probability statements: "there is a 94% chance that B is better than A." Uses the Beta-Binomial conjugate model with configurable priors.</p>
+
+                <div class="function-item">
+                    <h3 id="bayesian_ab_test">
+                        <code>fn bayesian_ab_test(successes_a int, n_a int, successes_b int, n_b int, cfg BayesianConfig) BayesianResult</code>
+                    </h3>
+                    <pre><code>result := experiment.bayesian_ab_test(30, 300, 48, 300)
+println('P(B beats A): ${(result.prob_b_beats_a * 100):.1f}%')
+println('Expected loss if we ship B: ${result.expected_loss_b:.4f}')
+println('A credible interval: [${result.ci_lower_a:.3f}, ${result.ci_upper_a:.3f}]')
+println('B credible interval: [${result.ci_lower_b:.3f}, ${result.ci_upper_b:.3f}]')</code></pre>
+                    <p><strong>Interpreting expected loss:</strong> <code>expected_loss_b</code> is the average rate you "give up" by shipping B if A was actually better. A decision rule: ship B if <code>expected_loss_b &lt; threshold</code> (e.g. 0.001).</p>
+                </div>
+
+                <div class="struct-item">
+                    <h3><code>struct BayesianConfig</code> (optional, <code>@[params]</code>)</h3>
+                    <table>
+                        <tr><th>Field</th><th>Default</th><th>Description</th></tr>
+                        <tr><td><code>alpha_prior</code></td><td>1.0</td><td>Beta prior shape &mdash; set higher to encode prior knowledge of the success rate</td></tr>
+                        <tr><td><code>beta_prior</code></td><td>1.0</td><td>Beta prior shape &mdash; Beta(1,1) is the uniform (non-informative) prior</td></tr>
+                        <tr><td><code>n_samples</code></td><td>10000</td><td>Monte Carlo samples &mdash; increase for more precise estimates</td></tr>
+                    </table>
+                </div>
+            </section>
+
+            <section id="cuped">
+                <h2>CUPED &mdash; Variance Reduction</h2>
+                <div class="function-item">
+                    <h3 id="cuped_test">
+                        <code>fn cuped_test(y_ctrl []f64, y_treat []f64, pre_ctrl []f64, pre_treat []f64, cfg ABTestConfig) CUPEDResult</code>
+                    </h3>
+                    <p>CUPED (Controlled-experiment Using Pre-Experiment Data) reduces variance by adjusting outcomes using a correlated pre-experiment covariate. A strong correlation (e.g. last week's revenue predicts this week's revenue) can cut required sample size by 50% or more.</p>
+                    <p>Pass the same pre-experiment metric as <code>pre_ctrl</code> / <code>pre_treat</code> (e.g. revenue in the week before the experiment). The function estimates the adjustment coefficient <code>theta</code> and runs the A/B test on adjusted values.</p>
+                    <pre><code>result := experiment.cuped_test(y_control, y_treatment, pre_control, pre_treatment)
+println('Variance reduced by: ${(result.variance_reduction * 100):.1f}%')
+println('Adjusted p-value: ${result.adjusted_result.p_value:.4f}')</code></pre>
+                </div>
+            </section>
+
+            <section id="causal">
+                <h2>Causal Inference</h2>
+                <p>Use these when treatment was <em>not</em> randomly assigned (observational data).</p>
+
+                <div class="function-item">
+                    <h3>Propensity Score Matching (PSM)</h3>
+                    <p>Matches treated and control units on the probability of receiving treatment, controlling for selection bias.</p>
+                    <pre><code>ps_model := experiment.estimate_propensity_scores(x_covariates, treatment)
+matching := experiment.match_nearest_neighbor(ps_model)
+balance  := experiment.check_balance(x_covariates, treatment, matching)
+ate      := experiment.ate_matched(y_outcomes, treatment, matching)</code></pre>
+                </div>
+
+                <div class="function-item">
+                    <h3>Difference-in-Differences (DiD)</h3>
+                    <p>Estimates causal effects using pre/post data across treated and control groups, assuming parallel pre-period trends.</p>
+                    <pre><code>// Simple 2x2 DiD
+result := experiment.did_2x2(y_treat_pre, y_treat_post, y_ctrl_pre, y_ctrl_post)
+println('DiD effect: ${result.did_effect:.4f}')
+
+// Test whether parallel trends assumption holds
+pt := experiment.test_parallel_trends(y_treated_pre, y_control_pre, time_pre)
+println('Parallel trends hold: ${pt.parallel_trends_hold}')</code></pre>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="../js/script.js"></script>
+</body>
+</html>
