@@ -31,13 +31,13 @@ fn test__proportion_test_not_significant() {
 }
 
 fn test__proportion_test_ci_width_scales_with_alpha() {
-	// Tighter alpha => wider CI
-	narrow := experiment.proportion_test(30, 300, 48, 300, experiment.ProportionTestConfig{ alpha: 0.10 })
-	wide := experiment.proportion_test(30, 300, 48, 300, experiment.ProportionTestConfig{ alpha: 0.01 })
+	// Lower alpha => wider CI (more confidence requires wider interval)
+	high_alpha := experiment.proportion_test(30, 300, 48, 300, experiment.ProportionTestConfig{ alpha: 0.10 })
+	low_alpha  := experiment.proportion_test(30, 300, 48, 300, experiment.ProportionTestConfig{ alpha: 0.01 })
 
-	narrow_width := narrow.ci_upper - narrow.ci_lower
-	wide_width := wide.ci_upper - wide.ci_lower
-	assert wide_width > narrow_width
+	high_alpha_width := high_alpha.ci_upper - high_alpha.ci_lower
+	low_alpha_width  := low_alpha.ci_upper - low_alpha.ci_lower
+	assert low_alpha_width > high_alpha_width
 }
 
 fn test__proportion_test_relative_lift() {
@@ -52,4 +52,13 @@ fn test__proportion_test_echoes_n() {
 
 	assert result.n_a == 300
 	assert result.n_b == 500
+}
+
+fn test__proportion_test_zero_baseline_lift() {
+	// rate_a = 0 => relative_lift should be 0.0 (not infinity)
+	result := experiment.proportion_test(0, 500, 10, 500)
+
+	assert result.rate_a == 0.0
+	assert result.relative_lift == 0.0
+	assert result.diff > 0.0
 }
