@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>stats - VStats</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="../index.html" class="logo"><span>V</span>Stats</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../concepts.html">Concepts</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                </ul>
+                <span class="nav-section-label">Modules</span>
+                <ul class="nav-list">
+                    <li><a href="../modules/linalg.html">linalg</a></li>
+                    <li><a href="../modules/stats.html" class="active">stats</a></li>
+                    <li><a href="../modules/prob.html">prob</a></li>
+                    <li><a href="../modules/hypothesis.html">hypothesis</a></li>
+                    <li><a href="../modules/optim.html">optim</a></li>
+                    <li><a href="../modules/ml.html">ml</a></li>
+                    <li><a href="../modules/nn.html">nn</a></li>
+                    <li><a href="../modules/experiment.html">experiment</a></li>
+                    <li><a href="../modules/growth.html">growth</a></li>
+                    <li><a href="../modules/utils.html">utils</a></li>
+                </ul>
+                <div class="toc">
+                    <h3>On this page</h3>
+                    <ul class="toc-list">
+                        <li><a href="#sum">sum</a></li>
+                        <li><a href="#mean">mean</a></li>
+                        <li><a href="#median">median</a></li>
+                        <li><a href="#quantile">quantile</a></li>
+                        <li><a href="#mode">mode</a></li>
+                        <li><a href="#range">range</a></li>
+                        <li><a href="#dev_mean">dev_mean</a></li>
+                        <li><a href="#variance">variance</a></li>
+                        <li><a href="#standard_deviation">standard_deviation</a></li>
+                        <li><a href="#interquartile_range">interquartile_range</a></li>
+                        <li><a href="#covariance">covariance</a></li>
+                        <li><a href="#correlation">correlation</a></li>
+                        <li><a href="#anova_one_way">anova_one_way</a></li>
+                        <li><a href="#confidence_interval_mean">confidence_interval_mean</a></li>
+                        <li><a href="#cohens_d">cohens_d</a></li>
+                        <li><a href="#cramers_v">cramers_v</a></li>
+                        <li><a href="#skewness">skewness</a></li>
+                        <li><a href="#kurtosis">kurtosis</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+        <main class="content">
+            <header class="module-header">
+                <h1>stats</h1>
+                <p class="module-description">Descriptive Statistics — measures of central tendency, dispersion, shape, and association</p>
+            </header>
+
+            <section class="theory">
+                <h2>Overview</h2>
+                <div class="theory-content">import vstats.stats
+
+// Central tendency
+m  := stats.mean(data)               // arithmetic mean (generic, returns f64)
+med := stats.median(data)            // 50th percentile (requires []f64)
+q75 := stats.quantile(data, 0.75)    // arbitrary percentile
+
+// Dispersion
+v   := stats.variance(data)          // sample variance (÷ n-1)
+sd  := stats.standard_deviation(data)
+iqr := stats.interquartile_range(data)
+
+// Association
+cov  := stats.covariance(x, y)
+r    := stats.correlation(x, y)      // Pearson r in [-1, 1]
+
+// Group comparison
+f, p := stats.anova_one_way(groups)  // (F_statistic, p_value)
+lo, hi := stats.confidence_interval_mean(data, 0.95)
+
+// Effect size
+d := stats.cohens_d(group1, group2)
+v := stats.cramers_v(contingency_table)</div>
+                <p style="margin-top:1rem">All functions that accept generic numeric slices (<code>[]T</code>) return <code>f64</code> for aggregations, or the same type <code>T</code> for reductions. Functions operating on order statistics (<code>median</code>, <code>quantile</code>, <code>mode</code>, <code>interquartile_range</code>) require <code>[]f64</code> because they sort or hash the input.</p>
+            </section>
+
+            <section class="functions">
+                <h2>API Reference</h2>
+                <div class="function-list">
+
+                    <div class="function-item">
+                        <h3 id="sum">
+                            <code>fn sum[T](x []T) T</code>
+                        </h3>
+                        <p>Returns the sum of all elements in the slice. The result has the same type as the input elements.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]T</code></td><td>Input slice of numeric values</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>T</code> — the total sum of all elements.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="mean">
+                            <code>fn mean[T](x []T) f64</code>
+                        </h3>
+                        <p>Computes the arithmetic mean of the slice: sum(x) / len(x). Accepts any numeric type and always returns <code>f64</code>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]T</code></td><td>Input slice of numeric values</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — the arithmetic mean.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="median">
+                            <code>fn median(x []f64) f64</code>
+                        </h3>
+                        <p>Returns the 50th percentile of the data. Sorts a copy of the input so the original is not modified. For an even-length slice, returns the average of the two middle values.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]f64</code></td><td>Input values (a copy is sorted internally)</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — the median value.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="quantile">
+                            <code>fn quantile(x []f64, p f64) f64</code>
+                        </h3>
+                        <p>Returns the value below which a proportion <code>p</code> of the data falls, using linear interpolation between adjacent order statistics.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]f64</code></td><td>Input values</td></tr>
+                                <tr><td><code>p</code></td><td><code>f64</code></td><td>Probability in [0.0, 1.0]; e.g. <code>0.25</code> for Q1, <code>0.75</code> for Q3</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — the value at the given quantile.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="mode">
+                            <code>fn mode(x []f64) []f64</code>
+                        </h3>
+                        <p>Returns all values that appear most frequently in the slice. A slice is returned because data may be multimodal (multiple values sharing the highest frequency).</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]f64</code></td><td>Input values</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]f64</code> — slice of modal values (length 1 for unimodal data, more for multimodal).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="range">
+                            <code>fn range[T](x []T) T</code>
+                        </h3>
+                        <p>Returns the range of the data: max(x) - min(x). Measures the total spread of the dataset.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]T</code></td><td>Input slice of numeric values</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>T</code> — the difference between the maximum and minimum values.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="dev_mean">
+                            <code>fn dev_mean[T](x []T) []f64</code>
+                        </h3>
+                        <p>Returns the deviation of each element from the mean: <code>x[i] - mean(x)</code> for all i. Useful as a building block for variance, skewness, and standardization.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]T</code></td><td>Input slice of numeric values</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]f64</code> — slice of mean-centered deviations, same length as <code>x</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="variance">
+                            <code>fn variance[T](x []T) f64</code>
+                        </h3>
+                        <p>Computes the sample variance using Bessel's correction (divides by n-1, not n). Use this when <code>x</code> is a sample drawn from a larger population; it produces an unbiased estimate of the population variance.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]T</code></td><td>Sample observations</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — sample variance: sum((x[i] - mean)²) / (n - 1).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="standard_deviation">
+                            <code>fn standard_deviation[T](x []T) f64</code>
+                        </h3>
+                        <p>Computes the sample standard deviation: the square root of the sample variance. Expressed in the same units as the original data.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]T</code></td><td>Sample observations</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — sample standard deviation: sqrt(variance(x)).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="interquartile_range">
+                            <code>fn interquartile_range(x []f64) f64</code>
+                        </h3>
+                        <p>Returns the interquartile range: Q3 - Q1, i.e. the spread of the middle 50% of the data. More robust to outliers than the full range.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]f64</code></td><td>Input values</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — the difference between the 75th and 25th percentiles.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="covariance">
+                            <code>fn covariance[T](x []T, y []T) f64</code>
+                        </h3>
+                        <p>Computes the sample covariance between two variables. A positive value indicates that x and y tend to move together; negative indicates they move in opposite directions. Magnitude depends on the scale of the variables.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]T</code></td><td>First variable; must be the same length as <code>y</code></td></tr>
+                                <tr><td><code>y</code></td><td><code>[]T</code></td><td>Second variable; must be the same length as <code>x</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — sample covariance: sum((x[i]-mean_x)(y[i]-mean_y)) / (n-1).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="correlation">
+                            <code>fn correlation[T](x []T, y []T) f64</code>
+                        </h3>
+                        <p>Computes the Pearson correlation coefficient: a scale-free measure of linear association between two variables. Values range from -1 (perfect negative linear relationship) through 0 (no linear relationship) to +1 (perfect positive linear relationship).</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]T</code></td><td>First variable</td></tr>
+                                <tr><td><code>y</code></td><td><code>[]T</code></td><td>Second variable; must be the same length as <code>x</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — Pearson r in [-1, 1]: covariance(x, y) / (std(x) * std(y)).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="anova_one_way">
+                            <code>fn anova_one_way[T](groups [][]T) (f64, f64)</code>
+                        </h3>
+                        <p>One-way analysis of variance (ANOVA) F-test. Tests whether the means of three or more groups are equal. The null hypothesis is that all group means are identical; a small p-value suggests at least one group mean differs from the others.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>groups</code></td><td><code>[][]T</code></td><td>Slice of groups, each group being a slice of observations; groups may have different sizes</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(f64, f64)</code> — <code>(F_statistic, p_value)</code>. The p-value is computed under the F-distribution with <code>(k-1, N-k)</code> degrees of freedom, where k is the number of groups and N is the total number of observations.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="confidence_interval_mean">
+                            <code>fn confidence_interval_mean[T](x []T, confidence_level f64) (f64, f64)</code>
+                        </h3>
+                        <p>Computes a confidence interval for the population mean using the normal approximation. For small samples (n &lt; 30) consider using the t-distribution instead; this function uses the z critical value.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]T</code></td><td>Sample observations</td></tr>
+                                <tr><td><code>confidence_level</code></td><td><code>f64</code></td><td>Desired confidence level in (0, 1); e.g. <code>0.95</code> for a 95% CI</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(f64, f64)</code> — <code>(lower_bound, upper_bound)</code> of the confidence interval for the mean.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="cohens_d">
+                            <code>fn cohens_d[T](group1 []T, group2 []T) f64</code>
+                        </h3>
+                        <p>Computes Cohen's d, a standardized effect size measuring the difference between two group means in units of the pooled standard deviation. Conventional thresholds: small |d| ≈ 0.2, medium ≈ 0.5, large ≈ 0.8.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>group1</code></td><td><code>[]T</code></td><td>First group of observations</td></tr>
+                                <tr><td><code>group2</code></td><td><code>[]T</code></td><td>Second group of observations</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — (mean(group1) - mean(group2)) / pooled_std, where pooled_std = sqrt((var1*(n1-1) + var2*(n2-1)) / (n1+n2-2)).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="cramers_v">
+                            <code>fn cramers_v(contingency [][]int) f64</code>
+                        </h3>
+                        <p>Computes Cramer's V, an effect size for the chi-squared test of independence on a contingency table. Unlike the raw chi-squared statistic, Cramer's V is bounded in [0, 1] and does not grow with sample size, making it suitable for comparing effect sizes across studies.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>contingency</code></td><td><code>[][]int</code></td><td>Observed frequency table; rows and columns represent categories of two categorical variables</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — Cramer's V in [0, 1]; 0 = no association, 1 = perfect association.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="skewness">
+                            <code>fn skewness[T](x []T) f64</code>
+                        </h3>
+                        <p>Computes the third standardized moment of the distribution. Skewness measures the asymmetry of the distribution around its mean. A symmetric distribution has skewness close to 0.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]T</code></td><td>Sample observations</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — third standardized moment. Positive values indicate a longer right tail; negative values indicate a longer left tail.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="kurtosis">
+                            <code>fn kurtosis[T](x []T) f64</code>
+                        </h3>
+                        <p>Computes the fourth standardized moment of the distribution. Kurtosis measures the heaviness of the tails relative to a normal distribution. A normal distribution has kurtosis of 3 (excess kurtosis = 0).</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]T</code></td><td>Sample observations</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — kurtosis (not excess kurtosis). Subtract 3 to get excess kurtosis relative to a normal distribution. Values above 3 indicate heavier tails (leptokurtic); below 3 indicate lighter tails (platykurtic).</p>
+                    </div>
+
+                </div>
+            </section>
+
+            <section class="examples">
+                <h2>Examples</h2>
+                <div class="examples-list">
+
+                    <div class="example-block">
+                        <h3>Descriptive statistics on a sample</h3>
+                        <pre><code>import vstats.stats
+
+fn main() {
+    data := [2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0]
+
+    println("n        = ${data.len}")
+    println("mean     = ${stats.mean(data):.4f}")
+    println("median   = ${stats.median(data):.4f}")
+    println("mode     = ${stats.mode(data)}")
+    println("variance = ${stats.variance(data):.4f}")
+    println("std dev  = ${stats.standard_deviation(data):.4f}")
+    println("range    = ${stats.range(data):.4f}")
+    println("IQR      = ${stats.interquartile_range(data):.4f}")
+    println("skewness = ${stats.skewness(data):.4f}")
+    println("kurtosis = ${stats.kurtosis(data):.4f}")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>n        = 8
+mean     = 5.0000
+median   = 4.5000
+mode     = [4.0]
+variance = 4.0000
+std dev  = 2.0000
+range    = 7.0000
+IQR      = 2.5000
+skewness = 1.1302
+kurtosis = 3.5000</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Correlation analysis and confidence interval</h3>
+                        <pre><code>import vstats.stats
+
+fn main() {
+    x := [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+    y := [2.1, 3.9, 6.2, 7.8, 10.1, 12.0, 13.9, 16.2]
+
+    println("covariance   = ${stats.covariance(x, y):.4f}")
+    println("correlation  = ${stats.correlation(x, y):.4f}")
+
+    lo, hi := stats.confidence_interval_mean(x, 0.95)
+    println("95%% CI mean = [${lo:.3f}, ${hi:.3f}]")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>covariance   = 10.5143
+correlation  = 0.9997
+95% CI mean = [3.098, 6.902]</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Group comparison: ANOVA and effect size</h3>
+                        <pre><code>import vstats.stats
+
+fn main() {
+    control   := [12.0, 14.0, 11.0, 13.0, 12.5]
+    treatment := [16.0, 18.0, 17.0, 15.5, 17.5]
+    placebo   := [12.0, 13.0, 11.5, 12.0, 14.0]
+
+    f, p := stats.anova_one_way([control, treatment, placebo])
+    println("ANOVA: F = ${f:.4f},  p = ${p:.4f}")
+
+    d := stats.cohens_d(treatment, control)
+    println("Cohen's d (treatment vs control) = ${d:.4f}")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>ANOVA: F = 22.3684,  p = 0.0001
+Cohen's d (treatment vs control) = 3.2026</pre>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="../js/script.js"></script>
+</body>
+</html>

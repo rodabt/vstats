@@ -39,6 +39,18 @@ fn test__power_analysis() {
 	assert result.effect_size == 0.5
 }
 
+fn test__proportion_power_analysis() {
+	// p_baseline=0.10, p_treatment=0.15, alpha=0.05, power=0.80 => n ~= 686
+	result := experiment.proportion_power_analysis(0.10, 0.15, 0.05, 0.80)
+
+	assert math.abs(result.n_per_group - 686) <= 5
+	assert result.power == 0.80
+	assert result.alpha == 0.05
+	assert result.p_baseline == 0.10
+	assert result.p_treatment == 0.15
+	assert math.abs(result.mde - 0.05) < 1e-10
+}
+
 fn test__cuped_reduces_variance() {
 	// Create data where pre-period correlates strongly with post-period
 	pre_ctrl := [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]

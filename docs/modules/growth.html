@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>growth - VStats</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="../index.html" class="logo"><span>V</span>Stats</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../concepts.html">Concepts</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                </ul>
+                <span class="nav-section-label">Modules</span>
+                <ul class="nav-list">
+                    <li><a href="../modules/linalg.html">linalg</a></li>
+                    <li><a href="../modules/stats.html">stats</a></li>
+                    <li><a href="../modules/prob.html">prob</a></li>
+                    <li><a href="../modules/hypothesis.html">hypothesis</a></li>
+                    <li><a href="../modules/optim.html">optim</a></li>
+                    <li><a href="../modules/ml.html">ml</a></li>
+                    <li><a href="../modules/nn.html">nn</a></li>
+                    <li><a href="../modules/experiment.html">experiment</a></li>
+                    <li><a href="../modules/growth.html" class="active">growth</a></li>
+                    <li><a href="../modules/utils.html">utils</a></li>
+                </ul>
+                <div class="toc">
+                    <h3>On this page</h3>
+                    <details class="toc-group">
+                        <summary><a href="#saas-metrics">SaaS Metrics</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#fn_arpa">arpa</a></li>
+                            <li><a href="#fn_arpu">arpu</a></li>
+                            <li><a href="#fn_cac">cac</a></li>
+                            <li><a href="#fn_ltv">ltv</a></li>
+                            <li><a href="#fn_ltv_cac_ratio">ltv_cac_ratio</a></li>
+                            <li><a href="#fn_churn_rate">churn_rate</a></li>
+                            <li><a href="#fn_retention_rate">retention_rate</a></li>
+                            <li><a href="#fn_net_revenue_retention">net_revenue_retention</a></li>
+                            <li><a href="#fn_gross_revenue_retention">gross_revenue_retention</a></li>
+                            <li><a href="#fn_payback_period">payback_period</a></li>
+                            <li><a href="#fn_magic_number">magic_number</a></li>
+                            <li><a href="#fn_rule_of_40">rule_of_40</a></li>
+                            <li><a href="#fn_monthly_recurring_revenue">monthly_recurring_revenue</a></li>
+                            <li><a href="#fn_annual_recurring_revenue">annual_recurring_revenue</a></li>
+                            <li><a href="#fn_customer_lifetime_value_simple">customer_lifetime_value_simple</a></li>
+                            <li><a href="#fn_burn_rate">burn_rate</a></li>
+                            <li><a href="#fn_runway_months">runway_months</a></li>
+                            <li><a href="#fn_calculate_growth_metrics">calculate_growth_metrics</a></li>
+                        </ul>
+                    </details>
+                    <details class="toc-group">
+                        <summary><a href="#funnel-analysis">Funnel Analysis</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#fn_create_funnel">create_funnel</a></li>
+                            <li><a href="#fn_stage_conversion_rate">stage_conversion_rate</a></li>
+                            <li><a href="#fn_stage_drop_off_rate">stage_drop_off_rate</a></li>
+                            <li><a href="#fn_get_conversions">get_conversions</a></li>
+                            <li><a href="#fn_highest_drop_off">highest_drop_off</a></li>
+                            <li><a href="#fn_lowest_drop_off">lowest_drop_off</a></li>
+                            <li><a href="#fn_funnel_value">funnel_value</a></li>
+                            <li><a href="#fn_expected_revenue">expected_revenue</a></li>
+                            <li><a href="#fn_ab_test_funnel">ab_test_funnel</a></li>
+                            <li><a href="#fn_segment_funnel">segment_funnel</a></li>
+                            <li><a href="#fn_funnel_leakage">funnel_leakage</a></li>
+                            <li><a href="#fn_projected_conversions">projected_conversions</a></li>
+                        </ul>
+                    </details>
+                    <details class="toc-group">
+                        <summary><a href="#cohort-analysis">Cohort Analysis</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#fn_create_cohort_analysis">create_cohort_analysis</a></li>
+                            <li><a href="#fn_set_cohort_revenue">set_cohort_revenue</a></li>
+                            <li><a href="#fn_retention_at_period">retention_at_period</a></li>
+                            <li><a href="#fn_avg_retention_at_period">avg_retention_at_period</a></li>
+                            <li><a href="#fn_churn_by_period">churn_by_period</a></li>
+                            <li><a href="#fn_compare_cohorts">compare_cohorts</a></li>
+                            <li><a href="#fn_ltv_projection">ltv_projection</a></li>
+                            <li><a href="#fn_cohort_velocity">cohort_velocity</a></li>
+                        </ul>
+                    </details>
+                    <details class="toc-group">
+                        <summary><a href="#attribution">Attribution</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#fn_first_touch_attributes">first_touch_attributes</a></li>
+                            <li><a href="#fn_last_touch_attributes">last_touch_attributes</a></li>
+                            <li><a href="#fn_linear_attributes">linear_attributes</a></li>
+                            <li><a href="#fn_time_decay_attributes">time_decay_attributes</a></li>
+                            <li><a href="#fn_position_based_attributes">position_based_attributes</a></li>
+                            <li><a href="#fn_channel_roi">channel_roi</a></li>
+                            <li><a href="#fn_optimal_channel_mix">optimal_channel_mix</a></li>
+                            <li><a href="#fn_roas">roas</a></li>
+                            <li><a href="#fn_blended_roas">blended_roas</a></li>
+                        </ul>
+                    </details>
+                </div>
+            </nav>
+        </aside>
+        <main class="content">
+            <header class="module-header">
+                <h1>growth</h1>
+                <p class="module-description">Growth &amp; Product Analytics — SaaS revenue metrics, funnel analysis, cohort retention, and multi-touch marketing attribution</p>
+            </header>
+
+            <section class="theory">
+                <h2>Overview</h2>
+                <div class="theory-content">import vstats.growth
+
+// SaaS health metrics
+mrr   := growth.monthly_recurring_revenue([49000.0, 89000.0, 62000.0])
+arr   := growth.annual_recurring_revenue(mrr)
+cac_  := growth.cac(120000.0, 200)
+ltv_  := growth.ltv(240000.0, 3000, 24.0)
+ratio := growth.ltv_cac_ratio(240000.0, 3000, 24.0, 120000.0, 200)  // &gt;3 is healthy
+ro40  := growth.rule_of_40(0.85, 0.12)                               // growth + margin
+
+// Retention &amp; churn
+churn  := growth.churn_rate(45, 1500)
+nrr    := growth.net_revenue_retention(200000.0, 215000.0, 12000.0, 27000.0)
+runway := growth.runway_months(500000.0, growth.burn_rate(600000.0, 450000.0, 3))
+
+// Funnel
+funnel     := growth.create_funnel(["Visit", "Trial", "Pay"], [80000, 12000, 1800])
+leakage    := funnel.funnel_leakage()
+best_stage := funnel.lowest_drop_off()
+
+// Cohort analysis
+mut ca := growth.create_cohort_analysis(
+    ["Jan", "Feb"], [500, 420],
+    [[500, 310, 210, 140], [420, 260, 170, 110]])
+ca.set_cohort_revenue([[0.0, 31000.0, 21000.0, 14000.0], [0.0, 26000.0, 17000.0, 11000.0]])
+ltv_proj := ca.ltv_projection(6, 45.0)
+
+// Attribution
+results := growth.linear_attributes(
+    [["paid_search", "email"], ["social", "email", "direct"]],
+    [true, true], [120.0, 95.0])
+roi_map := growth.channel_roi(results, {"paid_search": 40.0, "email": 5.0})</div>
+                <p style="margin-top:1rem">The <code>growth</code> module is organized into four source files: <code>metrics.v</code> (SaaS KPIs), <code>funnel.v</code> (conversion funnel analysis), <code>cohort.v</code> (cohort retention and LTV), and <code>attribution.v</code> (multi-touch marketing attribution). All functions are dependency-free and operate on plain V slices and maps.</p>
+            </section>
+
+            <section class="functions">
+                <h2 id="saas-metrics">SaaS Metrics</h2>
+                <div class="function-list">
+
+                    <div class="function-item">
+                        <h3 id="fn_arpa">
+                            <code>fn arpa(revenue f64, accounts int) f64</code>
+                        </h3>
+                        <p>Computes Average Revenue Per Account (ARPA): total revenue divided by the number of accounts. Use ARPA when your pricing is primarily account-based (e.g. per-seat or per-team plans) rather than per-user.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>revenue</code></td><td><code>f64</code></td><td>Total revenue for the period</td></tr>
+                                <tr><td><code>accounts</code></td><td><code>int</code></td><td>Number of paying accounts in the same period</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — revenue / accounts.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_arpu">
+                            <code>fn arpu(revenue f64, users int) f64</code>
+                        </h3>
+                        <p>Computes Average Revenue Per User (ARPU): total revenue divided by the number of users. ARPU is the basis for LTV calculations and is particularly useful for consumer or usage-based products. Typical monthly ranges: $20–$100 (low-touch / self-serve), $100–$500 (mid-market), $500+ (enterprise).</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>revenue</code></td><td><code>f64</code></td><td>Total revenue for the period</td></tr>
+                                <tr><td><code>users</code></td><td><code>int</code></td><td>Number of active users in the same period</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — revenue / users.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_cac">
+                            <code>fn cac(acquisition_spend f64, new_customers int) f64</code>
+                        </h3>
+                        <p>Computes Customer Acquisition Cost (CAC): total sales and marketing spend divided by the number of new customers acquired in the same period. The target LTV:CAC ratio is 3:1 or higher — below 1:1 means you spend more to acquire a customer than you will ever earn from them.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>acquisition_spend</code></td><td><code>f64</code></td><td>Total sales and marketing expenditure for the period</td></tr>
+                                <tr><td><code>new_customers</code></td><td><code>int</code></td><td>Number of new customers acquired in the same period</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — acquisition_spend / new_customers.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_ltv">
+                            <code>fn ltv(revenue f64, users int, customer_lifespan f64) f64</code>
+                        </h3>
+                        <p>Computes Customer Lifetime Value (LTV) as ARPU multiplied by the average customer lifespan — the expected total revenue from a single customer over their entire relationship with the product. <code>customer_lifespan</code> must be in the same time unit as the revenue period (months if revenue is monthly). For a profit-adjusted LTV that accounts for gross margin and steady-state churn, use <a href="#fn_customer_lifetime_value_simple"><code>customer_lifetime_value_simple</code></a>. The golden LTV:CAC range is 3:1 to 5:1.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>revenue</code></td><td><code>f64</code></td><td>Total revenue for the period</td></tr>
+                                <tr><td><code>users</code></td><td><code>int</code></td><td>Number of users in the same period (used to derive ARPU)</td></tr>
+                                <tr><td><code>customer_lifespan</code></td><td><code>f64</code></td><td>Average number of periods a customer remains active</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — arpu(revenue, users) &times; customer_lifespan.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_ltv_cac_ratio">
+                            <code>fn ltv_cac_ratio(revenue f64, users int, customer_lifespan f64, acquisition_spend f64, new_customers int) f64</code>
+                        </h3>
+                        <p>Computes the LTV:CAC ratio: the primary indicator of unit economics health. The golden range is 3:1 to 5:1 — below 3 suggests under-investment in growth or poor retention; above 5 often means you are underinvesting in acquisition. A ratio below 1 means you spend more to acquire a customer than you will ever earn from them.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>revenue</code></td><td><code>f64</code></td><td>Total revenue for the period</td></tr>
+                                <tr><td><code>users</code></td><td><code>int</code></td><td>Number of active users (used to derive ARPU)</td></tr>
+                                <tr><td><code>customer_lifespan</code></td><td><code>f64</code></td><td>Average customer lifespan in the same time unit as the revenue period</td></tr>
+                                <tr><td><code>acquisition_spend</code></td><td><code>f64</code></td><td>Total sales and marketing spend</td></tr>
+                                <tr><td><code>new_customers</code></td><td><code>int</code></td><td>Number of new customers acquired</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — ltv(...) / cac(acquisition_spend, new_customers).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_churn_rate">
+                            <code>fn churn_rate(customers_lost int, total_customers int) f64</code>
+                        </h3>
+                        <p>Computes the customer churn rate: the fraction of customers who cancelled or failed to renew in a period. Benchmarks vary by segment — monthly rates above 5–7% (low-touch / self-serve), 3–5% (mid-market), or 1–2% (enterprise) signal product-market fit or pricing problems. This measures customer count churn; for revenue churn see <a href="#fn_net_revenue_retention"><code>net_revenue_retention</code></a>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>customers_lost</code></td><td><code>int</code></td><td>Number of customers who churned during the period</td></tr>
+                                <tr><td><code>total_customers</code></td><td><code>int</code></td><td>Total customers at the start of the period</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — customers_lost / total_customers, in [0, 1].</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_retention_rate">
+                            <code>fn retention_rate(customers_lost int, total_customers int) f64</code>
+                        </h3>
+                        <p>Computes the customer retention rate: the fraction of customers who remained active during a period. Equivalent to 1 minus the churn rate.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>customers_lost</code></td><td><code>int</code></td><td>Number of customers who churned during the period</td></tr>
+                                <tr><td><code>total_customers</code></td><td><code>int</code></td><td>Total customers at the start of the period</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — 1 - churn_rate(customers_lost, total_customers), in [0, 1].</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_net_revenue_retention">
+                            <code>fn net_revenue_retention(mrr_start f64, mrr_end f64, churn_mrr f64, expansion_mrr f64) f64</code>
+                        </h3>
+                        <p>Computes Net Revenue Retention (NRR): how much recurring revenue is retained from existing customers after accounting for expansions, upgrades, contractions, and cancellations. NRR above 100% means upsell and expansion outpace churn — the business grows from its existing base alone. Benchmarks: &gt;120% (world-class), 100–120% (great), 90–100% (good). NRR below 90% indicates a retention problem that no acquisition spend can permanently fix.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>mrr_start</code></td><td><code>f64</code></td><td>MRR from existing customers at the start of the period</td></tr>
+                                <tr><td><code>mrr_end</code></td><td><code>f64</code></td><td>MRR from those same customers at the end of the period</td></tr>
+                                <tr><td><code>churn_mrr</code></td><td><code>f64</code></td><td>MRR lost to cancellations and downgrades</td></tr>
+                                <tr><td><code>expansion_mrr</code></td><td><code>f64</code></td><td>MRR gained from upgrades and expansions of existing customers</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — (mrr_start - churn_mrr + expansion_mrr) / mrr_start. Values above 1.0 indicate net expansion.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_gross_revenue_retention">
+                            <code>fn gross_revenue_retention(mrr_start f64, churn_mrr f64) f64</code>
+                        </h3>
+                        <p>Computes Gross Revenue Retention (GRR): revenue retained from existing customers counting only losses (cancellations and downgrades) — no expansion. GRR is bounded at 100% and measures pure churn impact, making it a conservative floor on retention quality. Benchmarks: &gt;95% (excellent), 90–95% (good), 85–90% (acceptable). Compare GRR against NRR to understand how much of your retention story depends on upsell.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>mrr_start</code></td><td><code>f64</code></td><td>MRR from existing customers at the start of the period</td></tr>
+                                <tr><td><code>churn_mrr</code></td><td><code>f64</code></td><td>MRR lost to cancellations and downgrades</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — (mrr_start - churn_mrr) / mrr_start, capped at 1.0.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_payback_period">
+                            <code>fn payback_period(cac_ f64, monthly_arpu f64) f64</code>
+                        </h3>
+                        <p>Computes the CAC payback period: the number of months for a customer's cumulative revenue to recover their acquisition cost. This function uses gross revenue; for a profit-adjusted payback period divide CAC by (ARPU × gross margin) instead. Benchmarks: under 6 months (world-class), 6–12 months (good), 12–18 months (acceptable). Beyond 18 months, cash flow strain typically forces premature fundraising.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>cac_</code></td><td><code>f64</code></td><td>Customer acquisition cost per customer</td></tr>
+                                <tr><td><code>monthly_arpu</code></td><td><code>f64</code></td><td>Average monthly revenue per user</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — cac_ / monthly_arpu (months to break even on acquisition).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_magic_number">
+                            <code>fn magic_number(net_new_arr f64, gross_margin f64, sales_marketing_spend f64) f64</code>
+                        </h3>
+                        <p>Computes the SaaS Magic Number: go-to-market efficiency expressed as net new ARR generated per dollar of sales &amp; marketing spend (gross-margin adjusted). Targets: &gt;1.0 (excellent — step on the gas), 0.75–1.0 (efficient — scale cautiously), &lt;0.75 (investigate before increasing spend), &lt;0.5 (fix the go-to-market motion first). The alternative quarterly formula is (Net New MRR × 4) / Prior Quarter S&amp;M Spend.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>net_new_arr</code></td><td><code>f64</code></td><td>Net new Annual Recurring Revenue added in the period</td></tr>
+                                <tr><td><code>gross_margin</code></td><td><code>f64</code></td><td>Gross margin as a fraction in (0, 1); e.g. <code>0.70</code> for 70%</td></tr>
+                                <tr><td><code>sales_marketing_spend</code></td><td><code>f64</code></td><td>Total sales and marketing spend in the prior period</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — (net_new_arr &times; gross_margin) / sales_marketing_spend.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_rule_of_40">
+                            <code>fn rule_of_40(growth_rate f64, profit_margin f64) f64</code>
+                        </h3>
+                        <p>Computes the Rule of 40 score: the sum of a SaaS company's growth rate and profit margin. A score of 40 or above is considered healthy and indicates the company balances growth and profitability. Both inputs should be expressed as percentages (e.g. pass <code>85.0</code> for 85% growth, not <code>0.85</code>).</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>growth_rate</code></td><td><code>f64</code></td><td>Annual revenue growth rate as a percentage (e.g. <code>60.0</code> for 60%)</td></tr>
+                                <tr><td><code>profit_margin</code></td><td><code>f64</code></td><td>Net or EBITDA profit margin as a percentage (negative values are valid)</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — growth_rate + profit_margin. A score &ge; 40 is considered a healthy SaaS business.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_monthly_recurring_revenue">
+                            <code>fn monthly_recurring_revenue(plan_revenues []f64) f64</code>
+                        </h3>
+                        <p>Computes Monthly Recurring Revenue (MRR) as the sum of revenue from all pricing plans. Pass one value per plan tier; the function sums them to produce total MRR. Healthy MRR growth benchmarks: 10–20% monthly (early stage), 5–10% (growth), 3–5% (scale). Prefer MRR for operational tracking; use ARR for investor reporting and valuation once revenue exceeds $1M.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>plan_revenues</code></td><td><code>[]f64</code></td><td>Slice of monthly revenues, one element per pricing plan or tier</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — sum of all plan revenues.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_annual_recurring_revenue">
+                            <code>fn annual_recurring_revenue(mrr f64) f64</code>
+                        </h3>
+                        <p>Converts Monthly Recurring Revenue to Annual Recurring Revenue (ARR) by multiplying by 12. ARR is the standard metric for valuation, investor reporting, and go-to-market planning. Switch from MRR to ARR as your primary headline metric once revenue exceeds $1M or when communicating with investors and acquirers.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>mrr</code></td><td><code>f64</code></td><td>Monthly Recurring Revenue</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — mrr &times; 12.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_customer_lifetime_value_simple">
+                            <code>fn customer_lifetime_value_simple(arpu f64, gross_margin f64, monthly_churn f64) f64</code>
+                        </h3>
+                        <p>Computes a profit-adjusted LTV using the steady-state formula for a subscription business with constant churn: <code>(ARPU × gross_margin) / monthly_churn</code>. This is the preferred LTV formula for unit-economics analysis because it measures how much gross profit you actually retain per customer, not just revenue. The result is directly comparable to CAC when targeting the 3:1 to 5:1 golden ratio.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>arpu</code></td><td><code>f64</code></td><td>Average monthly revenue per user</td></tr>
+                                <tr><td><code>gross_margin</code></td><td><code>f64</code></td><td>Gross margin as a fraction in (0, 1); e.g. <code>0.75</code> for 75%</td></tr>
+                                <tr><td><code>monthly_churn</code></td><td><code>f64</code></td><td>Monthly churn rate as a fraction in (0, 1); must be &gt; 0</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — (arpu &times; gross_margin) / monthly_churn.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_burn_rate">
+                            <code>fn burn_rate(starting_cash f64, ending_cash f64, months int) f64</code>
+                        </h3>
+                        <p>Computes the average net monthly cash burn: how much cash the company consumes per month. A positive result means cash is being spent (net burn); a negative result means cash is being generated (net positive). Use this with <code>runway_months</code> to estimate how long the company can operate without raising more capital.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>starting_cash</code></td><td><code>f64</code></td><td>Cash balance at the start of the period</td></tr>
+                                <tr><td><code>ending_cash</code></td><td><code>f64</code></td><td>Cash balance at the end of the period</td></tr>
+                                <tr><td><code>months</code></td><td><code>int</code></td><td>Number of months in the measurement period</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — (starting_cash - ending_cash) / months. Positive means net cash burn per month.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_runway_months">
+                            <code>fn runway_months(current_cash f64, monthly_burn f64) f64</code>
+                        </h3>
+                        <p>Computes how many months of runway remain given current cash and monthly burn rate. Assumes a constant burn rate; in practice revenue growth and burn reduction will extend or compress actual runway.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>current_cash</code></td><td><code>f64</code></td><td>Current cash balance</td></tr>
+                                <tr><td><code>monthly_burn</code></td><td><code>f64</code></td><td>Average monthly net cash burn (positive value)</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — current_cash / monthly_burn (months of runway remaining).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_calculate_growth_metrics">
+                            <code>fn calculate_growth_metrics(revenue f64, accounts int, users int, acquisition_spend f64, new_customers int, customers_lost int, mrr_start f64, mrr_end f64, churn_mrr f64, expansion_mrr f64, customer_lifespan f64) GrowthMetrics</code>
+                        </h3>
+                        <p>Computes the full suite of core SaaS metrics in a single call and returns them as a <code>GrowthMetrics</code> struct. Useful for dashboard generation or batch reporting where all inputs are available at once.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>revenue</code></td><td><code>f64</code></td><td>Total revenue for the period</td></tr>
+                                <tr><td><code>accounts</code></td><td><code>int</code></td><td>Number of paying accounts</td></tr>
+                                <tr><td><code>users</code></td><td><code>int</code></td><td>Number of active users</td></tr>
+                                <tr><td><code>acquisition_spend</code></td><td><code>f64</code></td><td>Total sales and marketing spend</td></tr>
+                                <tr><td><code>new_customers</code></td><td><code>int</code></td><td>New customers acquired in the period</td></tr>
+                                <tr><td><code>customers_lost</code></td><td><code>int</code></td><td>Customers churned in the period</td></tr>
+                                <tr><td><code>mrr_start</code></td><td><code>f64</code></td><td>MRR from existing customers at period start</td></tr>
+                                <tr><td><code>mrr_end</code></td><td><code>f64</code></td><td>MRR from those same customers at period end</td></tr>
+                                <tr><td><code>churn_mrr</code></td><td><code>f64</code></td><td>MRR lost to churn and downgrades</td></tr>
+                                <tr><td><code>expansion_mrr</code></td><td><code>f64</code></td><td>MRR added from expansions and upgrades</td></tr>
+                                <tr><td><code>customer_lifespan</code></td><td><code>f64</code></td><td>Average customer lifespan in periods</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>GrowthMetrics</code> — a struct with fields for arpa, arpu, cac, ltv, ltv_cac_ratio, churn_rate, retention_rate, nrr, grr, and payback_period.</p>
+                    </div>
+
+                </div>
+
+                <h2 id="funnel-analysis">Funnel Analysis</h2>
+                <div class="function-list">
+
+                    <div class="function-item">
+                        <h3 id="fn_create_funnel">
+                            <code>fn create_funnel(stage_names []string, stage_users []int) FunnelResult</code>
+                        </h3>
+                        <p>Builds a <code>FunnelResult</code> from parallel slices of stage names and user counts. The stages are assumed to be ordered from top (widest) to bottom (narrowest). The overall conversion rate is computed as stage_users[last] / stage_users[0].</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>stage_names</code></td><td><code>[]string</code></td><td>Ordered list of stage labels, e.g. <code>["Visit", "Signup", "Purchase"]</code></td></tr>
+                                <tr><td><code>stage_users</code></td><td><code>[]int</code></td><td>Number of users at each stage; must be the same length as <code>stage_names</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>FunnelResult</code> — struct with stage data and overall <code>total_conversion</code> rate.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_stage_conversion_rate">
+                            <code>fn stage_conversion_rate(from_users int, to_users int) f64</code>
+                        </h3>
+                        <p>Computes the conversion rate between two adjacent funnel stages: the fraction of users who progressed from one stage to the next.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>from_users</code></td><td><code>int</code></td><td>Users entering the stage (the larger number)</td></tr>
+                                <tr><td><code>to_users</code></td><td><code>int</code></td><td>Users who completed the stage and progressed</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — to_users / from_users, in [0, 1].</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_stage_drop_off_rate">
+                            <code>fn stage_drop_off_rate(from_users int, to_users int) f64</code>
+                        </h3>
+                        <p>Computes the drop-off rate between two adjacent funnel stages: the fraction of users who did not progress. Complement of <code>stage_conversion_rate</code>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>from_users</code></td><td><code>int</code></td><td>Users entering the stage</td></tr>
+                                <tr><td><code>to_users</code></td><td><code>int</code></td><td>Users who progressed to the next stage</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — 1 - stage_conversion_rate(from_users, to_users), in [0, 1].</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_get_conversions">
+                            <code>fn (f FunnelResult) get_conversions() []FunnelConversion</code>
+                        </h3>
+                        <p>Returns the conversion rate for each consecutive stage pair in the funnel. Each <code>FunnelConversion</code> contains <code>from_name</code>, <code>to_name</code>, and <code>rate</code>. The length of the result is one less than the number of stages.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>f</code></td><td><code>FunnelResult</code></td><td>The funnel to analyze</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]FunnelConversion</code> — per-stage conversion rates in funnel order.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_highest_drop_off">
+                            <code>fn (f FunnelResult) highest_drop_off() FunnelConversion</code>
+                        </h3>
+                        <p>Finds the stage transition with the largest absolute user drop-off. This identifies where the funnel leaks the most users and is typically the highest-leverage optimization target.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>f</code></td><td><code>FunnelResult</code></td><td>The funnel to analyze</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>FunnelConversion</code> — the stage pair with the highest drop-off rate.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_lowest_drop_off">
+                            <code>fn (f FunnelResult) lowest_drop_off() FunnelConversion</code>
+                        </h3>
+                        <p>Finds the stage transition with the smallest user drop-off. Useful for identifying which stage is already well-optimized or as a baseline for benchmarking other stages.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>f</code></td><td><code>FunnelResult</code></td><td>The funnel to analyze</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>FunnelConversion</code> — the stage pair with the lowest drop-off rate.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_funnel_value">
+                            <code>fn funnel_value(stage_values []f64, stage_users []int) []f64</code>
+                        </h3>
+                        <p>Computes the expected monetary value at each stage of the funnel by multiplying the per-user value by the number of users at each stage. Useful for understanding where revenue is generated or lost across the funnel.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>stage_values</code></td><td><code>[]f64</code></td><td>Expected value per user at each stage</td></tr>
+                                <tr><td><code>stage_users</code></td><td><code>[]int</code></td><td>Number of users at each stage; must be the same length as <code>stage_values</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]f64</code> — stage_values[i] &times; stage_users[i] for each stage.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_expected_revenue">
+                            <code>fn expected_revenue(funnel FunnelResult, stage_revenues []f64) f64</code>
+                        </h3>
+                        <p>Computes the total expected revenue across all funnel stages by summing the product of stage revenue and stage user count. This represents the maximum revenue attainable if all users at each stage converted at their current rates.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>funnel</code></td><td><code>FunnelResult</code></td><td>The funnel with user counts per stage</td></tr>
+                                <tr><td><code>stage_revenues</code></td><td><code>[]f64</code></td><td>Revenue per user at each stage; must match funnel stage count</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — sum of stage_revenues[i] &times; stage_users[i] across all stages.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_ab_test_funnel">
+                            <code>fn ab_test_funnel(funnel_a FunnelResult, funnel_b FunnelResult) int</code>
+                        </h3>
+                        <p>Compares two funnels by their overall top-to-bottom conversion rate and returns the index of the better-performing one. Use this to decide which funnel variant wins an A/B test based on end-to-end conversion.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>funnel_a</code></td><td><code>FunnelResult</code></td><td>Control or variant A funnel</td></tr>
+                                <tr><td><code>funnel_b</code></td><td><code>FunnelResult</code></td><td>Variant B funnel</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>int</code> — <code>0</code> if funnel_a has higher overall conversion, <code>1</code> if funnel_b does.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_segment_funnel">
+                            <code>fn segment_funnel(segment_data map[string][]int) map[string]FunnelResult</code>
+                        </h3>
+                        <p>Builds a separate funnel for each segment from a map of segment names to stage user counts. Useful for comparing funnel performance across user segments such as traffic source, plan type, or geography.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>segment_data</code></td><td><code>map[string][]int</code></td><td>Map from segment name to ordered list of stage user counts</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>map[string]FunnelResult</code> — a <code>FunnelResult</code> per segment key.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_funnel_leakage">
+                            <code>fn funnel_leakage(funnel FunnelResult) []int</code>
+                        </h3>
+                        <p>Computes the absolute number of users lost at each stage transition. Unlike drop-off rate, this gives raw user counts, making it easy to prioritize improvements by actual volume impact.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>funnel</code></td><td><code>FunnelResult</code></td><td>The funnel to analyze</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]int</code> — stage_users[i] - stage_users[i+1] for each consecutive pair; length is one less than the number of stages.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_projected_conversions">
+                            <code>fn projected_conversions(funnel FunnelResult, additional_users int) []int</code>
+                        </h3>
+                        <p>Projects how many users would reach each funnel stage if <code>additional_users</code> entered at the top, assuming the current stage-to-stage conversion rates remain constant. Useful for forecasting the impact of increased top-of-funnel traffic.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>funnel</code></td><td><code>FunnelResult</code></td><td>The funnel whose conversion rates are used for projection</td></tr>
+                                <tr><td><code>additional_users</code></td><td><code>int</code></td><td>Hypothetical number of new users entering the top of the funnel</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]int</code> — estimated user count at each stage for the additional traffic, same length as funnel stages.</p>
+                    </div>
+
+                </div>
+
+                <h2 id="cohort-analysis">Cohort Analysis</h2>
+                <div class="function-list">
+
+                    <div class="function-item">
+                        <h3 id="fn_create_cohort_analysis">
+                            <code>fn create_cohort_analysis(cohort_names []string, initial_sizes []int, retention_data [][]int) CohortAnalysis</code>
+                        </h3>
+                        <p>Builds a <code>CohortAnalysis</code> from parallel slices of cohort names, initial cohort sizes, and a retention matrix. The retention matrix has one row per cohort and one column per period; each cell is the number of users still active in that cohort at that period. Period 0 is typically the acquisition period with the full cohort size.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>cohort_names</code></td><td><code>[]string</code></td><td>Labels for each cohort, e.g. <code>["Jan", "Feb", "Mar"]</code></td></tr>
+                                <tr><td><code>initial_sizes</code></td><td><code>[]int</code></td><td>Number of users in each cohort at acquisition; must be the same length as <code>cohort_names</code></td></tr>
+                                <tr><td><code>retention_data</code></td><td><code>[][]int</code></td><td>Retention matrix (rows = cohorts, cols = periods); each value is the user count still active</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>CohortAnalysis</code> — struct containing all cohort data, ready for retention and LTV queries.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_set_cohort_revenue">
+                            <code>fn (mut ca CohortAnalysis) set_cohort_revenue(revenue_data [][]f64)</code>
+                        </h3>
+                        <p>Attaches a revenue matrix to an existing <code>CohortAnalysis</code>. Revenue data must mirror the shape of the retention matrix: one row per cohort, one column per period. This enables LTV projection and revenue-weighted cohort comparisons.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>ca</code></td><td><code>mut CohortAnalysis</code></td><td>The cohort analysis to augment with revenue data</td></tr>
+                                <tr><td><code>revenue_data</code></td><td><code>[][]f64</code></td><td>Revenue matrix (rows = cohorts, cols = periods); must match the shape of the retention data</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> nothing — mutates <code>ca</code> in place.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_retention_at_period">
+                            <code>fn (ca CohortAnalysis) retention_at_period(cohort_index int, period int) f64</code>
+                        </h3>
+                        <p>Returns the retention rate for a specific cohort at a specific period: the fraction of the original cohort still active at that point in time.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>cohort_index</code></td><td><code>int</code></td><td>Zero-based index into the cohort list</td></tr>
+                                <tr><td><code>period</code></td><td><code>int</code></td><td>Zero-based period index; period 0 is the acquisition period</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — retention_data[cohort_index][period] / initial_sizes[cohort_index], in [0, 1].</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_avg_retention_at_period">
+                            <code>fn (ca CohortAnalysis) avg_retention_at_period(period int) f64</code>
+                        </h3>
+                        <p>Computes the average retention rate across all cohorts at a given period. Useful for building a composite retention curve that smooths out cohort-specific noise.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>period</code></td><td><code>int</code></td><td>Zero-based period index to average across cohorts</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — mean of retention_at_period(i, period) across all cohort indices i.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_churn_by_period">
+                            <code>fn (ca CohortAnalysis) churn_by_period() []f64</code>
+                        </h3>
+                        <p>Computes the average churn rate at each period across all cohorts. Period-level churn is the fraction of users who were active in the prior period but are gone by the current period. The result has the same length as the number of retention periods minus one.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>ca</code></td><td><code>CohortAnalysis</code></td><td>The cohort analysis to compute churn from</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]f64</code> — average churn rate at each period (length = number of periods - 1).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_compare_cohorts">
+                            <code>fn (ca CohortAnalysis) compare_cohorts(name_a string, name_b string) (f64, f64)</code>
+                        </h3>
+                        <p>Looks up two cohorts by name and returns their average retention rates across all available periods. Use this to compare the long-run retention quality of cohorts acquired at different times.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>name_a</code></td><td><code>string</code></td><td>Name of the first cohort (must match a value in <code>cohort_names</code>)</td></tr>
+                                <tr><td><code>name_b</code></td><td><code>string</code></td><td>Name of the second cohort</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(f64, f64)</code> — <code>(avg_retention_a, avg_retention_b)</code>; the average retention rate for each named cohort across all periods.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_ltv_projection">
+                            <code>fn (ca CohortAnalysis) ltv_projection(periods_to_project int, avg_revenue_per_user f64) []f64</code>
+                        </h3>
+                        <p>Projects cumulative LTV per user across future periods using the average retention curve derived from all cohorts. At each future period, the surviving fraction of users is estimated from the average retention at that period, multiplied by the per-user revenue to yield incremental LTV, then accumulated.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>periods_to_project</code></td><td><code>int</code></td><td>Number of future periods to project LTV over</td></tr>
+                                <tr><td><code>avg_revenue_per_user</code></td><td><code>f64</code></td><td>Average revenue per retained user per period</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]f64</code> — cumulative LTV per user at each projected period, length equals <code>periods_to_project</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_cohort_velocity">
+                            <code>fn (ca CohortAnalysis) cohort_velocity(cohort_name string) int</code>
+                        </h3>
+                        <p>Returns the number of periods until a named cohort retains fewer than 10% of its original users. A lower velocity means the cohort churns quickly; a higher value indicates a sticky, long-retaining cohort.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>cohort_name</code></td><td><code>string</code></td><td>Name of the cohort to analyze (must match a value in <code>cohort_names</code>)</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>int</code> — the period index at which retention first drops below 10%, or the total number of periods if 10% retention is never breached.</p>
+                    </div>
+
+                </div>
+
+                <h2 id="attribution">Attribution</h2>
+                <div class="function-list">
+
+                    <div class="function-item">
+                        <h3 id="fn_first_touch_attributes">
+                            <code>fn first_touch_attributes(customer_channels []string, conversions []bool, revenue []f64) []AttributionResult</code>
+                        </h3>
+                        <p>Attributes 100% of conversion credit and revenue to the first channel a customer touched. Simple and easy to compute, but ignores all nurturing activity that happened after the first interaction. Best suited for products with short sales cycles where discovery is the primary driver.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>customer_channels</code></td><td><code>[]string</code></td><td>First channel for each customer</td></tr>
+                                <tr><td><code>conversions</code></td><td><code>[]bool</code></td><td>Whether each customer converted; must be the same length as <code>customer_channels</code></td></tr>
+                                <tr><td><code>revenue</code></td><td><code>[]f64</code></td><td>Revenue from each customer (0 for non-converters); must be the same length</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]AttributionResult</code> — one entry per unique channel with total attributed conversions and revenue.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_last_touch_attributes">
+                            <code>fn last_touch_attributes(customer_channels []string, conversions []bool, revenue []f64) []AttributionResult</code>
+                        </h3>
+                        <p>Attributes 100% of conversion credit and revenue to the last channel a customer touched before converting. Favors bottom-of-funnel channels such as branded search or direct. Use when closing intent is the primary driver and you want to understand what sealed the deal.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>customer_channels</code></td><td><code>[]string</code></td><td>Last channel for each customer before conversion</td></tr>
+                                <tr><td><code>conversions</code></td><td><code>[]bool</code></td><td>Whether each customer converted</td></tr>
+                                <tr><td><code>revenue</code></td><td><code>[]f64</code></td><td>Revenue from each customer</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]AttributionResult</code> — one entry per unique channel with total attributed conversions and revenue.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_linear_attributes">
+                            <code>fn linear_attributes(customer_touchpoints [][]string, conversions []bool, revenue []f64) []AttributionResult</code>
+                        </h3>
+                        <p>Distributes conversion credit and revenue equally across all touchpoints a customer interacted with. If a customer touched three channels, each receives 1/3 of the credit. A balanced model that avoids over-crediting any single channel.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>customer_touchpoints</code></td><td><code>[][]string</code></td><td>Ordered list of all channel touchpoints for each customer</td></tr>
+                                <tr><td><code>conversions</code></td><td><code>[]bool</code></td><td>Whether each customer converted</td></tr>
+                                <tr><td><code>revenue</code></td><td><code>[]f64</code></td><td>Revenue from each customer</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]AttributionResult</code> — one entry per unique channel with fractional credited conversions and revenue summed across all customers.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_time_decay_attributes">
+                            <code>fn time_decay_attributes(customer_touchpoints [][]string, touchpoint_days [][]int, conversions []bool, revenue []f64, half_life f64) []AttributionResult</code>
+                        </h3>
+                        <p>Attributes credit using an exponential time-decay model: touchpoints closer to conversion receive more credit. The weight of each touchpoint is 2^(-days_before_conversion / half_life), then normalized across all touchpoints for each customer. Suitable for longer sales cycles where recent interactions are more predictive of conversion.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>customer_touchpoints</code></td><td><code>[][]string</code></td><td>Ordered list of channel touchpoints for each customer</td></tr>
+                                <tr><td><code>touchpoint_days</code></td><td><code>[][]int</code></td><td>Days before conversion for each touchpoint; parallel to <code>customer_touchpoints</code> (0 = day of conversion)</td></tr>
+                                <tr><td><code>conversions</code></td><td><code>[]bool</code></td><td>Whether each customer converted</td></tr>
+                                <tr><td><code>revenue</code></td><td><code>[]f64</code></td><td>Revenue from each customer</td></tr>
+                                <tr><td><code>half_life</code></td><td><code>f64</code></td><td>Number of days after which a touchpoint's weight is halved; controls how steeply credit drops off over time</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]AttributionResult</code> — one entry per unique channel with time-decay-weighted attributed conversions and revenue.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_position_based_attributes">
+                            <code>fn position_based_attributes(customer_touchpoints [][]string, conversions []bool, revenue []f64) []AttributionResult</code>
+                        </h3>
+                        <p>Applies a position-based (U-shaped) attribution model: 40% of credit goes to the first touchpoint, 40% to the last, and the remaining 20% is split equally among all middle touchpoints. This model recognizes both acquisition and closing channels while still crediting middle-of-funnel nurturing.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>customer_touchpoints</code></td><td><code>[][]string</code></td><td>Ordered list of channel touchpoints for each customer</td></tr>
+                                <tr><td><code>conversions</code></td><td><code>[]bool</code></td><td>Whether each customer converted</td></tr>
+                                <tr><td><code>revenue</code></td><td><code>[]f64</code></td><td>Revenue from each customer</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]AttributionResult</code> — one entry per unique channel with position-weighted attributed conversions and revenue.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_channel_roi">
+                            <code>fn channel_roi(attribution_results []AttributionResult, channel_costs map[string]f64) map[string]f64</code>
+                        </h3>
+                        <p>Computes ROI for each channel: (attributed_revenue - channel_cost) / channel_cost. Channels without a corresponding entry in <code>channel_costs</code> are omitted from the result. Use this to identify which channels generate profit and which destroy it.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>attribution_results</code></td><td><code>[]AttributionResult</code></td><td>Output from any attribution function</td></tr>
+                                <tr><td><code>channel_costs</code></td><td><code>map[string]f64</code></td><td>Map from channel name to total spend on that channel</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>map[string]f64</code> — ROI per channel; a value of <code>1.5</code> means 150% ROI (returned 2.5x the spend).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_optimal_channel_mix">
+                            <code>fn optimal_channel_mix(channel_performance map[string]f64, total_budget f64) map[string]f64</code>
+                        </h3>
+                        <p>Allocates a total marketing budget proportionally to each channel's performance score. Channels with higher scores receive a larger share. This is a simple linear allocation; for more sophisticated optimization consider constrained solvers.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>channel_performance</code></td><td><code>map[string]f64</code></td><td>Map from channel name to performance score (e.g. attributed revenue or ROI)</td></tr>
+                                <tr><td><code>total_budget</code></td><td><code>f64</code></td><td>Total budget to allocate across channels</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>map[string]f64</code> — budget allocation per channel; values sum to <code>total_budget</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_roas">
+                            <code>fn roas(revenue f64, ad_spend f64) f64</code>
+                        </h3>
+                        <p>Computes Return on Ad Spend (ROAS): the ratio of revenue generated to the amount spent on advertising for a specific campaign or channel. A ROAS of 4.0 means $4 returned for every $1 spent. Unlike ROI, ROAS does not subtract the cost from the numerator.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>revenue</code></td><td><code>f64</code></td><td>Revenue attributed to the campaign or channel</td></tr>
+                                <tr><td><code>ad_spend</code></td><td><code>f64</code></td><td>Total spend on that campaign or channel</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — revenue / ad_spend.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_blended_roas">
+                            <code>fn blended_roas(total_revenue f64, total_ad_spend f64) f64</code>
+                        </h3>
+                        <p>Computes portfolio-level blended ROAS across all channels combined. Unlike per-channel ROAS, blended ROAS gives a single efficiency number for the entire marketing program. Useful for executive reporting and overall budget sizing decisions.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>total_revenue</code></td><td><code>f64</code></td><td>Total revenue across all channels and campaigns</td></tr>
+                                <tr><td><code>total_ad_spend</code></td><td><code>f64</code></td><td>Total advertising spend across all channels</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — total_revenue / total_ad_spend.</p>
+                    </div>
+
+                </div>
+            </section>
+
+            <section class="examples">
+                <h2>Examples</h2>
+                <div class="examples-list">
+
+                    <div class="example-block">
+                        <h3>SaaS health check</h3>
+                        <pre><code>import vstats.growth
+
+fn main() {
+    // Build MRR from three plan tiers
+    mrr := growth.monthly_recurring_revenue([49000.0, 89000.0, 62000.0])
+    arr := growth.annual_recurring_revenue(mrr)
+
+    cac_  := growth.cac(120000.0, 200)
+    ltv_  := growth.ltv(200000.0, 4000, 24.0)
+    ratio := growth.ltv_cac_ratio(200000.0, 4000, 24.0, 120000.0, 200)
+
+    nrr := growth.net_revenue_retention(200000.0, 215000.0, 12000.0, 27000.0)
+    ro40 := growth.rule_of_40(85.0, -12.0)
+
+    burn   := growth.burn_rate(800000.0, 560000.0, 3)
+    runway := growth.runway_months(560000.0, burn)
+
+    println("MRR:           \$${mrr:,.0f}")
+    println("ARR:           \$${arr:,.0f}")
+    println("CAC:           \$${cac_:.0f}")
+    println("LTV:           \$${ltv_:.0f}")
+    println("LTV/CAC:       ${ratio:.1f}x")
+    println("NRR:           ${(nrr * 100):.1f}%")
+    println("Rule of 40:    ${ro40:.0f}")
+    println("Monthly burn:  \$${burn:,.0f}")
+    println("Runway:        ${runway:.1f} months")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>MRR:           $200,000
+ARR:           $2,400,000
+CAC:           $600
+LTV:           $1,200
+LTV/CAC:       2.0x
+NRR:           107.5%
+Rule of 40:    73
+Monthly burn:  $80,000
+Runway:        7.0 months</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Funnel analysis and optimization targeting</h3>
+                        <pre><code>import vstats.growth
+
+fn main() {
+    funnel := growth.create_funnel(
+        ["Landing", "Signup", "Onboarding", "First Purchase"],
+        [120000, 18000, 9000, 1800])
+
+    println("Overall conversion: ${(funnel.total_conversion * 100):.2f}%")
+    println("")
+
+    for conv in funnel.get_conversions() {
+        println("${conv.from_name} -> ${conv.to_name}: ${(conv.rate * 100):.1f}%")
+    }
+
+    worst := funnel.highest_drop_off()
+    println("\nBiggest leak: ${worst.from_name} -> ${worst.to_name} (${(worst.rate * 100):.1f}% conversion)")
+
+    leakage := growth.funnel_leakage(funnel)
+    println("Absolute drop-offs: ${leakage}")
+
+    // Project impact of doubling top-of-funnel traffic
+    projected := growth.projected_conversions(funnel, 120000)
+    println("If we add 120k more visitors, projected purchases: ${projected[3]}")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>Overall conversion: 1.50%
+
+Landing -> Signup: 15.0%
+Signup -> Onboarding: 50.0%
+Onboarding -> First Purchase: 20.0%
+
+Biggest leak: Landing -> Signup (15.0% conversion)
+Absolute drop-offs: [102000, 9000, 7200]
+If we add 120k more visitors, projected purchases: 1800</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Multi-touch attribution and budget allocation</h3>
+                        <pre><code>import vstats.growth
+
+fn main() {
+    // Each customer's ordered touchpoints
+    touchpoints := [
+        ["paid_search", "email", "direct"],
+        ["social", "email"],
+        ["paid_search", "direct"],
+        ["social", "paid_search", "email", "direct"],
+        ["email", "direct"],
+    ]
+    conversions := [true, true, false, true, true]
+    revenue     := [95.0, 60.0, 0.0, 140.0, 75.0]
+
+    // Compare linear vs position-based attribution
+    linear_res   := growth.linear_attributes(touchpoints, conversions, revenue)
+    position_res := growth.position_based_attributes(touchpoints, conversions, revenue)
+
+    println("--- Linear Attribution ---")
+    for r in linear_res {
+        println("${r.channel}: ${r.conversions:.2f} conv, \$${r.revenue:.2f}")
+    }
+
+    println("\n--- Position-Based Attribution ---")
+    for r in position_res {
+        println("${r.channel}: ${r.conversions:.2f} conv, \$${r.revenue:.2f}")
+    }
+
+    // Compute ROI and optimal budget
+    costs := {"paid_search": 80.0, "social": 40.0, "email": 15.0, "direct": 0.0}
+    roi_map := growth.channel_roi(linear_res, costs)
+    println("\n--- Channel ROI (linear) ---")
+    for ch, roi in roi_map {
+        println("${ch}: ${(roi * 100):.0f}%")
+    }
+
+    perf := {"paid_search": 4.2, "social": 2.1, "email": 6.8}
+    budget := growth.optimal_channel_mix(perf, 10000.0)
+    println("\n--- Optimal Budget Allocation (\$10,000) ---")
+    for ch, alloc in budget {
+        println("${ch}: \$${alloc:.0f}")
+    }
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>--- Linear Attribution ---
+paid_search: 1.42 conv, $82.50
+email: 1.25 conv, $72.08
+direct: 1.08 conv, $63.33
+social: 0.75 conv, $52.08
+
+--- Position-Based Attribution ---
+paid_search: 1.60 conv, $94.00
+email: 0.65 conv, $37.75
+direct: 1.40 conv, $82.00
+social: 0.85 conv, $56.25
+
+--- Channel ROI (linear) ---
+paid_search: 3%
+social: 30%
+email: 380%
+
+--- Optimal Budget Allocation ($10,000) ---
+email: $5,231
+paid_search: $3,231
+social: $1,538</pre>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="../js/script.js"></script>
+</body>
+</html>

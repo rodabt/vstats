@@ -37,6 +37,16 @@ pub:
 	effect_size f64
 }
 
+pub struct ProportionPowerResult {
+pub:
+	n_per_group int
+	power       f64
+	alpha       f64
+	p_baseline  f64
+	p_treatment f64
+	mde         f64
+}
+
 pub struct CUPEDResult {
 pub:
 	theta              f64
@@ -123,6 +133,31 @@ pub fn power_analysis(effect_size f64, alpha f64, power f64) PowerAnalysisResult
 		power:       power
 		alpha:       alpha
 		effect_size: effect_size
+	}
+}
+
+// proportion_power_analysis computes the required sample size per group for binary outcomes
+// (conversion rates, click-through rates) using the two-proportion z-test formula.
+// Use this instead of power_analysis when your metric is a 0/1 proportion.
+pub fn proportion_power_analysis(p_baseline f64, p_treatment f64, alpha f64, power f64) ProportionPowerResult {
+	assert p_baseline > 0 && p_baseline < 1, 'p_baseline must be in (0, 1)'
+	assert p_treatment > 0 && p_treatment < 1, 'p_treatment must be in (0, 1)'
+	assert p_baseline != p_treatment, 'p_baseline and p_treatment must differ'
+	z_alpha := prob.inverse_normal_cdf(1.0 - alpha / 2.0, 0.0, 1.0)
+	z_beta := prob.inverse_normal_cdf(power, 0.0, 1.0)
+	p_bar := (p_baseline + p_treatment) / 2.0
+	se_null := math.sqrt(2.0 * p_bar * (1.0 - p_bar))
+	se_alt := math.sqrt(p_baseline * (1.0 - p_baseline) + p_treatment * (1.0 - p_treatment))
+	diff := math.abs(p_treatment - p_baseline)
+	n_raw := math.pow(z_alpha * se_null + z_beta * se_alt, 2) / (diff * diff)
+	n := if n_raw > f64(int(n_raw)) { int(n_raw) + 1 } else { int(n_raw) }
+	return ProportionPowerResult{
+		n_per_group: n
+		power:       power
+		alpha:       alpha
+		p_baseline:  p_baseline
+		p_treatment: p_treatment
+		mde:         diff
 	}
 }
 

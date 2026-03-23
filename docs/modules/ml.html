@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ml - VStats</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="../index.html" class="logo"><span>V</span>Stats</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../concepts.html">Concepts</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                </ul>
+                <span class="nav-section-label">Modules</span>
+                <ul class="nav-list">
+                    <li><a href="../modules/linalg.html">linalg</a></li>
+                    <li><a href="../modules/stats.html">stats</a></li>
+                    <li><a href="../modules/prob.html">prob</a></li>
+                    <li><a href="../modules/hypothesis.html">hypothesis</a></li>
+                    <li><a href="../modules/optim.html">optim</a></li>
+                    <li><a href="../modules/ml.html" class="active">ml</a></li>
+                    <li><a href="../modules/nn.html">nn</a></li>
+                    <li><a href="../modules/experiment.html">experiment</a></li>
+                    <li><a href="../modules/growth.html">growth</a></li>
+                    <li><a href="../modules/utils.html">utils</a></li>
+                </ul>
+                <div class="toc">
+                    <h3>On this page</h3>
+                    <details class="toc-group">
+                        <summary><a href="#regression">Regression</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#fn_linear_regression">linear_regression</a></li>
+                            <li><a href="#fn_linear_predict">linear_predict</a></li>
+                            <li><a href="#fn_linear_regression_fast">linear_regression_fast</a></li>
+                            <li><a href="#fn_logistic_regression">logistic_regression</a></li>
+                            <li><a href="#fn_logistic_predict_proba">logistic_predict_proba</a></li>
+                            <li><a href="#fn_logistic_predict">logistic_predict</a></li>
+                            <li><a href="#fn_logistic_regression_fast">logistic_regression_fast</a></li>
+                            <li><a href="#fn_logistic_regression_parallel">logistic_regression_parallel</a></li>
+                            <li><a href="#fn_sigmoid">sigmoid</a></li>
+                            <li><a href="#fn_mse">mse</a></li>
+                            <li><a href="#fn_rmse">rmse</a></li>
+                            <li><a href="#fn_mae">mae</a></li>
+                            <li><a href="#fn_r_squared">r_squared</a></li>
+                        </ul>
+                    </details>
+                    <details class="toc-group">
+                        <summary><a href="#classification">Classification</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#fn_logistic_classifier">logistic_classifier</a></li>
+                            <li><a href="#fn_logistic_classifier_predict">logistic_classifier_predict</a></li>
+                            <li><a href="#fn_logistic_classifier_predict_proba">logistic_classifier_predict_proba</a></li>
+                            <li><a href="#fn_naive_bayes_classifier">naive_bayes_classifier</a></li>
+                            <li><a href="#fn_naive_bayes_predict">naive_bayes_predict</a></li>
+                            <li><a href="#fn_svm_classifier">svm_classifier</a></li>
+                            <li><a href="#fn_svm_predict">svm_predict</a></li>
+                            <li><a href="#fn_random_forest_classifier">random_forest_classifier</a></li>
+                            <li><a href="#fn_random_forest_predict">random_forest_predict</a></li>
+                            <li><a href="#fn_random_forest_classifier_predict">random_forest_classifier_predict</a></li>
+                            <li><a href="#fn_random_forest_classifier_predict_proba">random_forest_classifier_predict_proba</a></li>
+                            <li><a href="#fn_accuracy">accuracy</a></li>
+                            <li><a href="#fn_precision">precision</a></li>
+                            <li><a href="#fn_recall">recall</a></li>
+                            <li><a href="#fn_f1_score">f1_score</a></li>
+                            <li><a href="#fn_confusion_matrix">confusion_matrix</a></li>
+                            <li><a href="#fn_setup">setup</a></li>
+                        </ul>
+                    </details>
+                    <details class="toc-group">
+                        <summary><a href="#clustering">Clustering</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#fn_kmeans">kmeans</a></li>
+                            <li><a href="#fn_kmeans_predict">kmeans_predict</a></li>
+                            <li><a href="#fn_kmeans_inertia">kmeans_inertia</a></li>
+                            <li><a href="#fn_silhouette_coefficient">silhouette_coefficient</a></li>
+                            <li><a href="#fn_hierarchical_clustering">hierarchical_clustering</a></li>
+                            <li><a href="#fn_dbscan">dbscan</a></li>
+                        </ul>
+                    </details>
+                </div>
+            </nav>
+        </aside>
+        <main class="content">
+            <header class="module-header">
+                <h1>ml</h1>
+                <p class="module-description">Machine Learning — supervised regression and classification, unsupervised clustering, and evaluation metrics</p>
+            </header>
+
+            <section class="theory">
+                <h2>Overview</h2>
+                <div class="theory-content">import vstats.ml
+
+// --- Regression ---
+model    := ml.linear_regression(x, y)          // OLS linear model
+preds    := ml.linear_predict(model, x_test)
+r2       := ml.r_squared(y_test, preds)          // 1.0 = perfect fit
+
+log_model := ml.logistic_regression(x, y, 1000, 0.01)
+proba     := ml.logistic_predict_proba(log_model, x_test)
+labels    := ml.logistic_predict(log_model, x_test, 0.5)
+
+// --- Classification ---
+nb    := ml.naive_bayes_classifier(x, y_int)
+preds := ml.naive_bayes_predict(nb, x_test)
+acc   := ml.accuracy(y_true, preds)
+
+rf    := ml.random_forest_classifier(x, y_int, num_trees: 100, max_depth: 5)
+preds := ml.random_forest_predict(rf, x_test)
+
+// --- Clustering ---
+km      := ml.kmeans(data, k: 3, max_iterations: 200)
+labels  := ml.kmeans_predict(km, data)
+score   := ml.silhouette_coefficient(data, labels)  // -1..1, higher is better</div>
+                <p style="margin-top:1rem">The <code>ml</code> module is split across three source files: <code>regression.v</code>, <code>classification.v</code>, and <code>clustering.v</code>. Regression and classification metrics are co-located with their algorithms. Generic functions are marked <code>[T]</code>; <code>f64</code>-specific variants accept only <code>[]f64</code> inputs.</p>
+            </section>
+
+            <section class="functions">
+                <h2>API Reference</h2>
+                <div class="function-list">
+
+                    <!-- ==================== REGRESSION ==================== -->
+                    <h2 id="regression">Regression</h2>
+
+                    <div class="function-item">
+                        <h3 id="fn_linear_regression">
+                            <code>fn linear_regression[T](x [][]T, y []T) LinearModel[T]</code>
+                        </h3>
+                        <p>Fits an Ordinary Least Squares (OLS) linear regression model by computing the closed-form normal equations. Suitable for small-to-medium datasets where the feature matrix fits in memory.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[][]T</code></td><td>Feature matrix of shape <code>[n_samples][n_features]</code></td></tr>
+                                <tr><td><code>y</code></td><td><code>[]T</code></td><td>Target values of length <code>n_samples</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>LinearModel[T]</code> — a struct with <code>.weights []T</code> (one per feature) and <code>.bias T</code> (intercept).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_linear_predict">
+                            <code>fn linear_predict[T](model LinearModel[T], x [][]T) []T</code>
+                        </h3>
+                        <p>Generates continuous predictions from a fitted <code>LinearModel</code> by computing the dot product of each row of <code>x</code> with the model weights, then adding the bias.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>model</code></td><td><code>LinearModel[T]</code></td><td>A model returned by <code>linear_regression</code> or <code>linear_regression_fast</code></td></tr>
+                                <tr><td><code>x</code></td><td><code>[][]T</code></td><td>Feature matrix to predict on; number of columns must match training data</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — predicted values, one per row of <code>x</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_linear_regression_fast">
+                            <code>fn linear_regression_fast[T](x [][]T, y []T) LinearModel[T]</code>
+                        </h3>
+                        <p>Faster OLS variant that solves the normal equations via Gaussian elimination rather than explicit matrix inversion. Numerically more stable for ill-conditioned feature matrices. Returns the same <code>LinearModel[T]</code> type as <a href="#fn_linear_regression"><code>linear_regression</code></a>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[][]T</code></td><td>Feature matrix of shape <code>[n_samples][n_features]</code></td></tr>
+                                <tr><td><code>y</code></td><td><code>[]T</code></td><td>Target values of length <code>n_samples</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>LinearModel[T]</code> — weights and bias identical in meaning to <a href="#fn_linear_regression"><code>linear_regression</code></a>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_logistic_regression">
+                            <code>fn logistic_regression[T](x [][]T, y []T, iterations int, learning_rate T) LogisticModel[T]</code>
+                        </h3>
+                        <p>Binary logistic regression trained via full-batch gradient descent. Labels in <code>y</code> must be <code>0</code> or <code>1</code>. Uses cross-entropy loss and applies the sigmoid activation at each step.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[][]T</code></td><td>Feature matrix of shape <code>[n_samples][n_features]</code></td></tr>
+                                <tr><td><code>y</code></td><td><code>[]T</code></td><td>Binary labels (<code>0</code> or <code>1</code>) of length <code>n_samples</code></td></tr>
+                                <tr><td><code>iterations</code></td><td><code>int</code></td><td>Number of gradient descent steps; typical values 100–10000</td></tr>
+                                <tr><td><code>learning_rate</code></td><td><code>T</code></td><td>Step size per iteration; typical values 0.001–0.1</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>LogisticModel[T]</code> — a struct with <code>.weights []T</code> and <code>.bias T</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_logistic_predict_proba">
+                            <code>fn logistic_predict_proba[T](model LogisticModel[T], x [][]T) []T</code>
+                        </h3>
+                        <p>Computes the sigmoid output for each sample, giving the predicted probability of class 1. Values are in the range <code>(0, 1)</code>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>model</code></td><td><code>LogisticModel[T]</code></td><td>A fitted logistic model</td></tr>
+                                <tr><td><code>x</code></td><td><code>[][]T</code></td><td>Feature matrix to predict on</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — predicted probabilities of class 1, one per sample.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_logistic_predict">
+                            <code>fn logistic_predict[T](model LogisticModel[T], x [][]T, threshold T) []T</code>
+                        </h3>
+                        <p>Converts sigmoid probabilities to hard class labels by applying a decision threshold. A sample is assigned class <code>1</code> when its probability exceeds <code>threshold</code>, and class <code>0</code> otherwise.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>model</code></td><td><code>LogisticModel[T]</code></td><td>A fitted logistic model</td></tr>
+                                <tr><td><code>x</code></td><td><code>[][]T</code></td><td>Feature matrix to predict on</td></tr>
+                                <tr><td><code>threshold</code></td><td><code>T</code></td><td>Decision boundary; use <code>0.5</code> for balanced classes</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — predicted class labels (<code>0</code> or <code>1</code>), one per sample.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_logistic_regression_fast">
+                            <code>fn logistic_regression_fast(x [][]f64, y []f64, config OptimLogisticConfig) LogisticModel[f64]</code>
+                        </h3>
+                        <p>Optimized logistic regression using mini-batch gradient descent, configured via an <code>OptimLogisticConfig</code> struct. More efficient than the generic variant for large datasets where full-batch updates are slow.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix of shape <code>[n_samples][n_features]</code></td></tr>
+                                <tr><td><code>y</code></td><td><code>[]f64</code></td><td>Binary labels (<code>0.0</code> or <code>1.0</code>)</td></tr>
+                                <tr><td><code>config</code></td><td><code>OptimLogisticConfig</code></td><td>Struct with fields <code>learning_rate f64</code>, <code>epochs int</code>, <code>batch_size int</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>LogisticModel[f64]</code> — trained weights and bias.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_logistic_regression_parallel">
+                            <code>fn logistic_regression_parallel(x [][]f64, y []f64, config OptimLogisticConfig) LogisticModel[f64]</code>
+                        </h3>
+                        <p>Parallel mini-batch logistic regression. Gradient computation across mini-batches is distributed across threads, then aggregated. Uses the same <code>OptimLogisticConfig</code> interface as <a href="#fn_logistic_regression_fast"><code>logistic_regression_fast</code></a>. Best suited for large feature matrices on multi-core machines.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix of shape <code>[n_samples][n_features]</code></td></tr>
+                                <tr><td><code>y</code></td><td><code>[]f64</code></td><td>Binary labels (<code>0.0</code> or <code>1.0</code>)</td></tr>
+                                <tr><td><code>config</code></td><td><code>OptimLogisticConfig</code></td><td>Training configuration; <code>batch_size</code> determines granularity of parallelism</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>LogisticModel[f64]</code> — trained weights and bias.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_sigmoid">
+                            <code>fn sigmoid[T](x T) T</code>
+                        </h3>
+                        <p>Logistic (sigmoid) activation function: <code>1 / (1 + exp(-x))</code>. Clips extreme inputs to avoid floating-point overflow. Used internally by logistic regression but available as a standalone utility.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>T</code></td><td>Scalar input value</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>T</code> — a value in the range <code>(0, 1)</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_mse">
+                            <code>fn mse[T](y_true []T, y_pred []T) f64</code>
+                        </h3>
+                        <p>Mean Squared Error: the average of squared differences between true and predicted values. Penalises large errors more heavily than MAE. Commonly used as the training loss for linear regression.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Ground-truth target values</td></tr>
+                                <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Model predictions; must be the same length as <code>y_true</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — mean squared error; lower is better, 0 indicates perfect predictions.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_rmse">
+                            <code>fn rmse[T](y_true []T, y_pred []T) f64</code>
+                        </h3>
+                        <p>Root Mean Squared Error: the square root of <a href="#fn_mse"><code>mse</code></a>. Has the same unit as the target variable, making it more interpretable than MSE for reporting.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Ground-truth target values</td></tr>
+                                <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Model predictions; must be the same length as <code>y_true</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — root mean squared error in the same units as <code>y_true</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_mae">
+                            <code>fn mae[T](y_true []T, y_pred []T) f64</code>
+                        </h3>
+                        <p>Mean Absolute Error: the average of absolute differences between true and predicted values. More robust to outliers than MSE because errors are not squared.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Ground-truth target values</td></tr>
+                                <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Model predictions; must be the same length as <code>y_true</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — mean absolute error; lower is better.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_r_squared">
+                            <code>fn r_squared[T](y_true []T, y_pred []T) f64</code>
+                        </h3>
+                        <p>Coefficient of determination R². Measures the proportion of variance in <code>y_true</code> explained by the model. A score of <code>1.0</code> indicates perfect predictions; <code>0.0</code> means the model performs no better than predicting the mean; negative values indicate a model worse than the mean baseline.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Ground-truth target values</td></tr>
+                                <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Model predictions; must be the same length as <code>y_true</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — R² score in range <code>(-inf, 1.0]</code>.</p>
+                    </div>
+
+                    <!-- ==================== CLASSIFICATION ==================== -->
+                    <h2 id="classification">Classification</h2>
+
+                    <div class="function-item">
+                        <h3 id="fn_logistic_classifier">
+                            <code>fn logistic_classifier(x [][]f64, y []f64, iterations int, learning_rate f64) LogisticClassifier[f64]</code>
+                        </h3>
+                        <p>Trains a logistic regression classifier. This is a distinct type from <code>LogisticModel</code> (used in <code>regression.v</code>) and has its own predict functions. Labels in <code>y</code> must be <code>0.0</code> or <code>1.0</code>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix of shape <code>[n_samples][n_features]</code></td></tr>
+                                <tr><td><code>y</code></td><td><code>[]f64</code></td><td>Binary labels (<code>0.0</code> or <code>1.0</code>)</td></tr>
+                                <tr><td><code>iterations</code></td><td><code>int</code></td><td>Number of gradient descent steps</td></tr>
+                                <tr><td><code>learning_rate</code></td><td><code>f64</code></td><td>Step size per iteration</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>LogisticClassifier[f64]</code> — fitted classifier struct.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_logistic_classifier_predict">
+                            <code>fn logistic_classifier_predict(model LogisticClassifier[f64], x [][]f64, threshold f64) []int</code>
+                        </h3>
+                        <p>Predicts integer class labels from a <code>LogisticClassifier</code>. Applies the sigmoid to compute probabilities, then thresholds to produce 0 or 1 as <code>int</code>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>model</code></td><td><code>LogisticClassifier[f64]</code></td><td>A fitted classifier</td></tr>
+                                <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix to predict on</td></tr>
+                                <tr><td><code>threshold</code></td><td><code>f64</code></td><td>Decision boundary; use <code>0.5</code> for balanced classes</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]int</code> — predicted class labels (<code>0</code> or <code>1</code>), one per sample.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_logistic_classifier_predict_proba">
+                            <code>fn logistic_classifier_predict_proba(model LogisticClassifier[f64], x [][]f64) []f64</code>
+                        </h3>
+                        <p>Returns the predicted class-1 probabilities for a <code>LogisticClassifier</code>, without applying a threshold.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>model</code></td><td><code>LogisticClassifier[f64]</code></td><td>A fitted classifier</td></tr>
+                                <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix to predict on</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]f64</code> — sigmoid probabilities in <code>(0, 1)</code>, one per sample.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_naive_bayes_classifier">
+                            <code>fn naive_bayes_classifier(x [][]f64, y []int) NaiveBayesClassifier</code>
+                        </h3>
+                        <p>Trains a Gaussian Naive Bayes classifier. Assumes features are conditionally independent given the class, and models each feature as a Gaussian. Estimates per-class mean and variance from the training data. Fast and effective for text-like or high-dimensional data.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix of shape <code>[n_samples][n_features]</code></td></tr>
+                                <tr><td><code>y</code></td><td><code>[]int</code></td><td>Integer class labels; multi-class is supported</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>NaiveBayesClassifier</code> — stores per-class priors, means, and variances.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_naive_bayes_predict">
+                            <code>fn naive_bayes_predict(model NaiveBayesClassifier, x [][]f64) []int</code>
+                        </h3>
+                        <p>Predicts class labels using a fitted <code>NaiveBayesClassifier</code>. Selects the class with the highest log-posterior for each sample.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>model</code></td><td><code>NaiveBayesClassifier</code></td><td>A fitted Naive Bayes model</td></tr>
+                                <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix to predict on</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]int</code> — predicted class labels, one per sample.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_svm_classifier">
+                            <code>fn svm_classifier(x [][]f64, y []f64, learning_rate f64, iterations int, gamma f64, kernel string) SVMClassifier</code>
+                        </h3>
+                        <p>Trains a Support Vector Machine (SVM) classifier using sub-gradient descent on the hinge loss. Supports linear and RBF kernels. Labels in <code>y</code> must be <code>-1.0</code> or <code>1.0</code>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix of shape <code>[n_samples][n_features]</code></td></tr>
+                                <tr><td><code>y</code></td><td><code>[]f64</code></td><td>Binary labels, must be <code>-1.0</code> or <code>1.0</code></td></tr>
+                                <tr><td><code>learning_rate</code></td><td><code>f64</code></td><td>Gradient descent step size</td></tr>
+                                <tr><td><code>iterations</code></td><td><code>int</code></td><td>Number of training iterations</td></tr>
+                                <tr><td><code>gamma</code></td><td><code>f64</code></td><td>Kernel coefficient for the RBF kernel; ignored for <code>"linear"</code></td></tr>
+                                <tr><td><code>kernel</code></td><td><code>string</code></td><td>Kernel type: <code>"linear"</code> or <code>"rbf"</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>SVMClassifier</code> — the fitted model with support vectors and decision boundary.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_svm_predict">
+                            <code>fn svm_predict(model SVMClassifier, x [][]f64) []int</code>
+                        </h3>
+                        <p>Predicts binary class labels from a fitted <code>SVMClassifier</code>. Each sample is assigned <code>1</code> or <code>-1</code> based on the sign of the decision function.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>model</code></td><td><code>SVMClassifier</code></td><td>A fitted SVM model</td></tr>
+                                <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix to predict on</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]int</code> — predicted labels (<code>-1</code> or <code>1</code>), one per sample.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_random_forest_classifier">
+                            <code>fn random_forest_classifier(x [][]f64, y []int, num_trees int, max_depth int) RandomForestClassifier</code>
+                        </h3>
+                        <p>Trains an ensemble of decision trees using bootstrap sampling (bagging). Each tree sees a random subset of the training data. Majority vote across trees determines the final prediction. Robust to overfitting and requires little hyperparameter tuning.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix of shape <code>[n_samples][n_features]</code></td></tr>
+                                <tr><td><code>y</code></td><td><code>[]int</code></td><td>Integer class labels</td></tr>
+                                <tr><td><code>num_trees</code></td><td><code>int</code></td><td>Number of trees in the ensemble; more trees reduce variance but increase training time</td></tr>
+                                <tr><td><code>max_depth</code></td><td><code>int</code></td><td>Maximum depth of each individual tree; controls bias-variance tradeoff</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>RandomForestClassifier</code> — the ensemble of fitted decision trees.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_random_forest_predict">
+                            <code>fn random_forest_predict(model RandomForestClassifier, x [][]f64) []int</code>
+                        </h3>
+                        <p>Predicts class labels by majority vote across all trees in the <code>RandomForestClassifier</code>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>model</code></td><td><code>RandomForestClassifier</code></td><td>A fitted random forest model</td></tr>
+                                <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix to predict on</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]int</code> — predicted class labels, one per sample.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_random_forest_classifier_predict">
+                            <code>fn random_forest_classifier_predict(model RandomForestClassifier, x [][]f64) []int</code>
+                        </h3>
+                        <p>Alias for <a href="#fn_random_forest_predict"><code>random_forest_predict</code></a>. Provided for API consistency with the naming convention used by other classifier types.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>model</code></td><td><code>RandomForestClassifier</code></td><td>A fitted random forest model</td></tr>
+                                <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix to predict on</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]int</code> — predicted class labels, one per sample.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_random_forest_classifier_predict_proba">
+                            <code>fn random_forest_classifier_predict_proba(model RandomForestClassifier, x [][]f64) []f64</code>
+                        </h3>
+                        <p>Estimates class probabilities from a <code>RandomForestClassifier</code> as the fraction of trees that vote for the positive class. Useful for ranking or calibration rather than hard classification.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>model</code></td><td><code>RandomForestClassifier</code></td><td>A fitted random forest model</td></tr>
+                                <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix to predict on</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]f64</code> — probability estimates in <code>[0, 1]</code>, one per sample.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_accuracy">
+                            <code>fn accuracy(y_true []int, y_pred []int) f64</code>
+                        </h3>
+                        <p>Computes classification accuracy: the fraction of samples for which the predicted label matches the true label. Simple and intuitive but can be misleading on imbalanced datasets.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>y_true</code></td><td><code>[]int</code></td><td>Ground-truth class labels</td></tr>
+                                <tr><td><code>y_pred</code></td><td><code>[]int</code></td><td>Predicted class labels; must be the same length as <code>y_true</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — accuracy in <code>[0.0, 1.0]</code>; <code>1.0</code> means all predictions correct.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_precision">
+                            <code>fn precision(y_true []int, y_pred []int, positive_class int) f64</code>
+                        </h3>
+                        <p>Precision for a specified positive class: <code>TP / (TP + FP)</code>. Answers the question: of all samples predicted as the positive class, what fraction actually belong to it? High precision is critical when false positives are costly.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>y_true</code></td><td><code>[]int</code></td><td>Ground-truth class labels</td></tr>
+                                <tr><td><code>y_pred</code></td><td><code>[]int</code></td><td>Predicted class labels</td></tr>
+                                <tr><td><code>positive_class</code></td><td><code>int</code></td><td>The class label to treat as positive (e.g. <code>1</code>)</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — precision in <code>[0.0, 1.0]</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_recall">
+                            <code>fn recall(y_true []int, y_pred []int, positive_class int) f64</code>
+                        </h3>
+                        <p>Recall (sensitivity) for a specified positive class: <code>TP / (TP + FN)</code>. Answers the question: of all samples that truly belong to the positive class, what fraction did the model detect? High recall is critical when false negatives are costly.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>y_true</code></td><td><code>[]int</code></td><td>Ground-truth class labels</td></tr>
+                                <tr><td><code>y_pred</code></td><td><code>[]int</code></td><td>Predicted class labels</td></tr>
+                                <tr><td><code>positive_class</code></td><td><code>int</code></td><td>The class label to treat as positive</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — recall in <code>[0.0, 1.0]</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_f1_score">
+                            <code>fn f1_score(y_true []int, y_pred []int, positive_class int) f64</code>
+                        </h3>
+                        <p>F1 score: the harmonic mean of precision and recall for a specified positive class. Balances the two metrics and is often preferred over accuracy for imbalanced datasets.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>y_true</code></td><td><code>[]int</code></td><td>Ground-truth class labels</td></tr>
+                                <tr><td><code>y_pred</code></td><td><code>[]int</code></td><td>Predicted class labels</td></tr>
+                                <tr><td><code>positive_class</code></td><td><code>int</code></td><td>The class label to treat as positive</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — F1 score in <code>[0.0, 1.0]</code>; <code>1.0</code> is perfect.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_confusion_matrix">
+                            <code>fn confusion_matrix(y_true []int, y_pred []int) [][]int</code>
+                        </h3>
+                        <p>Builds a confusion matrix from true and predicted labels. Entry <code>[i][j]</code> is the number of samples with true class <code>i</code> predicted as class <code>j</code>. Classes are inferred automatically from the unique values in <code>y_true</code>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>y_true</code></td><td><code>[]int</code></td><td>Ground-truth class labels</td></tr>
+                                <tr><td><code>y_pred</code></td><td><code>[]int</code></td><td>Predicted class labels; must be the same length as <code>y_true</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[][]int</code> — square matrix of shape <code>[n_classes][n_classes]</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_setup">
+                            <code>fn setup(x [][]f64, y []int, test_size f64, estimator string) ClassificationSetup</code>
+                        </h3>
+                        <p>Convenience function that combines train/test splitting, model training, and evaluation in a single call. Useful for quick benchmarking of different classifiers on the same data.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Full feature matrix</td></tr>
+                                <tr><td><code>y</code></td><td><code>[]int</code></td><td>Full label vector</td></tr>
+                                <tr><td><code>test_size</code></td><td><code>f64</code></td><td>Fraction of data held out for evaluation; e.g. <code>0.2</code> for an 80/20 split</td></tr>
+                                <tr><td><code>estimator</code></td><td><code>string</code></td><td>Classifier name: <code>"logistic"</code>, <code>"naive_bayes"</code>, <code>"svm"</code>, or <code>"random_forest"</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>ClassificationSetup</code> — contains the trained model, test predictions, and evaluation metrics (accuracy, precision, recall, F1).</p>
+                    </div>
+
+                    <!-- ==================== CLUSTERING ==================== -->
+                    <h2 id="clustering">Clustering</h2>
+
+                    <div class="function-item">
+                        <h3 id="fn_kmeans">
+                            <code>fn kmeans(data [][]f64, k int, max_iterations int) KMeansModel</code>
+                        </h3>
+                        <p>K-Means clustering with random centroid initialization (Forgy method). Iteratively assigns each sample to the nearest centroid and recomputes centroids from cluster means until assignments stop changing or <code>max_iterations</code> is reached. Results may vary between runs due to random initialization; re-run with different seeds or use inertia to select the best result.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>data</code></td><td><code>[][]f64</code></td><td>Input data of shape <code>[n_samples][n_features]</code></td></tr>
+                                <tr><td><code>k</code></td><td><code>int</code></td><td>Number of clusters to form</td></tr>
+                                <tr><td><code>max_iterations</code></td><td><code>int</code></td><td>Maximum number of expectation-maximization iterations</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>KMeansModel</code> — contains <code>.centroids [][]f64</code> and <code>.labels []int</code> (training set cluster assignments).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_kmeans_predict">
+                            <code>fn kmeans_predict(model KMeansModel, data [][]f64) []int</code>
+                        </h3>
+                        <p>Assigns each sample in <code>data</code> to the nearest centroid in a fitted <code>KMeansModel</code> using Euclidean distance.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>model</code></td><td><code>KMeansModel</code></td><td>A fitted K-Means model</td></tr>
+                                <tr><td><code>data</code></td><td><code>[][]f64</code></td><td>Samples to assign; number of features must match training data</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]int</code> — cluster index in <code>[0, k)</code> for each sample.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_kmeans_inertia">
+                            <code>fn kmeans_inertia(model KMeansModel, data [][]f64) f64</code>
+                        </h3>
+                        <p>Computes the within-cluster sum of squared distances from each point to its assigned centroid (inertia). Lower inertia indicates tighter, more compact clusters. Use the elbow method — plot inertia vs. k and look for the inflection point — to choose the optimal number of clusters.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>model</code></td><td><code>KMeansModel</code></td><td>A fitted K-Means model</td></tr>
+                                <tr><td><code>data</code></td><td><code>[][]f64</code></td><td>The data used for inertia computation; typically the training set</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — total inertia; lower is better.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_silhouette_coefficient">
+                            <code>fn silhouette_coefficient(data [][]f64, labels []int) f64</code>
+                        </h3>
+                        <p>Computes the mean silhouette score across all samples. For each sample, the silhouette is <code>(b - a) / max(a, b)</code>, where <code>a</code> is the mean intra-cluster distance and <code>b</code> is the mean nearest-cluster distance. A model-agnostic metric — works with any clustering algorithm's output labels.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>data</code></td><td><code>[][]f64</code></td><td>Input data of shape <code>[n_samples][n_features]</code></td></tr>
+                                <tr><td><code>labels</code></td><td><code>[]int</code></td><td>Cluster assignment per sample; must be the same length as <code>data</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — mean silhouette score in <code>[-1, 1]</code>; values above <code>0.5</code> indicate well-separated clusters.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_hierarchical_clustering">
+                            <code>fn hierarchical_clustering(data [][]f64, num_clusters int) HierarchicalClustering</code>
+                        </h3>
+                        <p>Agglomerative (bottom-up) hierarchical clustering using single linkage. Each sample starts as its own cluster; the two closest clusters are merged at each step until <code>num_clusters</code> remain. Returns the dendrogram-like merge history alongside the final labels.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>data</code></td><td><code>[][]f64</code></td><td>Input data of shape <code>[n_samples][n_features]</code></td></tr>
+                                <tr><td><code>num_clusters</code></td><td><code>int</code></td><td>Target number of clusters to produce</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>HierarchicalClustering</code> — contains <code>.labels []int</code> (final cluster assignments) and the merge history.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="fn_dbscan">
+                            <code>fn dbscan(data [][]f64, eps f64, min_points int) []int</code>
+                        </h3>
+                        <p>Density-Based Spatial Clustering of Applications with Noise (DBSCAN). Groups points that are within <code>eps</code> distance of at least <code>min_points</code> neighbours. Does not require specifying the number of clusters up front and naturally identifies noise points. Effective for non-convex cluster shapes.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>data</code></td><td><code>[][]f64</code></td><td>Input data of shape <code>[n_samples][n_features]</code></td></tr>
+                                <tr><td><code>eps</code></td><td><code>f64</code></td><td>Neighbourhood radius; two points are neighbours if their Euclidean distance is &lt;= <code>eps</code></td></tr>
+                                <tr><td><code>min_points</code></td><td><code>int</code></td><td>Minimum number of neighbours (including the point itself) required to form a core point</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]int</code> — cluster label per sample; <code>-1</code> indicates a noise point not belonging to any cluster.</p>
+                    </div>
+
+                </div>
+            </section>
+
+            <section class="examples">
+                <h2>Examples</h2>
+                <div class="examples-list">
+
+                    <div class="example-block">
+                        <h3>Linear regression with evaluation metrics</h3>
+                        <pre><code>import vstats.ml
+
+fn main() {
+    // y = 2x + 1
+    x := [[1.0], [2.0], [3.0], [4.0], [5.0]]
+    y := [3.0, 5.0, 7.0, 9.0, 11.0]
+
+    model := ml.linear_regression(x, y)
+    preds := ml.linear_predict(model, x)
+
+    println("bias:    ${model.bias:.4f}")
+    println("weights: ${model.weights[0]:.4f}")
+    println("R²:      ${ml.r_squared(y, preds):.4f}")
+    println("RMSE:    ${ml.rmse(y, preds):.6f}")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>bias:    1.0000
+weights: 2.0000
+R²:      1.0000
+RMSE:    0.000000</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Random forest classification with precision, recall, F1</h3>
+                        <pre><code>import vstats.ml
+import vstats.utils
+
+fn main() {
+    ds := utils.load_breast_cancer()!
+    split := ds.train_test_split(0.8)
+
+    rf := ml.random_forest_classifier(split.x_train, split.y_train_int, 100, 8)
+    preds := ml.random_forest_predict(rf, split.x_test)
+
+    acc  := ml.accuracy(split.y_test_int, preds)
+    prec := ml.precision(split.y_test_int, preds, 1)
+    rec  := ml.recall(split.y_test_int, preds, 1)
+    f1   := ml.f1_score(split.y_test_int, preds, 1)
+
+    println("Accuracy:  ${acc:.3f}")
+    println("Precision: ${prec:.3f}")
+    println("Recall:    ${rec:.3f}")
+    println("F1:        ${f1:.3f}")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>Accuracy:  0.956
+Precision: 0.962
+Recall:    0.962
+F1:        0.962</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>K-Means clustering with elbow method and silhouette score</h3>
+                        <pre><code>import vstats.ml
+
+fn main() {
+    // Two clearly separated 2-D clusters
+    data := [
+        [1.0, 1.0], [1.2, 0.8], [0.9, 1.1], [1.1, 0.9],
+        [9.0, 9.0], [9.2, 8.8], [8.9, 9.1], [9.1, 8.9],
+    ]
+
+    // Elbow method: compare inertia for k=2 and k=3
+    for k in [2, 3] {
+        km := ml.kmeans(data, k, 100)
+        inertia := ml.kmeans_inertia(km, data)
+        println("k=${k}  inertia=${inertia:.3f}")
+    }
+
+    // Evaluate quality of the 2-cluster solution
+    km2     := ml.kmeans(data, 2, 100)
+    labels  := ml.kmeans_predict(km2, data)
+    score   := ml.silhouette_coefficient(data, labels)
+    println("labels:     ${labels}")
+    println("silhouette: ${score:.3f}")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>k=2  inertia=0.480
+k=3  inertia=0.240
+labels:     [0, 0, 0, 0, 1, 1, 1, 1]
+silhouette: 0.981</pre>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="../js/script.js"></script>
+</body>
+</html>

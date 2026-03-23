@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>utils - VStats</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="../index.html" class="logo"><span>V</span>Stats</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../concepts.html">Concepts</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                </ul>
+                <span class="nav-section-label">Modules</span>
+                <ul class="nav-list">
+                    <li><a href="../modules/linalg.html">linalg</a></li>
+                    <li><a href="../modules/stats.html">stats</a></li>
+                    <li><a href="../modules/prob.html">prob</a></li>
+                    <li><a href="../modules/hypothesis.html">hypothesis</a></li>
+                    <li><a href="../modules/optim.html">optim</a></li>
+                    <li><a href="../modules/ml.html">ml</a></li>
+                    <li><a href="../modules/nn.html">nn</a></li>
+                    <li><a href="../modules/experiment.html">experiment</a></li>
+                    <li><a href="../modules/growth.html">growth</a></li>
+                    <li><a href="../modules/utils.html" class="active">utils</a></li>
+                </ul>
+                <div class="toc">
+                    <h3>On this page</h3>
+                    <ul class="toc-list">
+                        <li><a href="#overview">Overview</a></li>
+                    </ul>
+                    <details class="toc-group">
+                        <summary><a href="#eval-metrics">Evaluation Metrics</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#mse">mse</a></li>
+                            <li><a href="#rmse">rmse</a></li>
+                            <li><a href="#mae">mae</a></li>
+                            <li><a href="#build_confusion_matrix">build_confusion_matrix</a></li>
+                            <li><a href="#roc_curve">roc_curve</a></li>
+                            <li><a href="#binary_classification_metrics">binary_classification_metrics</a></li>
+                            <li><a href="#regression_metrics">regression_metrics</a></li>
+                            <li><a href="#generate_param_grid">generate_param_grid</a></li>
+                            <li><a href="#early_stopping">early_stopping</a></li>
+                            <li><a href="#decay_learning_rate">decay_learning_rate</a></li>
+                        </ul>
+                    </details>
+                    <details class="toc-group">
+                        <summary><a href="#datasets">Datasets</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#load_iris">load_iris</a></li>
+                            <li><a href="#load_wine">load_wine</a></li>
+                            <li><a href="#load_breast_cancer">load_breast_cancer</a></li>
+                            <li><a href="#load_titanic">load_titanic</a></li>
+                            <li><a href="#load_boston_housing">load_boston_housing</a></li>
+                            <li><a href="#load_linear_regression">load_linear_regression</a></li>
+                            <li><a href="#dataset-methods">Dataset methods</a></li>
+                        </ul>
+                    </details>
+                    <details class="toc-group">
+                        <summary><a href="#math-utils">Math Utilities</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#factorial">factorial</a></li>
+                            <li><a href="#combinations">combinations</a></li>
+                            <li><a href="#permutations">permutations</a></li>
+                            <li><a href="#ipow">ipow</a></li>
+                            <li><a href="#range">range</a></li>
+                            <li><a href="#normalize_features">normalize_features</a></li>
+                            <li><a href="#apply_normalization">apply_normalization</a></li>
+                        </ul>
+                    </details>
+                    <details class="toc-group">
+                        <summary><a href="#activations">Activation Functions</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#sigmoid">sigmoid</a></li>
+                            <li><a href="#sigmoid_derivative">sigmoid_derivative</a></li>
+                        </ul>
+                    </details>
+                    <ul class="toc-list">
+                        <li><a href="#examples">Examples</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+        <main class="content">
+            <header class="module-header">
+                <h1>utils</h1>
+                <p class="module-description">Evaluation Metrics, Datasets, Math Utilities &amp; Activation Functions</p>
+            </header>
+
+            <section id="overview">
+                <h2>Overview</h2>
+                <div class="theory-content">import vstats.utils
+
+// Regression metrics
+mse  := utils.mse(y_true, y_pred)
+rmse := utils.rmse(y_true, y_pred)
+mae  := utils.mae(y_true, y_pred)
+
+// Classification metrics
+cm := utils.build_confusion_matrix(y_true, y_pred)
+println('accuracy:  ${cm.accuracy():.4f}')
+println('precision: ${cm.precision():.4f}')
+println('recall:    ${cm.recall():.4f}')
+println('F1:        ${cm.f1_score():.4f}')
+
+// ROC / AUC
+roc := utils.roc_curve(y_true, y_proba)
+println('AUC: ${roc.auc_value():.4f}')
+
+// Load built-in dataset
+data := utils.load_iris()!
+x, y := data.xy()
+train, test := data.train_test_split(0.2)
+
+// Feature normalization
+x_norm, means, stds := utils.normalize_features(x_train)
+x_test_norm := utils.apply_normalization(x_test, means, stds)</div>
+                <p style="margin-top:1rem">The <code>utils</code> module is a foundational layer with no dependencies on other VStats modules. It provides evaluation metrics for both regression and classification, six built-in benchmark datasets, combinatorial math functions, and activation functions used throughout the library.</p>
+            </section>
+
+            <section id="eval-metrics">
+                <h2>Evaluation Metrics</h2>
+
+                <div class="function-item">
+                    <h3 id="mse">
+                        <code>fn mse[T](y_true []T, y_pred []T) f64</code>
+                    </h3>
+                    <p>Mean Squared Error: the average of squared differences between true and predicted values. Sensitive to large errors due to the squaring.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Ground truth values</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Predicted values; must be the same length as <code>y_true</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — mean((y_true[i] - y_pred[i])^2) over all i.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="rmse">
+                        <code>fn rmse[T](y_true []T, y_pred []T) f64</code>
+                    </h3>
+                    <p>Root Mean Squared Error: the square root of MSE. Expressed in the same units as the target variable, making it more interpretable than MSE.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Ground truth values</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Predicted values; must be the same length as <code>y_true</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — sqrt(mse(y_true, y_pred)).</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="mae">
+                        <code>fn mae[T](y_true []T, y_pred []T) f64</code>
+                    </h3>
+                    <p>Mean Absolute Error: the average of absolute differences. More robust to outliers than MSE because errors are not squared.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Ground truth values</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Predicted values; must be the same length as <code>y_true</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — mean(|y_true[i] - y_pred[i]|) over all i.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="build_confusion_matrix">
+                        <code>fn build_confusion_matrix(y_true []int, y_pred []int) ConfusionMatrix</code>
+                    </h3>
+                    <p>Builds a <code>ConfusionMatrix</code> struct for binary classification (labels 0 and 1). The struct exposes methods for every standard derived metric. Use <code>.summary()</code> to print all metrics at once.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]int</code></td><td>Ground truth binary labels (0 or 1)</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]int</code></td><td>Predicted binary labels (0 or 1); must be the same length as <code>y_true</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>ConfusionMatrix</code> — struct with methods: <code>accuracy()</code>, <code>precision()</code>, <code>recall()</code>, <code>specificity()</code>, <code>f1_score()</code>, <code>false_positive_rate()</code>, <code>summary()</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="cm_accuracy">
+                        <code>fn (cm ConfusionMatrix) accuracy() f64</code>
+                    </h3>
+                    <p>Fraction of all predictions that are correct: (TP + TN) / (TP + TN + FP + FN).</p>
+                    <p><strong>Returns</strong> <code>f64</code> — overall accuracy in [0, 1].</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="cm_precision">
+                        <code>fn (cm ConfusionMatrix) precision() f64</code>
+                    </h3>
+                    <p>Of all predicted positives, what fraction are truly positive: TP / (TP + FP). High precision means few false alarms.</p>
+                    <p><strong>Returns</strong> <code>f64</code> — precision in [0, 1].</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="cm_recall">
+                        <code>fn (cm ConfusionMatrix) recall() f64</code>
+                    </h3>
+                    <p>Of all true positives, what fraction did the model find: TP / (TP + FN). Also called sensitivity or true positive rate. High recall means few missed positives.</p>
+                    <p><strong>Returns</strong> <code>f64</code> — recall in [0, 1].</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="cm_specificity">
+                        <code>fn (cm ConfusionMatrix) specificity() f64</code>
+                    </h3>
+                    <p>Of all true negatives, what fraction did the model correctly identify: TN / (TN + FP). Also called true negative rate.</p>
+                    <p><strong>Returns</strong> <code>f64</code> — specificity in [0, 1].</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="cm_f1_score">
+                        <code>fn (cm ConfusionMatrix) f1_score() f64</code>
+                    </h3>
+                    <p>Harmonic mean of precision and recall: 2 * precision * recall / (precision + recall). Balances the two metrics; useful when class imbalance makes accuracy misleading.</p>
+                    <p><strong>Returns</strong> <code>f64</code> — F1 score in [0, 1].</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="cm_false_positive_rate">
+                        <code>fn (cm ConfusionMatrix) false_positive_rate() f64</code>
+                    </h3>
+                    <p>Fraction of true negatives that were incorrectly predicted as positive: FP / (FP + TN). This is the x-axis of a ROC curve.</p>
+                    <p><strong>Returns</strong> <code>f64</code> — false positive rate in [0, 1].</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="cm_summary">
+                        <code>fn (cm ConfusionMatrix) summary() string</code>
+                    </h3>
+                    <p>Returns a formatted multi-line string with all derived metrics: accuracy, precision, recall, specificity, F1 score, and false positive rate.</p>
+                    <p><strong>Returns</strong> <code>string</code> — human-readable metrics report.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="roc_curve">
+                        <code>fn roc_curve(y_true []int, y_proba []f64) ROC_Curve</code>
+                    </h3>
+                    <p>Computes the Receiver Operating Characteristic curve: (FPR, TPR) pairs at multiple decision thresholds swept from 0 to 1. Call <code>.auc_value()</code> on the result to get the area under the curve.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]int</code></td><td>Ground truth binary labels (0 or 1)</td></tr>
+                            <tr><td><code>y_proba</code></td><td><code>[]f64</code></td><td>Predicted probabilities of the positive class, in [0, 1]</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>ROC_Curve</code> — struct holding parallel slices of FPR and TPR values; call <code>.auc_value()</code> for the scalar AUC.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="auc_value">
+                        <code>fn (roc ROC_Curve) auc_value() f64</code>
+                    </h3>
+                    <p>Computes the area under the ROC curve using the trapezoidal rule. A random classifier scores 0.5; a perfect classifier scores 1.0.</p>
+                    <p><strong>Returns</strong> <code>f64</code> — AUC in [0, 1]; 0.5 = random, 1.0 = perfect.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="binary_classification_metrics">
+                        <code>fn binary_classification_metrics(y_true []int, y_pred []int) map[string]f64</code>
+                    </h3>
+                    <p>Convenience wrapper that builds a <code>ConfusionMatrix</code> and returns all metrics in a single map. Useful for logging or comparing models in a loop.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]int</code></td><td>Ground truth binary labels (0 or 1)</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]int</code></td><td>Predicted binary labels (0 or 1)</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>map[string]f64</code> — keys: <code>"accuracy"</code>, <code>"precision"</code>, <code>"recall"</code>, <code>"f1"</code>, <code>"specificity"</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="regression_metrics">
+                        <code>fn regression_metrics(y_true []f64, y_pred []f64) map[string]f64</code>
+                    </h3>
+                    <p>Convenience wrapper that computes MSE, RMSE, and MAE in one call and returns them in a map.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]f64</code></td><td>Ground truth values</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]f64</code></td><td>Predicted values</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>map[string]f64</code> — keys: <code>"mse"</code>, <code>"rmse"</code>, <code>"mae"</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="generate_param_grid">
+                        <code>fn generate_param_grid(param_ranges map[string][]f64) []map[string]f64</code>
+                    </h3>
+                    <p>Computes the Cartesian product of parameter ranges for grid search. Every combination of one value from each parameter slice is included. Feed the result into a training loop to perform exhaustive hyperparameter search.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>param_ranges</code></td><td><code>map[string][]f64</code></td><td>Map from parameter name to the list of candidate values to try</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]map[string]f64</code> — all combinations as a slice of maps; length equals the product of all slice lengths.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="early_stopping">
+                        <code>fn early_stopping(losses []f64, patience int) bool</code>
+                    </h3>
+                    <p>Returns <code>true</code> when the last <code>patience</code> loss values show no improvement (i.e. the minimum over the last <code>patience</code> entries is not lower than the minimum over all earlier entries). Call after each epoch to decide whether to halt training.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>losses</code></td><td><code>[]f64</code></td><td>Cumulative list of validation losses, one per epoch</td></tr>
+                            <tr><td><code>patience</code></td><td><code>int</code></td><td>Number of epochs with no improvement to wait before signalling a stop</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>bool</code> — <code>true</code> if training should stop, <code>false</code> if it should continue.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="decay_learning_rate">
+                        <code>fn decay_learning_rate(initial_lr f64, epoch int, decay_rate f64) f64</code>
+                    </h3>
+                    <p>Exponential learning rate decay: reduces the learning rate by a constant factor each epoch, helping the optimizer converge stably in later training stages.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>initial_lr</code></td><td><code>f64</code></td><td>Starting learning rate at epoch 0</td></tr>
+                            <tr><td><code>epoch</code></td><td><code>int</code></td><td>Current epoch index (0-based)</td></tr>
+                            <tr><td><code>decay_rate</code></td><td><code>f64</code></td><td>Exponential decay constant; larger values decay faster</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — initial_lr * e^(-decay_rate * epoch).</p>
+                </div>
+            </section>
+
+            <section id="datasets">
+                <h2>Datasets</h2>
+                <p>All classification datasets return a <code>Dataset</code> struct; all regression datasets return a <code>RegressionDataset</code> struct. Both support <code>.xy()</code>, <code>.train_test_split()</code>, and <code>.summary()</code>.</p>
+
+                <div class="function-item">
+                    <h3 id="load_iris">
+                        <code>fn load_iris() !Dataset</code>
+                    </h3>
+                    <p>Loads the Iris dataset: 150 samples, 4 features (sepal/petal length and width), 3 classes (setosa, versicolor, virginica). The canonical benchmark for multi-class classification.</p>
+                    <p><strong>Returns</strong> <code>!Dataset</code> — propagates an error if the embedded data cannot be decoded.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="load_wine">
+                        <code>fn load_wine() !Dataset</code>
+                    </h3>
+                    <p>Loads the Wine dataset: 178 samples, 13 chemical features, 3 wine cultivar classes. Useful for testing classifiers on real-valued, moderately high-dimensional data.</p>
+                    <p><strong>Returns</strong> <code>!Dataset</code> — propagates an error if the embedded data cannot be decoded.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="load_breast_cancer">
+                        <code>fn load_breast_cancer() !Dataset</code>
+                    </h3>
+                    <p>Loads the Wisconsin Breast Cancer dataset: 569 samples, 30 features derived from cell nucleus measurements, binary labels (0 = malignant, 1 = benign).</p>
+                    <p><strong>Returns</strong> <code>!Dataset</code> — propagates an error if the embedded data cannot be decoded.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="load_titanic">
+                        <code>fn load_titanic() !Dataset</code>
+                    </h3>
+                    <p>Loads the Titanic survival dataset: 891 samples with passenger features, binary survival label (0 = did not survive, 1 = survived).</p>
+                    <p><strong>Returns</strong> <code>!Dataset</code> — propagates an error if the embedded data cannot be decoded.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="load_boston_housing">
+                        <code>fn load_boston_housing() !RegressionDataset</code>
+                    </h3>
+                    <p>Loads the Boston Housing dataset: 506 samples, 13 features, continuous house price target. A standard regression benchmark.</p>
+                    <p><strong>Returns</strong> <code>!RegressionDataset</code> — propagates an error if the embedded data cannot be decoded.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="load_linear_regression">
+                        <code>fn load_linear_regression() RegressionDataset</code>
+                    </h3>
+                    <p>Returns a simple synthetic regression dataset with a known linear relationship plus noise. No error return — the data is generated in memory. Useful for quickly testing regression implementations.</p>
+                    <p><strong>Returns</strong> <code>RegressionDataset</code> — synthetic dataset with one feature and a continuous target.</p>
+                </div>
+
+                <div id="dataset-methods">
+                    <div class="function-item">
+                        <h3 id="dataset_xy">
+                            <code>fn (d Dataset) xy() ([][]f64, []int)</code>
+                        </h3>
+                        <p>Unpacks a classification dataset into its feature matrix and label vector.</p>
+                        <p><strong>Returns</strong> <code>([][]f64, []int)</code> — <code>(X, y)</code> where X is shape [n_samples][n_features] and y holds integer class labels.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="regression_dataset_xy">
+                            <code>fn (d RegressionDataset) xy() ([][]f64, []f64)</code>
+                        </h3>
+                        <p>Unpacks a regression dataset into its feature matrix and continuous target vector.</p>
+                        <p><strong>Returns</strong> <code>([][]f64, []f64)</code> — <code>(X, y)</code> where X is shape [n_samples][n_features] and y holds continuous targets.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="dataset_train_test_split">
+                            <code>fn (d Dataset) train_test_split(test_size f64) (Dataset, Dataset)</code>
+                        </h3>
+                        <p>Randomly shuffles and splits the dataset into training and test subsets.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>test_size</code></td><td><code>f64</code></td><td>Fraction of samples to place in the test set; e.g. <code>0.2</code> for an 80/20 split</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(Dataset, Dataset)</code> — <code>(train, test)</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="regression_dataset_train_test_split">
+                            <code>fn (d RegressionDataset) train_test_split(test_size f64) (RegressionDataset, RegressionDataset)</code>
+                        </h3>
+                        <p>Same as <code>Dataset.train_test_split</code> but for regression datasets.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>test_size</code></td><td><code>f64</code></td><td>Fraction of samples to place in the test set</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(RegressionDataset, RegressionDataset)</code> — <code>(train, test)</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="dataset_summary">
+                            <code>fn (d Dataset) summary() string</code>
+                        </h3>
+                        <p>Returns a formatted string with the dataset shape and class distribution.</p>
+                        <p><strong>Returns</strong> <code>string</code> — multi-line summary including sample count, feature count, and per-class sample counts.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="regression_dataset_summary">
+                            <code>fn (d RegressionDataset) summary() string</code>
+                        </h3>
+                        <p>Returns a formatted string with the dataset shape and target statistics (min, max, mean, std).</p>
+                        <p><strong>Returns</strong> <code>string</code> — multi-line summary of the regression dataset.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="math-utils">
+                <h2>Math Utilities</h2>
+
+                <div class="function-item">
+                    <h3 id="factorial">
+                        <code>fn factorial(n int) f64</code>
+                    </h3>
+                    <p>Computes n! iteratively. Returns <code>f64</code> rather than <code>int</code> to avoid integer overflow for larger values of n.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>n</code></td><td><code>int</code></td><td>Non-negative integer; behaviour for negative input is undefined</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — n! as a floating-point number.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="combinations">
+                        <code>fn combinations(n int, k int) f64</code>
+                    </h3>
+                    <p>Computes the binomial coefficient C(n, k) = n! / (k! * (n-k)!): the number of ways to choose k items from n items without regard to order.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>n</code></td><td><code>int</code></td><td>Total number of items</td></tr>
+                            <tr><td><code>k</code></td><td><code>int</code></td><td>Number of items to choose; must satisfy 0 &lt;= k &lt;= n</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — C(n, k).</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="permutations">
+                        <code>fn permutations(n int, k int) f64</code>
+                    </h3>
+                    <p>Computes P(n, k) = n! / (n-k)!: the number of ways to arrange k items chosen from n items where order matters.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>n</code></td><td><code>int</code></td><td>Total number of items</td></tr>
+                            <tr><td><code>k</code></td><td><code>int</code></td><td>Number of items to arrange; must satisfy 0 &lt;= k &lt;= n</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — P(n, k).</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="ipow">
+                        <code>fn ipow(base int, exp int) int</code>
+                    </h3>
+                    <p>Integer exponentiation computed with repeated multiplication. Avoids the float conversion overhead of <code>math.pow</code> when working with integer bases and exponents.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>base</code></td><td><code>int</code></td><td>The base value</td></tr>
+                            <tr><td><code>exp</code></td><td><code>int</code></td><td>Non-negative exponent</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>int</code> — base^exp.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="range">
+                        <code>fn range(n int) []int</code>
+                    </h3>
+                    <p>Returns the integer slice [0, 1, ..., n-1]. Useful for generating index arrays for iteration and sampling.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>n</code></td><td><code>int</code></td><td>Length of the output slice; must be non-negative</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]int</code> — slice of length n containing [0, 1, ..., n-1].</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="normalize_features">
+                        <code>fn normalize_features(x [][]f64) ([][]f64, []f64, []f64)</code>
+                    </h3>
+                    <p>Applies z-score normalization column-wise: subtracts the column mean and divides by the column standard deviation. Always compute normalization parameters on training data only, then apply to test data with <code>apply_normalization</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix of shape [n_samples][n_features]</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>([][]f64, []f64, []f64)</code> — <code>(normalized_x, means, stds)</code>. Store <code>means</code> and <code>stds</code> to normalize the test set consistently.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="apply_normalization">
+                        <code>fn apply_normalization(x [][]f64, means []f64, stds []f64) [][]f64</code>
+                    </h3>
+                    <p>Applies pre-computed normalization parameters (from <code>normalize_features</code>) to a new feature matrix. Use this on test or validation data so they are scaled with the same statistics as the training set.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Feature matrix to normalize</td></tr>
+                            <tr><td><code>means</code></td><td><code>[]f64</code></td><td>Per-feature means returned by <code>normalize_features</code></td></tr>
+                            <tr><td><code>stds</code></td><td><code>[]f64</code></td><td>Per-feature standard deviations returned by <code>normalize_features</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[][]f64</code> — normalized feature matrix with the same shape as <code>x</code>.</p>
+                </div>
+            </section>
+
+            <section id="activations">
+                <h2>Activation Functions</h2>
+
+                <div class="function-item">
+                    <h3 id="sigmoid">
+                        <code>fn sigmoid[T](x T) T</code>
+                    </h3>
+                    <p>The logistic sigmoid function: maps any real number to the open interval (0, 1). Commonly used as an output activation for binary classification and as a gate in recurrent networks.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x</code></td><td><code>T</code></td><td>Input value (any numeric type)</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>T</code> — 1 / (1 + e^(-x)), in (0, 1).</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="sigmoid_derivative">
+                        <code>fn sigmoid_derivative[T](x T) T</code>
+                    </h3>
+                    <p>The derivative of the sigmoid function with respect to its input x. Used in backpropagation when computing gradients through a sigmoid activation layer.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x</code></td><td><code>T</code></td><td>The pre-activation input value (same x that was passed to sigmoid)</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>T</code> — sigmoid(x) * (1 - sigmoid(x)). Maximum value is 0.25 at x = 0.</p>
+                </div>
+            </section>
+
+            <section id="examples" class="examples">
+                <h2>Examples</h2>
+                <div class="examples-list">
+
+                    <div class="example-block">
+                        <h3>Classification metrics with confusion matrix</h3>
+                        <pre><code>import vstats.utils
+
+fn main() {
+    y_true := [1, 0, 1, 1, 0, 1, 0, 0, 1, 0]
+    y_pred := [1, 0, 1, 0, 0, 1, 1, 0, 1, 0]
+
+    cm := utils.build_confusion_matrix(y_true, y_pred)
+    println(cm.summary())
+
+    // Compute ROC / AUC with predicted probabilities
+    y_proba := [0.9, 0.1, 0.85, 0.4, 0.2, 0.95, 0.6, 0.15, 0.8, 0.3]
+    roc := utils.roc_curve(y_true, y_proba)
+    println('AUC: ${roc.auc_value():.4f}')
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>Accuracy:    0.8000
+Precision:   0.8000
+Recall:      0.8000
+Specificity: 0.8000
+F1 Score:    0.8000
+FPR:         0.2000
+AUC: 0.9200</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Loading a dataset and normalizing features</h3>
+                        <pre><code>import vstats.utils
+
+fn main() {
+    data := utils.load_iris()!
+    println(data.summary())
+
+    train, test := data.train_test_split(0.2)
+    x_train, y_train := train.xy()
+    x_test,  y_test  := test.xy()
+
+    // Normalize on training data; apply same params to test
+    x_train_norm, means, stds := utils.normalize_features(x_train)
+    x_test_norm := utils.apply_normalization(x_test, means, stds)
+
+    println('Train samples: ${x_train_norm.len}')
+    println('Test  samples: ${x_test_norm.len}')
+    _ = y_train
+    _ = y_test
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>Dataset: Iris
+Samples: 150  Features: 4  Classes: 3
+  setosa:     50 samples
+  versicolor: 50 samples
+  virginica:  50 samples
+Train samples: 120
+Test  samples: 30</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Grid search with generate_param_grid and early stopping</h3>
+                        <pre><code>import vstats.utils
+
+fn main() {
+    // Define hyperparameter candidates
+    grid := utils.generate_param_grid({
+        'learning_rate': [0.01, 0.001, 0.0001],
+        'lambda':        [0.0, 0.01, 0.1],
+    })
+    println('Total combinations: ${grid.len}')  // 9
+
+    // Simulate training losses and check early stopping
+    losses := [0.95, 0.82, 0.74, 0.70, 0.69, 0.69, 0.69, 0.69]
+    patience := 3
+    if utils.early_stopping(losses, patience) {
+        println('Stopping: no improvement in last ${patience} epochs')
+    }
+
+    // Exponential LR decay over 10 epochs
+    for epoch in 0..5 {
+        lr := utils.decay_learning_rate(0.1, epoch, 0.2)
+        println('epoch ${epoch}: lr = ${lr:.4f}')
+    }
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>Total combinations: 9
+Stopping: no improvement in last 3 epochs
+epoch 0: lr = 0.1000
+epoch 1: lr = 0.0819
+epoch 2: lr = 0.0670
+epoch 3: lr = 0.0549
+epoch 4: lr = 0.0449</pre>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="../js/script.js"></script>
+</body>
+</html>

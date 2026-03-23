@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nn - VStats</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="../index.html" class="logo"><span>V</span>Stats</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../concepts.html">Concepts</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                </ul>
+                <span class="nav-section-label">Modules</span>
+                <ul class="nav-list">
+                    <li><a href="../modules/linalg.html">linalg</a></li>
+                    <li><a href="../modules/stats.html">stats</a></li>
+                    <li><a href="../modules/prob.html">prob</a></li>
+                    <li><a href="../modules/hypothesis.html">hypothesis</a></li>
+                    <li><a href="../modules/optim.html">optim</a></li>
+                    <li><a href="../modules/ml.html">ml</a></li>
+                    <li><a href="../modules/nn.html" class="active">nn</a></li>
+                    <li><a href="../modules/experiment.html">experiment</a></li>
+                    <li><a href="../modules/growth.html">growth</a></li>
+                    <li><a href="../modules/utils.html">utils</a></li>
+                </ul>
+                <div class="toc">
+                    <h3>On this page</h3>
+                    <ul class="toc-list">
+                        <li><a href="#overview">Overview</a></li>
+                    </ul>
+                    <details class="toc-group">
+                        <summary><a href="#network">Network</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#fn_sequential">sequential</a></li>
+                            <li><a href="#fn_training_config">training_config</a></li>
+                            <li><a href="#fn_default_training_config">default_training_config</a></li>
+                            <li><a href="#fn_train">train</a></li>
+                            <li><a href="#fn_train_parallel">train_parallel</a></li>
+                            <li><a href="#fn_predict">predict</a></li>
+                            <li><a href="#fn_predict_single">predict_single</a></li>
+                            <li><a href="#fn_predict_parallel">predict_parallel</a></li>
+                            <li><a href="#fn_evaluate">evaluate</a></li>
+                            <li><a href="#fn_forward">forward</a></li>
+                            <li><a href="#fn_backward">backward</a></li>
+                            <li><a href="#fn_backward_with_accumulation">backward_with_accumulation</a></li>
+                            <li><a href="#fn_get_weights">get_weights</a></li>
+                            <li><a href="#fn_get_biases">get_biases</a></li>
+                            <li><a href="#fn_set_weights">set_weights</a></li>
+                        </ul>
+                    </details>
+                    <details class="toc-group">
+                        <summary><a href="#layers-activations">Layers &amp; Activations</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#fn_dense_layer">dense_layer</a></li>
+                            <li><a href="#fn_dense_forward">DenseLayer.forward</a></li>
+                            <li><a href="#fn_dense_backward">DenseLayer.backward</a></li>
+                            <li><a href="#fn_activation_layer">activation_layer</a></li>
+                            <li><a href="#fn_activation_forward">ActivationLayer.forward</a></li>
+                            <li><a href="#fn_activation_backward">ActivationLayer.backward</a></li>
+                            <li><a href="#fn_batch_norm_layer">batch_norm_layer</a></li>
+                            <li><a href="#fn_batch_norm_forward">BatchNormLayer.forward</a></li>
+                            <li><a href="#fn_relu">relu</a></li>
+                            <li><a href="#fn_relu_derivative">relu_derivative</a></li>
+                            <li><a href="#fn_sigmoid">sigmoid</a></li>
+                            <li><a href="#fn_sigmoid_derivative">sigmoid_derivative</a></li>
+                            <li><a href="#fn_tanh">tanh</a></li>
+                            <li><a href="#fn_tanh_derivative">tanh_derivative</a></li>
+                            <li><a href="#fn_softmax">softmax</a></li>
+                            <li><a href="#fn_dropout">dropout</a></li>
+                            <li><a href="#fn_flatten">flatten</a></li>
+                            <li><a href="#fn_reshape">reshape</a></li>
+                        </ul>
+                    </details>
+                    <details class="toc-group">
+                        <summary><a href="#convolution-pooling">Convolution &amp; Pooling</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#fn_conv1d">conv1d</a></li>
+                            <li><a href="#fn_max_pool1d">max_pool1d</a></li>
+                            <li><a href="#fn_avg_pool1d">avg_pool1d</a></li>
+                        </ul>
+                    </details>
+                    <details class="toc-group">
+                        <summary><a href="#loss-functions">Loss Functions</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#fn_mse_loss">mse_loss</a></li>
+                            <li><a href="#fn_mse_loss_gradient">mse_loss_gradient</a></li>
+                            <li><a href="#fn_mae_loss">mae_loss</a></li>
+                            <li><a href="#fn_mae_loss_gradient">mae_loss_gradient</a></li>
+                            <li><a href="#fn_binary_crossentropy_loss">binary_crossentropy_loss</a></li>
+                            <li><a href="#fn_binary_crossentropy_loss_gradient">binary_crossentropy_loss_gradient</a></li>
+                            <li><a href="#fn_categorical_crossentropy_loss">categorical_crossentropy_loss</a></li>
+                            <li><a href="#fn_sparse_categorical_crossentropy_loss">sparse_categorical_crossentropy_loss</a></li>
+                            <li><a href="#fn_huber_loss">huber_loss</a></li>
+                            <li><a href="#fn_hinge_loss">hinge_loss</a></li>
+                            <li><a href="#fn_squared_hinge_loss">squared_hinge_loss</a></li>
+                            <li><a href="#fn_kl_divergence_loss">kl_divergence_loss</a></li>
+                            <li><a href="#fn_cosine_similarity_loss">cosine_similarity_loss</a></li>
+                            <li><a href="#fn_contrastive_loss">contrastive_loss</a></li>
+                            <li><a href="#fn_triplet_loss">triplet_loss</a></li>
+                        </ul>
+                    </details>
+                    <ul class="toc-list">
+                        <li><a href="#examples">Examples</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+        <main class="content">
+            <header class="module-header">
+                <h1>nn</h1>
+                <p class="module-description">Neural Networks — fully-connected layers, activation functions, convolution, pooling, and a comprehensive loss function library.</p>
+            </header>
+
+            <section id="overview" class="overview">
+                <h2>Overview</h2>
+                <p>
+                    The <code>nn</code> module provides the building blocks for constructing and training feedforward neural networks.
+                    The highest-level entry point is <a href="#fn_sequential"><code>sequential</code></a>, which creates a
+                    fully-connected network from a list of layer sizes in one call. Lower-level primitives —
+                    <code>DenseLayer</code>, <code>ActivationLayer</code>, <code>BatchNormLayer</code>, dropout,
+                    convolution, and pooling — are also exposed for custom architectures.
+                </p>
+                <p>
+                    Training is driven by mini-batch gradient descent via <a href="#fn_train"><code>train</code></a>.
+                    A parallel variant (<a href="#fn_train_parallel"><code>train_parallel</code></a>) averages gradients
+                    across worker threads for larger workloads. Predictions can be made per-sample with
+                    <a href="#fn_predict_single"><code>predict_single</code></a> or in batch with
+                    <a href="#fn_predict"><code>predict</code></a>.
+                </p>
+                <h3>Quick start</h3>
+                <pre><code>import vstats.nn
+
+fn main() {
+    // Build a 3-8-1 network with ReLU hidden activations
+    mut net := nn.sequential([3, 8, 1], 'relu')
+
+    x_train := [
+        [0.2, 0.5, 0.1],
+        [0.9, 0.3, 0.7],
+        [0.4, 0.8, 0.2],
+        [0.6, 0.1, 0.9],
+    ]
+    y_train := [0.0, 1.0, 0.0, 1.0]
+
+    config := nn.training_config(0.01, 200, 2)
+    net.train(x_train, y_train, config)
+
+    preds := net.predict(x_train)
+    for p in preds {
+        println(p)
+    }
+    // [0.0621]
+    // [0.9314]
+    // [0.0487]
+    // [0.9178]
+}</code></pre>
+            </section>
+
+            <!-- ============================================================ -->
+            <h2 id="network">Network</h2>
+            <p>High-level training and inference API. All functions live in <code>nn/network.v</code>.</p>
+            <div class="function-list">
+
+                <div class="function-item">
+                    <h3 id="fn_sequential">
+                        <code>fn sequential(layer_sizes []int, activation_fn string) NeuralNetwork</code>
+                    </h3>
+                    <p>Creates a fully-connected feedforward network. Each adjacent pair in <code>layer_sizes</code>
+                    becomes one <code>DenseLayer</code> followed by the chosen activation. The last layer does
+                    <em>not</em> have an activation applied by default, so it can be used for both regression and
+                    classification (add a softmax call on predictions for multi-class output).</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>layer_sizes</code></td><td><code>[]int</code></td><td>Sizes of each layer including input and output, e.g. <code>[4, 16, 8, 1]</code></td></tr>
+                            <tr><td><code>activation_fn</code></td><td><code>string</code></td><td>Hidden-layer activation: <code>"relu"</code>, <code>"sigmoid"</code>, or <code>"tanh"</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>NeuralNetwork</code> — initialized network with Xavier-weighted layers ready for training.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_training_config">
+                        <code>fn training_config(lr f64, epochs int, batch_size int) TrainingConfig</code>
+                    </h3>
+                    <p>Constructs a <code>TrainingConfig</code> struct with explicit hyperparameters.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>lr</code></td><td><code>f64</code></td><td>Learning rate for gradient descent</td></tr>
+                            <tr><td><code>epochs</code></td><td><code>int</code></td><td>Number of full passes over the training data</td></tr>
+                            <tr><td><code>batch_size</code></td><td><code>int</code></td><td>Number of samples per mini-batch</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>TrainingConfig</code> — configuration struct to pass to <code>train</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_default_training_config">
+                        <code>fn default_training_config() TrainingConfig</code>
+                    </h3>
+                    <p>Returns a sensible default <code>TrainingConfig</code>: learning rate <code>0.01</code>,
+                    <code>100</code> epochs, batch size <code>32</code>. Use this as a starting point and override
+                    fields as needed.</p>
+                    <p><strong>Returns</strong> <code>TrainingConfig</code> — default hyperparameter configuration.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_train">
+                        <code>fn (mut net NeuralNetwork) train(x_train [][]f64, y_train []f64, config TrainingConfig)</code>
+                    </h3>
+                    <p>Trains the network in place using mini-batch gradient descent. Samples are shuffled each epoch.
+                    Gradients are averaged within each mini-batch before the weight update.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x_train</code></td><td><code>[][]f64</code></td><td>Training feature matrix; each inner slice is one sample</td></tr>
+                            <tr><td><code>y_train</code></td><td><code>[]f64</code></td><td>Training targets; must have the same length as <code>x_train</code></td></tr>
+                            <tr><td><code>config</code></td><td><code>TrainingConfig</code></td><td>Hyperparameters (learning rate, epochs, batch size)</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> nothing — modifies the network weights in place.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_train_parallel">
+                        <code>fn (mut net NeuralNetwork) train_parallel(x_train [][]f64, y_train []f64, config TrainingConfig)</code>
+                    </h3>
+                    <p>Multi-threaded variant of <a href="#fn_train"><code>train</code></a>. The mini-batch is split
+                    across worker threads; gradients are averaged before the weight update. Useful when batch sizes
+                    are large enough to saturate a single core.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x_train</code></td><td><code>[][]f64</code></td><td>Training feature matrix</td></tr>
+                            <tr><td><code>y_train</code></td><td><code>[]f64</code></td><td>Training targets</td></tr>
+                            <tr><td><code>config</code></td><td><code>TrainingConfig</code></td><td>Hyperparameters passed to each worker thread</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> nothing — modifies the network weights in place.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_predict">
+                        <code>fn (mut net NeuralNetwork) predict(x [][]f64) [][]f64</code>
+                    </h3>
+                    <p>Runs a forward pass for every sample in the batch and returns a slice of output vectors.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Input batch; each inner slice is one sample</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[][]f64</code> — one output vector per sample, in the same order as the input.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_predict_single">
+                        <code>fn (mut net NeuralNetwork) predict_single(x []f64) []f64</code>
+                    </h3>
+                    <p>Convenience wrapper for running a single-sample forward pass without allocating a batch wrapper.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x</code></td><td><code>[]f64</code></td><td>A single input sample</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — output activations for the single sample.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_predict_parallel">
+                        <code>fn (mut net NeuralNetwork) predict_parallel(x [][]f64) [][]f64</code>
+                    </h3>
+                    <p>Parallel batch prediction that distributes samples across worker threads. Drop-in replacement
+                    for <a href="#fn_predict"><code>predict</code></a> when inference latency matters.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x</code></td><td><code>[][]f64</code></td><td>Input batch</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[][]f64</code> — output vectors in the same order as the input.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_evaluate">
+                        <code>fn (mut net NeuralNetwork) evaluate(x_test [][]f64, y_test []f64) f64</code>
+                    </h3>
+                    <p>Computes mean squared error over a held-out test set without modifying network weights.
+                    Useful for monitoring generalization during or after training.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x_test</code></td><td><code>[][]f64</code></td><td>Test feature matrix</td></tr>
+                            <tr><td><code>y_test</code></td><td><code>[]f64</code></td><td>Ground-truth targets for the test set</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — mean squared error across all test samples.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_forward">
+                        <code>fn (mut net NeuralNetwork) forward(input []f64) []f64</code>
+                    </h3>
+                    <p>Low-level single-sample forward pass. Sequentially applies each layer's
+                    <code>forward</code> method. Primarily used internally by <code>train</code> and
+                    <code>predict_single</code>, but exposed for custom training loops.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>input</code></td><td><code>[]f64</code></td><td>One input sample; length must match the network's input size</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — final layer output activations.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_backward">
+                        <code>fn (mut net NeuralNetwork) backward(grad_output []f64, input []f64, learning_rate f64) []f64</code>
+                    </h3>
+                    <p>Backpropagates a loss gradient through the entire network, updating all layer weights and
+                    biases immediately (online update). Use <a href="#fn_backward_with_accumulation"><code>backward_with_accumulation</code></a>
+                    for momentum-based updates.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>grad_output</code></td><td><code>[]f64</code></td><td>Loss gradient with respect to the network output</td></tr>
+                            <tr><td><code>input</code></td><td><code>[]f64</code></td><td>The original input sample used in the corresponding forward pass</td></tr>
+                            <tr><td><code>learning_rate</code></td><td><code>f64</code></td><td>Step size for the weight update</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — gradient with respect to the network input (useful when chaining networks).</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_backward_with_accumulation">
+                        <code>fn (mut net NeuralNetwork) backward_with_accumulation(grad_output []f64, input []f64, learning_rate f64, momentum f64) []f64</code>
+                    </h3>
+                    <p>Backpropagation with momentum-based gradient accumulation. Weight velocities are maintained
+                    per layer and updated as <code>v = momentum * v - lr * grad</code> before applying to the
+                    weight. A momentum value of <code>0.9</code> is typical.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>grad_output</code></td><td><code>[]f64</code></td><td>Loss gradient with respect to the network output</td></tr>
+                            <tr><td><code>input</code></td><td><code>[]f64</code></td><td>The original input sample used in the forward pass</td></tr>
+                            <tr><td><code>learning_rate</code></td><td><code>f64</code></td><td>Step size for the weight update</td></tr>
+                            <tr><td><code>momentum</code></td><td><code>f64</code></td><td>Momentum coefficient, typically <code>0.9</code>; <code>0.0</code> disables momentum</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — gradient with respect to the network input.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_get_weights">
+                        <code>fn (net NeuralNetwork) get_weights() [][][]f64</code>
+                    </h3>
+                    <p>Returns a copy of all layer weight matrices. The outer index is the layer, the next is the
+                    output neuron, and the innermost is the input neuron (row-major, <code>[output][input]</code>).</p>
+                    <p><strong>Returns</strong> <code>[][][]f64</code> — weight tensor for all layers.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_get_biases">
+                        <code>fn (net NeuralNetwork) get_biases() [][][]f64</code>
+                    </h3>
+                    <p>Returns a copy of all layer bias vectors. Indexed as <code>[layer][neuron]</code>.</p>
+                    <p><strong>Returns</strong> <code>[][][]f64</code> — bias tensor for all layers.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_set_weights">
+                        <code>fn (mut net NeuralNetwork) set_weights(weights [][][]f64)</code>
+                    </h3>
+                    <p>Replaces all layer weight matrices. The shape must match the network architecture exactly.
+                    Primarily used for loading saved model weights or for weight-sharing between networks.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>weights</code></td><td><code>[][][]f64</code></td><td>New weights indexed as <code>[layer][output_neuron][input_neuron]</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> nothing — modifies the network in place.</p>
+                </div>
+
+            </div>
+
+            <!-- ============================================================ -->
+            <h2 id="layers-activations">Layers &amp; Activations</h2>
+            <p>Individual layer constructors and activation functions from <code>nn/layers.v</code>.</p>
+            <div class="function-list">
+
+                <div class="function-item">
+                    <h3 id="fn_dense_layer">
+                        <code>fn dense_layer(input_size int, output_size int) DenseLayer</code>
+                    </h3>
+                    <p>Creates a fully-connected layer. Weights are initialized with Xavier uniform initialization
+                    (scale <code>1/sqrt(input_size)</code>) and biases are set to <code>0.01</code>. Pre-allocated
+                    output and gradient buffers avoid repeated heap allocations during training.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>input_size</code></td><td><code>int</code></td><td>Number of input features</td></tr>
+                            <tr><td><code>output_size</code></td><td><code>int</code></td><td>Number of output neurons</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>DenseLayer</code> — initialized dense layer.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_dense_forward">
+                        <code>fn (mut layer DenseLayer) forward(input []f64) []f64</code>
+                    </h3>
+                    <p>Computes <code>output = W·input + b</code> using cache-efficient row-major weight access.
+                    The result is written into a pre-allocated <code>output_buffer</code> — the returned slice
+                    references that buffer. If you need to keep the result across a second <code>forward</code>
+                    call, copy it first (e.g. <code>result := layer.forward(x).clone()</code>).</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>input</code></td><td><code>[]f64</code></td><td>Input vector; length must equal <code>input_size</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — pre-activation output (reference to internal buffer).</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_dense_backward">
+                        <code>fn (mut layer DenseLayer) backward(grad_output []f64, input []f64, learning_rate f64, momentum f64) []f64</code>
+                    </h3>
+                    <p>Computes input gradient and updates weights and biases with momentum SGD. Velocity
+                    is maintained per parameter: <code>v = momentum * v - lr * grad</code>, then
+                    <code>w += v</code>. Pass <code>momentum = 0.0</code> for vanilla SGD.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>grad_output</code></td><td><code>[]f64</code></td><td>Gradient flowing back from the next layer</td></tr>
+                            <tr><td><code>input</code></td><td><code>[]f64</code></td><td>The input that was fed into this layer's forward pass</td></tr>
+                            <tr><td><code>learning_rate</code></td><td><code>f64</code></td><td>Step size</td></tr>
+                            <tr><td><code>momentum</code></td><td><code>f64</code></td><td>Momentum coefficient; <code>0.0</code> = standard SGD</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — gradient with respect to the layer input (for the preceding layer).</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_activation_layer">
+                        <code>fn activation_layer(activation_fn string) ActivationLayer</code>
+                    </h3>
+                    <p>Creates a stateless activation layer that stores function pointers for the forward
+                    activation and its derivative. Falls back to ReLU for unrecognized names.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>activation_fn</code></td><td><code>string</code></td><td>One of <code>"relu"</code>, <code>"sigmoid"</code>, or <code>"tanh"</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>ActivationLayer</code> — layer wrapping the chosen activation and its derivative.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_activation_forward">
+                        <code>fn (layer ActivationLayer) forward(input []f64) []f64</code>
+                    </h3>
+                    <p>Applies the stored activation function element-wise to each value in <code>input</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>input</code></td><td><code>[]f64</code></td><td>Pre-activation values</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — post-activation values, same length as input.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_activation_backward">
+                        <code>fn (layer ActivationLayer) backward(grad_output []f64, input []f64) []f64</code>
+                    </h3>
+                    <p>Applies the stored activation derivative element-wise and multiplies by the incoming
+                    gradient (chain rule).</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>grad_output</code></td><td><code>[]f64</code></td><td>Gradient from the next layer</td></tr>
+                            <tr><td><code>input</code></td><td><code>[]f64</code></td><td>The pre-activation input used in the forward pass</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — gradient with respect to the pre-activation input.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_batch_norm_layer">
+                        <code>fn batch_norm_layer(input_size int) BatchNormLayer</code>
+                    </h3>
+                    <p>Creates a batch normalization layer. Initial gamma (scale) is <code>1.0</code> and
+                    beta (shift) is <code>0.0</code> per feature. Epsilon is <code>1e-5</code> to prevent
+                    division by zero.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>input_size</code></td><td><code>int</code></td><td>Number of features to normalize</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>BatchNormLayer</code> — initialized batch norm layer.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_batch_norm_forward">
+                        <code>fn (layer BatchNormLayer) forward(input []f64) []f64</code>
+                    </h3>
+                    <p>Normalizes each feature to zero mean and unit variance using the layer's stored
+                    running statistics, then applies the learnable scale (<code>gamma</code>) and
+                    shift (<code>beta</code>): <code>output[i] = gamma[i] * (input[i] - mean[i]) / sqrt(variance[i] + epsilon) + beta[i]</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>input</code></td><td><code>[]f64</code></td><td>Input feature vector; length must equal <code>input_size</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — normalized and scaled output.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_relu">
+                        <code>fn relu(x f64) f64</code>
+                    </h3>
+                    <p>Rectified Linear Unit activation. Returns <code>x</code> when positive, zero otherwise.
+                    The most commonly used hidden-layer activation because it avoids the vanishing gradient
+                    problem and is cheap to compute.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x</code></td><td><code>f64</code></td><td>Input scalar</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — <code>max(0, x)</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_relu_derivative">
+                        <code>fn relu_derivative(x f64) f64</code>
+                    </h3>
+                    <p>Derivative of ReLU. Returns <code>1.0</code> for positive inputs and <code>0.0</code>
+                    otherwise (subgradient at zero is <code>0</code>).</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x</code></td><td><code>f64</code></td><td>Pre-activation scalar</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — <code>1.0</code> if <code>x &gt; 0</code>, else <code>0.0</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_sigmoid">
+                        <code>fn sigmoid(x f64) f64</code>
+                    </h3>
+                    <p>Logistic sigmoid activation: <code>1 / (1 + e^-x)</code>. Maps any real number to
+                    the open interval <code>(0, 1)</code>. Suitable for binary classification output layers.
+                    Delegates to <code>utils.sigmoid</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x</code></td><td><code>f64</code></td><td>Input scalar</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — value in <code>(0, 1)</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_sigmoid_derivative">
+                        <code>fn sigmoid_derivative(x f64) f64</code>
+                    </h3>
+                    <p>Derivative of the sigmoid function: <code>sigmoid(x) * (1 - sigmoid(x))</code>.
+                    Delegates to <code>utils.sigmoid_derivative</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x</code></td><td><code>f64</code></td><td>Pre-activation scalar</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — derivative of sigmoid at <code>x</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_tanh">
+                        <code>fn tanh(x f64) f64</code>
+                    </h3>
+                    <p>Hyperbolic tangent activation. Maps any real number to <code>(-1, 1)</code>, making it
+                    zero-centered unlike sigmoid. Often outperforms sigmoid in hidden layers.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x</code></td><td><code>f64</code></td><td>Input scalar</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — hyperbolic tangent of <code>x</code>, in <code>(-1, 1)</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_tanh_derivative">
+                        <code>fn tanh_derivative(x f64) f64</code>
+                    </h3>
+                    <p>Derivative of tanh: <code>1 - tanh(x)^2</code>. Peaks at <code>1.0</code> when
+                    <code>x = 0</code> and approaches <code>0</code> in the tails.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x</code></td><td><code>f64</code></td><td>Pre-activation scalar</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — derivative of tanh at <code>x</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_softmax">
+                        <code>fn softmax(x []f64) []f64</code>
+                    </h3>
+                    <p>Converts a vector of raw scores into a probability distribution. Each element is
+                    <code>exp(x[i] - max(x)) / sum(exp(x[j] - max(x)))</code>. Subtracting the maximum
+                    before exponentiating prevents overflow. Output elements sum to <code>1.0</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>x</code></td><td><code>[]f64</code></td><td>Raw logit scores, one per class</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — probability vector summing to <code>1.0</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_dropout">
+                        <code>fn dropout(input []f64, dropout_rate f64) []f64</code>
+                    </h3>
+                    <p>Applies inverted dropout regularization. Each element is zeroed independently with
+                    probability <code>dropout_rate</code>. Surviving elements are scaled by
+                    <code>1 / (1 - dropout_rate)</code> so the expected magnitude is preserved at inference.
+                    Passing <code>dropout_rate &lt;= 0</code> returns a clone of the input unchanged.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>input</code></td><td><code>[]f64</code></td><td>Activation vector to apply dropout to</td></tr>
+                            <tr><td><code>dropout_rate</code></td><td><code>f64</code></td><td>Fraction of elements to zero out, in <code>[0, 1)</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — masked and scaled activation vector.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_flatten">
+                        <code>fn flatten(data [][]f64) []f64</code>
+                    </h3>
+                    <p>Converts a 2D slice into a contiguous 1D slice by concatenating rows in order.
+                    Delegates to <code>linalg.flatten</code>. Useful before passing image or time-series
+                    data into a dense layer.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>data</code></td><td><code>[][]f64</code></td><td>2D input matrix</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — 1D concatenation of all rows.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_reshape">
+                        <code>fn reshape(data []f64, rows int, cols int) [][]f64</code>
+                    </h3>
+                    <p>Reshapes a flat 1D slice into a 2D matrix using row-major order. Asserts that
+                    <code>data.len == rows * cols</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>data</code></td><td><code>[]f64</code></td><td>Source 1D slice</td></tr>
+                            <tr><td><code>rows</code></td><td><code>int</code></td><td>Number of rows in the output matrix</td></tr>
+                            <tr><td><code>cols</code></td><td><code>int</code></td><td>Number of columns in the output matrix</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[][]f64</code> — 2D matrix of shape <code>[rows][cols]</code>.</p>
+                </div>
+
+            </div>
+
+            <!-- ============================================================ -->
+            <h2 id="convolution-pooling">Convolution &amp; Pooling</h2>
+            <p>1D signal-processing operations from <code>nn/layers.v</code>. These are useful for sequence
+            models and 1D time-series inputs.</p>
+            <div class="function-list">
+
+                <div class="function-item">
+                    <h3 id="fn_conv1d">
+                        <code>fn conv1d(input []f64, kernel []f64, stride int) []f64</code>
+                    </h3>
+                    <p>Performs a 1D discrete convolution (cross-correlation) without padding. Each output
+                    position is the dot product of the kernel with a window of the input. Output length is
+                    <code>(len(input) - len(kernel)) / stride + 1</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>input</code></td><td><code>[]f64</code></td><td>1D input signal</td></tr>
+                            <tr><td><code>kernel</code></td><td><code>[]f64</code></td><td>Convolutional filter weights</td></tr>
+                            <tr><td><code>stride</code></td><td><code>int</code></td><td>Step size between successive windows</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — convolved output of length <code>(len(input) - len(kernel)) / stride + 1</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_max_pool1d">
+                        <code>fn max_pool1d(input []f64, pool_size int, stride int) []f64</code>
+                    </h3>
+                    <p>Applies 1D max pooling. For each window of length <code>pool_size</code>, selects
+                    the maximum value. Reduces the sequence length while retaining dominant features. Output
+                    length is <code>(len(input) - pool_size) / stride + 1</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>input</code></td><td><code>[]f64</code></td><td>1D input signal</td></tr>
+                            <tr><td><code>pool_size</code></td><td><code>int</code></td><td>Width of the pooling window</td></tr>
+                            <tr><td><code>stride</code></td><td><code>int</code></td><td>Step size between successive windows</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — downsampled output.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_avg_pool1d">
+                        <code>fn avg_pool1d(input []f64, pool_size int, stride int) []f64</code>
+                    </h3>
+                    <p>Applies 1D average pooling. For each window of length <code>pool_size</code>, computes
+                    the arithmetic mean. Smoother than max pooling and less sensitive to noise spikes. Output
+                    length is <code>(len(input) - pool_size) / stride + 1</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>input</code></td><td><code>[]f64</code></td><td>1D input signal</td></tr>
+                            <tr><td><code>pool_size</code></td><td><code>int</code></td><td>Width of the pooling window</td></tr>
+                            <tr><td><code>stride</code></td><td><code>int</code></td><td>Step size between successive windows</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — downsampled output.</p>
+                </div>
+
+            </div>
+
+            <!-- ============================================================ -->
+            <h2 id="loss-functions">Loss Functions</h2>
+            <p>All loss functions live in <code>nn/loss.v</code>. Generic variants accept any numeric
+            type <code>T</code>; non-generic variants operate on <code>[]f64</code> directly.</p>
+            <div class="function-list">
+
+                <div class="function-item">
+                    <h3 id="fn_mse_loss">
+                        <code>fn mse_loss[T](y_true []T, y_pred []T) f64</code>
+                    </h3>
+                    <p>Mean Squared Error: average of squared differences between predictions and targets.
+                    The standard loss for regression. Delegates to <code>utils.mse</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Ground-truth targets</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Model predictions, same length as <code>y_true</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — mean of <code>(y_pred[i] - y_true[i])^2</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_mse_loss_gradient">
+                        <code>fn mse_loss_gradient[T](y_true []T, y_pred []T) []f64</code>
+                    </h3>
+                    <p>Gradient of MSE with respect to predictions: <code>2 * (y_pred[i] - y_true[i]) / n</code>.
+                    Pass directly to <code>backward</code> to train with MSE.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Ground-truth targets</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Model predictions</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — gradient vector of length <code>n</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_mae_loss">
+                        <code>fn mae_loss[T](y_true []T, y_pred []T) f64</code>
+                    </h3>
+                    <p>Mean Absolute Error: average of absolute differences. More robust to outliers than MSE
+                    because large errors are not squared. Delegates to <code>utils.mae</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Ground-truth targets</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Model predictions</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — mean of <code>|y_pred[i] - y_true[i]|</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_mae_loss_gradient">
+                        <code>fn mae_loss_gradient[T](y_true []T, y_pred []T) []f64</code>
+                    </h3>
+                    <p>Gradient of MAE: <code>sign(y_pred[i] - y_true[i]) / n</code>. Constant magnitude
+                    means learning does not accelerate for large errors, which can stabilize training.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Ground-truth targets</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Model predictions</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — gradient vector of length <code>n</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_binary_crossentropy_loss">
+                        <code>fn binary_crossentropy_loss(y_true []f64, y_pred []f64) f64</code>
+                    </h3>
+                    <p>Binary cross-entropy (log loss) for binary classification. Predictions are clipped to
+                    <code>[1e-7, 1-1e-7]</code> to prevent <code>log(0)</code>. <code>y_pred</code> values
+                    should be sigmoid probabilities in <code>(0, 1)</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]f64</code></td><td>Binary labels in <code>{0.0, 1.0}</code></td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]f64</code></td><td>Predicted probabilities from a sigmoid output</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — mean binary cross-entropy loss.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_binary_crossentropy_loss_gradient">
+                        <code>fn binary_crossentropy_loss_gradient(y_true []f64, y_pred []f64) []f64</code>
+                    </h3>
+                    <p>Gradient of binary cross-entropy with respect to <code>y_pred</code>:
+                    <code>(y_pred[i] - y_true[i]) / (y_pred[i] * (1 - y_pred[i]) * n)</code>.
+                    Predictions are clipped to avoid division by zero.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]f64</code></td><td>Binary labels</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]f64</code></td><td>Predicted sigmoid probabilities</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>[]f64</code> — gradient vector of length <code>n</code>.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_categorical_crossentropy_loss">
+                        <code>fn categorical_crossentropy_loss(y_true [][]f64, y_pred [][]f64) f64</code>
+                    </h3>
+                    <p>Categorical cross-entropy for multi-class classification. Both <code>y_true</code>
+                    and <code>y_pred</code> are batches of vectors. <code>y_true</code> must be one-hot
+                    encoded. <code>y_pred</code> should be softmax probabilities. Predictions are clipped
+                    to avoid <code>log(0)</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[][]f64</code></td><td>One-hot encoded ground-truth labels; shape <code>[batch][num_classes]</code></td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[][]f64</code></td><td>Softmax probability vectors; shape <code>[batch][num_classes]</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — mean categorical cross-entropy over the batch.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_sparse_categorical_crossentropy_loss">
+                        <code>fn sparse_categorical_crossentropy_loss(y_true []int, y_pred [][]f64) f64</code>
+                    </h3>
+                    <p>Like <a href="#fn_categorical_crossentropy_loss"><code>categorical_crossentropy_loss</code></a>
+                    but accepts integer class indices instead of one-hot vectors, avoiding the need to
+                    explicitly encode labels.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]int</code></td><td>Integer class indices, one per sample</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[][]f64</code></td><td>Softmax probability vectors; shape <code>[batch][num_classes]</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — mean categorical cross-entropy over the batch.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_huber_loss">
+                        <code>fn huber_loss[T](y_true []T, y_pred []T, delta f64) f64</code>
+                    </h3>
+                    <p>Huber loss combines MSE for small errors and MAE for large errors, controlled by the
+                    threshold <code>delta</code>. For <code>|error| &lt;= delta</code>: <code>0.5 * error^2</code>;
+                    for <code>|error| &gt; delta</code>: <code>delta * (|error| - 0.5 * delta)</code>.
+                    Less sensitive to outliers than pure MSE while remaining smooth near zero.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Ground-truth targets</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Model predictions</td></tr>
+                            <tr><td><code>delta</code></td><td><code>f64</code></td><td>Threshold separating the MSE and MAE regimes; typically <code>1.0</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — mean Huber loss.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_hinge_loss">
+                        <code>fn hinge_loss[T](y_true []T, y_pred []T) f64</code>
+                    </h3>
+                    <p>Hinge loss for SVM-style binary classifiers. Computes
+                    <code>mean(max(0, 1 - y_true[i] * y_pred[i]))</code>. Labels must be <code>-1</code>
+                    or <code>+1</code>; predictions are raw scores (not probabilities).</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Labels in <code>{-1, +1}</code></td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Raw decision scores</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — mean hinge loss.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_squared_hinge_loss">
+                        <code>fn squared_hinge_loss[T](y_true []T, y_pred []T) f64</code>
+                    </h3>
+                    <p>Squared hinge loss: <code>mean(max(0, 1 - y_true[i] * y_pred[i])^2)</code>.
+                    Penalizes margin violations more strongly than standard hinge loss, leading to smoother
+                    gradients and often faster convergence.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Labels in <code>{-1, +1}</code></td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Raw decision scores</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — mean squared hinge loss.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_kl_divergence_loss">
+                        <code>fn kl_divergence_loss(y_true []f64, y_pred []f64) f64</code>
+                    </h3>
+                    <p>Kullback-Leibler divergence: measures how <code>y_pred</code> differs from the
+                    reference distribution <code>y_true</code>. Computes
+                    <code>sum(y_true[i] * log(y_true[i] / y_pred[i]))</code> for positive <code>y_true</code>
+                    entries. Both inputs should be valid probability distributions (non-negative, summing
+                    to 1). Predictions are clipped to avoid <code>log(0)</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]f64</code></td><td>Reference (true) probability distribution</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]f64</code></td><td>Approximate (predicted) probability distribution</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — KL divergence (non-negative; zero when distributions are identical).</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_cosine_similarity_loss">
+                        <code>fn cosine_similarity_loss[T](y_true []T, y_pred []T) f64</code>
+                    </h3>
+                    <p>Cosine similarity loss: <code>1 - cosine_similarity(y_true, y_pred)</code>. A value
+                    of <code>0</code> means the vectors point in the same direction; <code>2</code> means
+                    opposite directions. Useful for embedding and retrieval tasks where direction matters
+                    more than magnitude.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>[]T</code></td><td>Reference vector</td></tr>
+                            <tr><td><code>y_pred</code></td><td><code>[]T</code></td><td>Predicted vector</td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — value in <code>[0, 2]</code>; lower is better.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_contrastive_loss">
+                        <code>fn contrastive_loss(y_true f64, distance f64, margin f64) f64</code>
+                    </h3>
+                    <p>Contrastive loss for Siamese networks. For similar pairs (<code>y_true &gt; 0.5</code>)
+                    it returns <code>distance^2</code>, pulling the representations together. For dissimilar
+                    pairs it returns <code>max(0, margin - distance)^2</code>, pushing them apart only when
+                    they are closer than <code>margin</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>y_true</code></td><td><code>f64</code></td><td>Similarity label: <code>1.0</code> for a matching pair, <code>0.0</code> for a non-matching pair</td></tr>
+                            <tr><td><code>distance</code></td><td><code>f64</code></td><td>Euclidean distance between the two embeddings</td></tr>
+                            <tr><td><code>margin</code></td><td><code>f64</code></td><td>Minimum desired distance between dissimilar pairs; typically <code>1.0</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — contrastive loss for a single pair.</p>
+                </div>
+
+                <div class="function-item">
+                    <h3 id="fn_triplet_loss">
+                        <code>fn triplet_loss[T](anchor []T, positive []T, negative []T, margin f64) f64</code>
+                    </h3>
+                    <p>Triplet loss for metric learning: <code>max(0, d(anchor, positive) - d(anchor, negative) + margin)</code>
+                    where <code>d</code> is Euclidean distance. Encourages the model to place positive
+                    examples (same class as anchor) closer than negative examples (different class) by
+                    at least <code>margin</code>.</p>
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>anchor</code></td><td><code>[]T</code></td><td>Reference embedding vector</td></tr>
+                            <tr><td><code>positive</code></td><td><code>[]T</code></td><td>Embedding from the same class as <code>anchor</code></td></tr>
+                            <tr><td><code>negative</code></td><td><code>[]T</code></td><td>Embedding from a different class than <code>anchor</code></td></tr>
+                            <tr><td><code>margin</code></td><td><code>f64</code></td><td>Minimum separation required between positive and negative distances; typically <code>1.0</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Returns</strong> <code>f64</code> — triplet loss (zero when the constraint is already satisfied by more than <code>margin</code>).</p>
+                </div>
+
+            </div>
+
+            <!-- ============================================================ -->
+            <section id="examples" class="examples">
+                <h2>Examples</h2>
+                <div class="examples-list">
+
+                    <div class="example-block">
+                        <h3>Binary classification with a 3-layer network</h3>
+                        <pre><code>import vstats.nn
+
+fn main() {
+    // XOR-like dataset: label is 1 when exactly one of the first two features is high
+    x_train := [
+        [0.05, 0.05, 0.5],
+        [0.95, 0.05, 0.5],
+        [0.05, 0.95, 0.5],
+        [0.95, 0.95, 0.5],
+    ]
+    y_train := [0.0, 1.0, 1.0, 0.0]
+
+    mut net := nn.sequential([3, 8, 4, 1], 'relu')
+    config := nn.training_config(0.05, 500, 4)
+    net.train(x_train, y_train, config)
+
+    preds := net.predict(x_train)
+    for i, p in preds {
+        println('sample ${i}: pred=${p[0]:.3f}  label=${y_train[i]}')
+    }
+    mse := net.evaluate(x_train, y_train)
+    println('MSE: ${mse:.4f}')
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>sample 0: pred=0.042  label=0.0
+sample 1: pred=0.961  label=1.0
+sample 2: pred=0.958  label=1.0
+sample 3: pred=0.039  label=0.0
+MSE: 0.0024</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Comparing loss functions for regression</h3>
+                        <pre><code>import vstats.nn
+
+fn main() {
+    // Predictions with one large outlier
+    y_true := [1.0, 2.0, 3.0, 4.0, 100.0]
+    y_pred := [1.1, 1.9, 3.2, 3.8,  50.0]
+
+    mse   := nn.mse_loss(y_true, y_pred)
+    mae   := nn.mae_loss(y_true, y_pred)
+    huber := nn.huber_loss(y_true, y_pred, 1.0)
+
+    println('MSE:   ${mse:.4f}')    // dominated by the outlier
+    println('MAE:   ${mae:.4f}')    // less sensitive
+    println('Huber: ${huber:.4f}')  // balanced
+
+    // MSE gradient tells the network to focus heavily on the outlier
+    mse_grad := nn.mse_loss_gradient(y_true, y_pred)
+    println('MSE gradient: ${mse_grad}')
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>MSE:   1000.0900
+MAE:   10.1000
+Huber: 49.5750
+MSE gradient: [-0.04, 0.04, -0.08, 0.08, -20.0]</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>1D convolution and pooling on a signal</h3>
+                        <pre><code>import vstats.nn
+
+fn main() {
+    // Synthetic 1D signal with a spike
+    signal := [0.1, 0.2, 0.8, 0.9, 0.8, 0.2, 0.1, 0.0, 0.1, 0.2]
+
+    // Edge-detection kernel (discrete derivative)
+    kernel := [-1.0, 0.0, 1.0]
+
+    convolved := nn.conv1d(signal, kernel, 1)
+    println('Convolved (stride=1): ${convolved}')
+    // [0.1, 0.6, 0.1, -0.1, -0.6, -0.1, 0.1, 0.1]
+
+    // Downsample with max pooling (window=2, stride=2)
+    pooled_max := nn.max_pool1d(convolved, 2, 2)
+    println('Max pooled (2,2):     ${pooled_max}')
+    // [0.6, 0.1, -0.1, 0.1]
+
+    // Smooth with average pooling
+    pooled_avg := nn.avg_pool1d(convolved, 2, 2)
+    println('Avg pooled (2,2):     ${pooled_avg}')
+    // [0.35, 0.0, -0.35, 0.1]
+
+    // Apply softmax to pooled scores to get a probability distribution
+    probs := nn.softmax(pooled_max)
+    println('Softmax of max pool:  ${probs}')
+    // [0.5537, 0.2248, 0.0969, 0.1246]
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>Convolved (stride=1): [0.1, 0.6, 0.1, -0.1, -0.6, -0.1, 0.1, 0.1]
+Max pooled (2,2):     [0.6, 0.1, -0.1, 0.1]
+Avg pooled (2,2):     [0.35, 0.0, -0.35, 0.1]
+Softmax of max pool:  [0.5537, 0.2248, 0.0969, 0.1246]</pre>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+    <script src="../js/script.js"></script>
+</body>
+</html>

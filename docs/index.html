@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VStats - Statistical & Machine Learning Library for V</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="index.html" class="logo"><span>V</span>Stats</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li><a href="index.html" class="active">Home</a></li>
+                    <li><a href="concepts.html">Concepts</a></li>
+                    <li><a href="examples.html">Examples</a></li>
+                </ul>
+                <span class="nav-section-label">Modules</span>
+                <ul class="nav-list">
+                    <li><a href="modules/linalg.html">linalg</a></li>
+                    <li><a href="modules/stats.html">stats</a></li>
+                    <li><a href="modules/prob.html">prob</a></li>
+                    <li><a href="modules/hypothesis.html">hypothesis</a></li>
+                    <li><a href="modules/optim.html">optim</a></li>
+                    <li><a href="modules/ml.html">ml</a></li>
+                    <li><a href="modules/nn.html">nn</a></li>
+                    <li><a href="modules/experiment.html">experiment</a></li>
+                    <li><a href="modules/growth.html">growth</a></li>
+                    <li><a href="modules/utils.html">utils</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="content">
+            <div class="hero">
+                <h1>VStats</h1>
+                <p class="tagline">Statistical & Machine Learning Library for V</p>
+                <p class="description">A dependency-free library for linear algebra, statistics, probability distributions, machine learning, neural networks, and growth analytics.</p>
+                <div class="badges">
+                    <span class="badge">Zero Dependencies</span>
+                    <span class="badge">Pure V</span>
+                    <span class="badge">Generic Types</span>
+                </div>
+            </div>
+
+            <section class="features">
+                <h2>Features</h2>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h3>Linear Algebra</h3>
+                        <p>Vector and matrix operations with generic type support</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Statistics</h3>
+                        <p>Descriptive statistics, hypothesis testing, ANOVA</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Machine Learning</h3>
+                        <p>Regression, classification, clustering algorithms</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Neural Networks</h3>
+                        <p>Deep learning layers, activations, loss functions</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Growth Analytics</h3>
+                        <p>Funnel, cohort, attribution, and product metrics</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Experimentation</h3>
+                        <p>A/B testing, CUPED, DiD, propensity score matching</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="modules">
+                <h2>Modules</h2>
+                <div class="module-grid">
+                    <a href="modules/linalg.html" class="module-card">
+                        <h3>linalg</h3>
+                        <p>Linear Algebra - Core vector and matrix operations with generic type support</p>
+                    </a>
+                    <a href="modules/stats.html" class="module-card">
+                        <h3>stats</h3>
+                        <p>Descriptive Statistics & Hypothesis Testing - Measures of central tendency, dispersion, and statistical tests</p>
+                    </a>
+                    <a href="modules/growth.html" class="module-card">
+                        <h3>growth</h3>
+                        <p>Growth & Product Analytics - Revenue metrics, funnel analysis, cohort analysis, and marketing attribution</p>
+                    </a>
+                    <a href="modules/ml.html" class="module-card">
+                        <h3>ml</h3>
+                        <p>Machine Learning - Supervised and unsupervised learning algorithms</p>
+                    </a>
+                    <a href="modules/nn.html" class="module-card">
+                        <h3>nn</h3>
+                        <p>Neural Networks - Deep learning layers, activations, and loss functions</p>
+                    </a>
+                    <a href="modules/prob.html" class="module-card">
+                        <h3>prob</h3>
+                        <p>Probability Distributions - PDFs, CDFs, and inverse CDF for discrete and continuous distributions</p>
+                    </a>
+                    <a href="modules/hypothesis.html" class="module-card">
+                        <h3>hypothesis</h3>
+                        <p>Hypothesis Testing - Parametric and non-parametric tests for comparing distributions</p>
+                    </a>
+                    <a href="modules/optim.html" class="module-card">
+                        <h3>optim</h3>
+                        <p>Optimization - Numerical differentiation and gradient descent primitives</p>
+                    </a>
+                </div>
+            </section>
+
+            <section class="quick-start">
+                <h2>Quick Start</h2>
+                <pre><code>import vstats.ml
+import vstats.nn
+
+fn main() {
+    model := ml.linear_regression(x_train, y_train)
+    predictions := ml.linear_predict(model, x_test)
+
+    mut net := nn.sequential([10, 5, 1], "relu")
+    net.train(x_train, y_train, nn.training_config(0.01, 100, 32))
+}</code></pre>
+            </section>
+
+            <section class="examples-preview">
+                <h2>Featured Examples</h2>
+                <div class="example-cards">
+                    <a href="examples.html" class="example-card">
+                        <h3>Customer Churn Prediction</h3>
+                        <p>Predict customer churn using logistic regression</p>
+                    </a>
+                    <a href="examples.html" class="example-card">
+                        <h3>SaaS Metrics Dashboard</h3>
+                        <p>Track ARPA, CAC, LTV, and churn metrics</p>
+                    </a>
+                    <a href="examples.html" class="example-card">
+                        <h3>A/B Testing</h3>
+                        <p>Statistical analysis of experiment results</p>
+                    </a>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="js/script.js"></script>
+</body>
+</html>

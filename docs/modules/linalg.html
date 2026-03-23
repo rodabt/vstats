@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>linalg - VStats</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="../index.html" class="logo"><span>V</span>Stats</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../concepts.html">Concepts</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                </ul>
+                <span class="nav-section-label">Modules</span>
+                <ul class="nav-list">
+                    <li><a href="../modules/linalg.html" class="active">linalg</a></li>
+                    <li><a href="../modules/stats.html">stats</a></li>
+                    <li><a href="../modules/prob.html">prob</a></li>
+                    <li><a href="../modules/hypothesis.html">hypothesis</a></li>
+                    <li><a href="../modules/optim.html">optim</a></li>
+                    <li><a href="../modules/ml.html">ml</a></li>
+                    <li><a href="../modules/nn.html">nn</a></li>
+                    <li><a href="../modules/experiment.html">experiment</a></li>
+                    <li><a href="../modules/growth.html">growth</a></li>
+                    <li><a href="../modules/utils.html">utils</a></li>
+                </ul>
+                <div class="toc">
+                    <h3>On this page</h3>
+                    <details class="toc-group" open>
+                        <summary><a href="#vectors">Vectors</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#add">add</a></li>
+                            <li><a href="#subtract">subtract</a></li>
+                            <li><a href="#vector_sum">vector_sum</a></li>
+                            <li><a href="#scalar_multiply">scalar_multiply</a></li>
+                            <li><a href="#vector_mean">vector_mean</a></li>
+                            <li><a href="#dot">dot</a></li>
+                            <li><a href="#sum_of_squares">sum_of_squares</a></li>
+                            <li><a href="#magnitude">magnitude</a></li>
+                            <li><a href="#squared_distance">squared_distance</a></li>
+                            <li><a href="#distance">distance</a></li>
+                            <li><a href="#sum">sum</a></li>
+                        </ul>
+                    </details>
+                    <details class="toc-group" open>
+                        <summary><a href="#matrices">Matrices</a></summary>
+                        <ul class="toc-list">
+                            <li><a href="#flatten">flatten</a></li>
+                            <li><a href="#shape">shape</a></li>
+                            <li><a href="#get_row">get_row</a></li>
+                            <li><a href="#get_column">get_column</a></li>
+                            <li><a href="#make_matrix">make_matrix</a></li>
+                            <li><a href="#identity_matrix">identity_matrix</a></li>
+                            <li><a href="#matmul">matmul</a></li>
+                            <li><a href="#arange">arange</a></li>
+                            <li><a href="#reshape">reshape</a></li>
+                            <li><a href="#transpose">transpose</a></li>
+                            <li><a href="#matvec_mul">matvec_mul</a></li>
+                            <li><a href="#gaussian_elimination">gaussian_elimination</a></li>
+                            <li><a href="#rotation_z">rotation_z</a></li>
+                            <li><a href="#rotation_y">rotation_y</a></li>
+                            <li><a href="#rotation_x">rotation_x</a></li>
+                            <li><a href="#rotation">rotation</a></li>
+                        </ul>
+                    </details>
+                </div>
+            </nav>
+        </aside>
+        <main class="content">
+            <header class="module-header">
+                <h1>linalg</h1>
+                <p class="module-description">Linear Algebra — generic vector and matrix operations, linear system solving, and 3D rotation matrices</p>
+            </header>
+
+            <section class="theory">
+                <h2>Overview</h2>
+                <div class="theory-content">import vstats.linalg
+
+// Vector arithmetic
+s   := linalg.add(v, w)              // element-wise addition
+d   := linalg.subtract(v, w)         // element-wise subtraction
+dp  := linalg.dot(v, w)              // dot product
+mag := linalg.magnitude(v)           // Euclidean norm: sqrt(sum(v[i]²))
+dist := linalg.distance(v, w)        // Euclidean distance
+
+// Vector reductions
+total  := linalg.sum(arr)            // sum of elements
+total2 := linalg.vector_sum(vecs)    // element-wise reduce over list of vectors
+avg    := linalg.vector_mean(vecs)   // element-wise mean over list of vectors
+
+// Matrix construction
+id  := linalg.identity_matrix[f64](3)
+m   := linalg.make_matrix(rows, cols, fn(i, j int) f64 { return f64(i * cols + j) })
+r   := linalg.reshape(flat_slice, rows, cols)
+
+// Matrix operations
+c   := linalg.matmul(a, b)           // matrix multiplication
+mt  := linalg.transpose(m)           // swap rows and columns
+mv  := linalg.matvec_mul(m, v)       // matrix-vector product
+x   := linalg.gaussian_elimination(a, b)  // solve Ax = b</div>
+                <p style="margin-top:1rem">All vector and matrix functions are generic over numeric types (<code>[T]</code>). The exception is <code>gaussian_elimination</code>, which requires <code>[][]f64</code> due to the floating-point arithmetic involved in elimination. Matrices are represented as <code>[][]T</code> (slice of row slices) in row-major order.</p>
+            </section>
+
+            <section class="functions">
+                <h2>API Reference</h2>
+
+                <h3 id="vectors" style="margin: 2rem 0 1rem; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">vectors.v</h3>
+                <div class="function-list">
+
+                    <div class="function-item">
+                        <h3 id="add">
+                            <code>fn add[T](v []T, w []T) []T</code>
+                        </h3>
+                        <p>Element-wise addition of two vectors. Returns a new slice where each element is v[i] + w[i]. Both inputs must have the same length.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>v</code></td><td><code>[]T</code></td><td>First input vector</td></tr>
+                                <tr><td><code>w</code></td><td><code>[]T</code></td><td>Second input vector; must be the same length as <code>v</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — new vector where result[i] = v[i] + w[i].</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="subtract">
+                            <code>fn subtract[T](v []T, w []T) []T</code>
+                        </h3>
+                        <p>Element-wise subtraction of two vectors. Returns a new slice where each element is v[i] - w[i]. Both inputs must have the same length.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>v</code></td><td><code>[]T</code></td><td>First input vector (minuend)</td></tr>
+                                <tr><td><code>w</code></td><td><code>[]T</code></td><td>Second input vector (subtrahend); must be the same length as <code>v</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — new vector where result[i] = v[i] - w[i].</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="vector_sum">
+                            <code>fn vector_sum[T](vector_list [][]T) []T</code>
+                        </h3>
+                        <p>Reduces a list of vectors into a single vector by summing element-wise across all vectors in the list. Equivalent to folding <code>add</code> over the list.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>vector_list</code></td><td><code>[][]T</code></td><td>List of vectors to sum; all vectors must have the same length</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — element-wise sum across all input vectors.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="scalar_multiply">
+                            <code>fn scalar_multiply[T](c f64, v []T) []T</code>
+                        </h3>
+                        <p>Multiplies each element of a vector by a scalar constant. Scales the vector without changing its direction.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>c</code></td><td><code>f64</code></td><td>Scalar multiplier</td></tr>
+                                <tr><td><code>v</code></td><td><code>[]T</code></td><td>Input vector</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — new vector where result[i] = c * v[i].</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="vector_mean">
+                            <code>fn vector_mean[T](vector_list [][]T) []T</code>
+                        </h3>
+                        <p>Computes the element-wise mean of a list of vectors. Each position in the output is the arithmetic mean of the corresponding positions across all input vectors.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>vector_list</code></td><td><code>[][]T</code></td><td>List of vectors to average; all must be the same length</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — element-wise mean vector: vector_sum(list) / len(list).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="dot">
+                            <code>fn dot[T](v []T, w []T) T</code>
+                        </h3>
+                        <p>Computes the dot product (inner product) of two vectors: the sum of element-wise products. Used in projections, similarity measures, and as a building block for matrix multiplication.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>v</code></td><td><code>[]T</code></td><td>First vector</td></tr>
+                                <tr><td><code>w</code></td><td><code>[]T</code></td><td>Second vector; must be the same length as <code>v</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>T</code> — scalar dot product: sum(v[i] * w[i]).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="sum_of_squares">
+                            <code>fn sum_of_squares[T](v []T) T</code>
+                        </h3>
+                        <p>Returns the sum of the squared elements of a vector: dot(v, v). Equivalent to the squared Euclidean norm. Used as a building block for magnitude, distance, and variance.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>v</code></td><td><code>[]T</code></td><td>Input vector</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>T</code> — sum of v[i]² for all i.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="magnitude">
+                            <code>fn magnitude[T](v []T) T</code>
+                        </h3>
+                        <p>Computes the Euclidean norm (L2 norm) of a vector: the geometric length. Defined as sqrt(sum_of_squares(v)). A unit vector has magnitude 1.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>v</code></td><td><code>[]T</code></td><td>Input vector</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>T</code> — Euclidean length: sqrt(v[0]² + v[1]² + … + v[n-1]²).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="squared_distance">
+                            <code>fn squared_distance[T](v []T, w []T) T</code>
+                        </h3>
+                        <p>Returns the squared Euclidean distance between two vectors. Avoids the square root, making it faster than <code>distance</code> when only relative comparisons are needed (e.g. finding the nearest neighbor).</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>v</code></td><td><code>[]T</code></td><td>First vector</td></tr>
+                                <tr><td><code>w</code></td><td><code>[]T</code></td><td>Second vector; must be the same length as <code>v</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>T</code> — sum_of_squares(v - w) = sum((v[i] - w[i])²).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="distance">
+                            <code>fn distance[T](v []T, w []T) T</code>
+                        </h3>
+                        <p>Computes the Euclidean distance between two vectors: the length of the difference vector. This is the most common notion of geometric distance in machine learning (e.g. k-NN, k-means).</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>v</code></td><td><code>[]T</code></td><td>First vector</td></tr>
+                                <tr><td><code>w</code></td><td><code>[]T</code></td><td>Second vector; must be the same length as <code>v</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>T</code> — sqrt(squared_distance(v, w)).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="sum">
+                            <code>fn sum[T](arr []T) T</code>
+                        </h3>
+                        <p>Returns the sum of all elements in a flat array. A convenience scalar reduction that complements <code>vector_sum</code> for 2D inputs.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>arr</code></td><td><code>[]T</code></td><td>Input array of numeric values</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>T</code> — sum of all elements.</p>
+                    </div>
+
+                </div>
+
+                <h3 id="matrices" style="margin: 2rem 0 1rem; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">matrix.v</h3>
+                <div class="function-list">
+
+                    <div class="function-item">
+                        <h3 id="flatten">
+                            <code>fn flatten[T](m [][]T) []T</code>
+                        </h3>
+                        <p>Converts a 2D matrix into a 1D slice in row-major order (all elements of row 0 first, then row 1, etc.). Useful for passing matrices to flat-array APIs or serialization.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>m</code></td><td><code>[][]T</code></td><td>Input matrix (slice of row slices)</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — flat 1D slice in row-major order; length = rows * cols.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="shape">
+                            <code>fn shape[T](a [][]T) (int, int)</code>
+                        </h3>
+                        <p>Returns the dimensions of a matrix as a (rows, cols) tuple. The column count is taken from the length of the first row.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>a</code></td><td><code>[][]T</code></td><td>Input matrix</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(int, int)</code> — <code>(num_rows, num_cols)</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="get_row">
+                            <code>fn get_row[T](a [][]T, i int) []T</code>
+                        </h3>
+                        <p>Extracts the i-th row of a matrix as a 1D slice.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>a</code></td><td><code>[][]T</code></td><td>Input matrix</td></tr>
+                                <tr><td><code>i</code></td><td><code>int</code></td><td>Row index (0-based)</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — the i-th row as a flat slice.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="get_column">
+                            <code>fn get_column[T](a [][]T, j int) []T</code>
+                        </h3>
+                        <p>Extracts the j-th column of a matrix as a 1D slice, collecting a[0][j], a[1][j], …, a[m-1][j].</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>a</code></td><td><code>[][]T</code></td><td>Input matrix</td></tr>
+                                <tr><td><code>j</code></td><td><code>int</code></td><td>Column index (0-based)</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — the j-th column as a flat slice of length <code>num_rows</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="make_matrix">
+                            <code>fn make_matrix[T](num_rows int, num_cols int, op fn(int, int) T) [][]T</code>
+                        </h3>
+                        <p>Constructs a matrix by calling <code>op(i, j)</code> for each cell (i, j). This functional constructor is flexible enough to build identity matrices, diagonal matrices, distance matrices, or any other structured matrix.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>num_rows</code></td><td><code>int</code></td><td>Number of rows in the output matrix</td></tr>
+                                <tr><td><code>num_cols</code></td><td><code>int</code></td><td>Number of columns in the output matrix</td></tr>
+                                <tr><td><code>op</code></td><td><code>fn(int, int) T</code></td><td>Function called with (row_index, col_index) to produce each cell value</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[][]T</code> — newly allocated matrix of shape num_rows x num_cols.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="identity_matrix">
+                            <code>fn identity_matrix[T](n int) [][]T</code>
+                        </h3>
+                        <p>Creates an n×n identity matrix: 1 on the main diagonal, 0 everywhere else. The identity matrix is the neutral element for matrix multiplication.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>n</code></td><td><code>int</code></td><td>Size of the square matrix</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[][]T</code> — n×n identity matrix.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="matmul">
+                            <code>fn matmul[T](a [][]T, b [][]T) [][]T</code>
+                        </h3>
+                        <p>Multiplies two matrices together. The number of columns in <code>a</code> must equal the number of rows in <code>b</code>. If <code>a</code> is m×k and <code>b</code> is k×n, the result is m×n.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>a</code></td><td><code>[][]T</code></td><td>Left matrix of shape m×k</td></tr>
+                                <tr><td><code>b</code></td><td><code>[][]T</code></td><td>Right matrix of shape k×n</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[][]T</code> — product matrix of shape m×n, where result[i][j] = dot(row i of a, col j of b).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="arange">
+                            <code>fn arange[T](end int) []T</code>
+                        </h3>
+                        <p>Generates an integer range [0, 1, 2, …, end-1] cast to type T. Useful for constructing index vectors or initializing sequences before reshaping into a matrix.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>end</code></td><td><code>int</code></td><td>Exclusive upper bound of the range; the output has <code>end</code> elements</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — slice [T(0), T(1), …, T(end-1)].</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="reshape">
+                            <code>fn reshape[T](v []T, rows int, columns int) [][]T</code>
+                        </h3>
+                        <p>Reshapes a flat 1D slice into a 2D matrix of the given dimensions in row-major order. The total number of elements must equal rows * columns.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>v</code></td><td><code>[]T</code></td><td>Flat input slice; must have length == rows * columns</td></tr>
+                                <tr><td><code>rows</code></td><td><code>int</code></td><td>Number of rows in the output matrix</td></tr>
+                                <tr><td><code>columns</code></td><td><code>int</code></td><td>Number of columns in the output matrix</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[][]T</code> — matrix of shape rows×columns filled in row-major order.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="transpose">
+                            <code>fn transpose[T](m [][]T) [][]T</code>
+                        </h3>
+                        <p>Returns the transpose of a matrix: rows become columns and columns become rows. If the input is m×n, the output is n×m, and result[j][i] = m[i][j].</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>m</code></td><td><code>[][]T</code></td><td>Input matrix of shape m×n</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[][]T</code> — transposed matrix of shape n×m.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="matvec_mul">
+                            <code>fn matvec_mul[T](m [][]T, v []T) []T</code>
+                        </h3>
+                        <p>Multiplies a matrix by a column vector: the matrix-vector product m @ v. Each element of the result is the dot product of the corresponding row of m with v. The length of v must equal the number of columns in m.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>m</code></td><td><code>[][]T</code></td><td>Matrix of shape r×c</td></tr>
+                                <tr><td><code>v</code></td><td><code>[]T</code></td><td>Column vector of length c</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — result vector of length r, where result[i] = dot(m[i], v).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="gaussian_elimination">
+                            <code>fn gaussian_elimination(a [][]f64, b []f64) []f64</code>
+                        </h3>
+                        <p>Solves the linear system Ax = b via Gaussian elimination with back-substitution. The matrix <code>a</code> must be square (n×n) and non-singular. This is suitable for small-to-medium systems; for very large systems consider an iterative solver.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>a</code></td><td><code>[][]f64</code></td><td>Coefficient matrix of shape n×n; must be non-singular</td></tr>
+                                <tr><td><code>b</code></td><td><code>[]f64</code></td><td>Right-hand side vector of length n</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]f64</code> — solution vector x of length n such that A @ x ≈ b.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="rotation_z">
+                            <code>fn rotation_z[T](alpha T) [][]T</code>
+                        </h3>
+                        <p>Creates a 3×3 rotation matrix that rotates points around the Z axis by angle alpha in radians. Points in the XY plane are rotated; the Z coordinate is unchanged.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>alpha</code></td><td><code>T</code></td><td>Rotation angle in radians around the Z axis</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[][]T</code> — 3×3 rotation matrix R_z(alpha).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="rotation_y">
+                            <code>fn rotation_y[T](beta T) [][]T</code>
+                        </h3>
+                        <p>Creates a 3×3 rotation matrix that rotates points around the Y axis by angle beta in radians.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>beta</code></td><td><code>T</code></td><td>Rotation angle in radians around the Y axis</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[][]T</code> — 3×3 rotation matrix R_y(beta).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="rotation_x">
+                            <code>fn rotation_x[T](gamma T) [][]T</code>
+                        </h3>
+                        <p>Creates a 3×3 rotation matrix that rotates points around the X axis by angle gamma in radians.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>gamma</code></td><td><code>T</code></td><td>Rotation angle in radians around the X axis</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[][]T</code> — 3×3 rotation matrix R_x(gamma).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="rotation">
+                            <code>fn rotation[T](alpha T, beta T, gamma T) [][]T</code>
+                        </h3>
+                        <p>Computes the combined 3D rotation matrix by composing rotations around Z, then Y, then X (intrinsic Tait-Bryan angles). Equivalent to matmul(R_x(gamma), matmul(R_y(beta), R_z(alpha))).</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>alpha</code></td><td><code>T</code></td><td>Rotation angle in radians around the Z axis (yaw)</td></tr>
+                                <tr><td><code>beta</code></td><td><code>T</code></td><td>Rotation angle in radians around the Y axis (pitch)</td></tr>
+                                <tr><td><code>gamma</code></td><td><code>T</code></td><td>Rotation angle in radians around the X axis (roll)</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[][]T</code> — combined 3×3 rotation matrix R = R_x * R_y * R_z.</p>
+                    </div>
+
+                </div>
+            </section>
+
+            <section class="examples">
+                <h2>Examples</h2>
+                <div class="examples-list">
+
+                    <div class="example-block">
+                        <h3>Vector arithmetic and distances</h3>
+                        <pre><code>import vstats.linalg
+
+fn main() {
+    v1 := [1.0, 2.0, 3.0]
+    v2 := [4.0, 5.0, 6.0]
+
+    println("add:        ${linalg.add(v1, v2)}")
+    println("subtract:   ${linalg.subtract(v2, v1)}")
+    println("dot:        ${linalg.dot(v1, v2):.1f}")
+    println("magnitude:  ${linalg.magnitude([3.0, 4.0]):.1f}")
+    println("distance:   ${linalg.distance(v1, v2):.4f}")
+    println("sq_dist:    ${linalg.squared_distance(v1, v2):.1f}")
+
+    vecs := [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]]
+    println("vector_sum: ${linalg.vector_sum(vecs)}")
+    println("vector_mean: ${linalg.vector_mean(vecs)}")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>add:        [5.0, 7.0, 9.0]
+subtract:   [3.0, 3.0, 3.0]
+dot:        32.0
+magnitude:  5.0
+distance:   5.1962
+sq_dist:    27.0
+vector_sum: [2.0, 2.0]
+vector_mean: [0.6667, 0.6667]</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Matrix construction and multiplication</h3>
+                        <pre><code>import vstats.linalg
+
+fn main() {
+    a := [[1.0, 2.0], [3.0, 4.0]]
+    b := [[5.0, 6.0], [7.0, 8.0]]
+
+    c := linalg.matmul(a, b)
+    println("matmul: ${c}")
+
+    id := linalg.identity_matrix[f64](3)
+    println("identity: ${id}")
+
+    flat := linalg.arange[f64](6)
+    m := linalg.reshape(flat, 2, 3)
+    println("reshape [0..5] to 2x3: ${m}")
+    println("transpose: ${linalg.transpose(m)}")
+
+    rows, cols := linalg.shape(m)
+    println("shape: ${rows} x ${cols}")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>matmul: [[19.0, 22.0], [43.0, 50.0]]
+identity: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+reshape [0..5] to 2x3: [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]]
+transpose: [[0.0, 3.0], [1.0, 4.0], [2.0, 5.0]]
+shape: 2 x 3</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Solving a linear system with Gaussian elimination</h3>
+                        <pre><code>import vstats.linalg
+
+fn main() {
+    // Solve: 2x + y = 5
+    //         x + 3y = 10
+    a := [[2.0, 1.0], [1.0, 3.0]]
+    b := [5.0, 10.0]
+
+    x := linalg.gaussian_elimination(a, b)
+    println("x = ${x[0]:.4f}")  // 1.0
+    println("y = ${x[1]:.4f}")  // 3.0
+
+    // Verify: A @ x should equal b
+    check := linalg.matvec_mul(a, x)
+    println("A @ x = ${check}")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>x = 1.0000
+y = 3.0000
+A @ x = [5.0, 10.0]</pre>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="../js/script.js"></script>
+</body>
+</html>

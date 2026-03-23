@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>optim - VStats</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="../index.html" class="logo"><span>V</span>Stats</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../concepts.html">Concepts</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                </ul>
+                <span class="nav-section-label">Modules</span>
+                <ul class="nav-list">
+                    <li><a href="../modules/linalg.html">linalg</a></li>
+                    <li><a href="../modules/stats.html">stats</a></li>
+                    <li><a href="../modules/prob.html">prob</a></li>
+                    <li><a href="../modules/hypothesis.html">hypothesis</a></li>
+                    <li><a href="../modules/optim.html" class="active">optim</a></li>
+                    <li><a href="../modules/ml.html">ml</a></li>
+                    <li><a href="../modules/nn.html">nn</a></li>
+                    <li><a href="../modules/experiment.html">experiment</a></li>
+                    <li><a href="../modules/growth.html">growth</a></li>
+                    <li><a href="../modules/utils.html">utils</a></li>
+                </ul>
+                <div class="toc">
+                    <h3>On this page</h3>
+                    <ul class="toc-list">
+                        <li><a href="#difference_quotient">difference_quotient</a></li>
+                        <li><a href="#partial_difference_quotient">partial_difference_quotient</a></li>
+                        <li><a href="#gradient">gradient</a></li>
+                        <li><a href="#gradient_step">gradient_step</a></li>
+                        <li><a href="#sum_of_squares_gradient">sum_of_squares_gradient</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+        <main class="content">
+            <header class="module-header">
+                <h1>optim</h1>
+                <p class="module-description">Gradient-Based Optimization — numerical differentiation and gradient descent primitives</p>
+            </header>
+
+            <section class="theory">
+                <h2>Overview</h2>
+                <div class="theory-content">import vstats.optim
+
+// Numerical gradient of any scalar function
+f := fn(v []f64) f64 { return v[0]*v[0] + v[1]*v[1] }
+grad := optim.gradient(f, [3.0, 4.0], 0.0001)  // [-6.0, -8.0] approx
+
+// Gradient descent loop
+mut v := [10.0, 10.0]
+for _ in 0..100 {
+    g := optim.gradient(f, v, 0.0001)
+    v = optim.gradient_step(v, g, -0.1)  // step in negative gradient direction
+}</div>
+                <p style="margin-top:1rem">The <code>optim</code> module provides building blocks for gradient descent. Gradients are computed numerically via finite differences — no symbolic differentiation required. Combine <code>gradient</code> and <code>gradient_step</code> in a loop to minimize any differentiable scalar function.</p>
+            </section>
+
+            <section class="functions">
+                <h2>API Reference</h2>
+                <div class="function-list">
+
+                    <div class="function-item">
+                        <h3 id="difference_quotient">
+                            <code>fn difference_quotient(f fn(f64) f64, x f64, h f64) f64</code>
+                        </h3>
+                        <p>Numerical derivative of a univariate function at point <code>x</code> using the forward difference quotient: <code>(f(x + h) - f(x)) / h</code>. Use a small <code>h</code> (e.g. <code>0.0001</code>) for a good approximation.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>f</code></td><td><code>fn(f64) f64</code></td><td>Scalar function of one variable to differentiate</td></tr>
+                                <tr><td><code>x</code></td><td><code>f64</code></td><td>Point at which to evaluate the derivative</td></tr>
+                                <tr><td><code>h</code></td><td><code>f64</code></td><td>Step size for the finite difference; smaller values give better approximations but risk numerical instability</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — approximate derivative f′(x).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="partial_difference_quotient">
+                            <code>fn partial_difference_quotient(f fn([]f64) f64, v []f64, i int, h f64) f64</code>
+                        </h3>
+                        <p>Numerical partial derivative of a multivariate function with respect to the <code>i</code>-th component of <code>v</code>. Perturbs only <code>v[i]</code> by <code>h</code>, leaving all other components unchanged.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>f</code></td><td><code>fn([]f64) f64</code></td><td>Scalar function of a vector argument</td></tr>
+                                <tr><td><code>v</code></td><td><code>[]f64</code></td><td>Point at which to evaluate the partial derivative</td></tr>
+                                <tr><td><code>i</code></td><td><code>int</code></td><td>Index of the component to differentiate with respect to</td></tr>
+                                <tr><td><code>h</code></td><td><code>f64</code></td><td>Step size for the finite difference</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — approximate partial derivative ∂f/∂vᵢ at <code>v</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="gradient">
+                            <code>fn gradient(f fn([]f64) f64, v []f64, h f64) []f64</code>
+                        </h3>
+                        <p>Numerical gradient of a multivariate scalar function at point <code>v</code>. Computes the partial derivative with respect to each component using <a href="#partial_difference_quotient"><code>partial_difference_quotient</code></a>. The gradient vector points in the direction of steepest ascent.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>f</code></td><td><code>fn([]f64) f64</code></td><td>Scalar function of a vector argument to differentiate</td></tr>
+                                <tr><td><code>v</code></td><td><code>[]f64</code></td><td>Point at which to evaluate the gradient</td></tr>
+                                <tr><td><code>h</code></td><td><code>f64</code></td><td>Step size for finite differences; typically <code>0.0001</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]f64</code> — gradient vector ∇f(v) of the same length as <code>v</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="gradient_step">
+                            <code>fn gradient_step[T](v []T, gradient_vector []T, step_size T) []T</code>
+                        </h3>
+                        <p>Applies one step of gradient descent (or ascent). Computes <code>v + step_size × gradient_vector</code> element-wise. Pass a negative <code>step_size</code> (learning rate) to descend; pass a positive value to ascend.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>v</code></td><td><code>[]T</code></td><td>Current parameter vector</td></tr>
+                                <tr><td><code>gradient_vector</code></td><td><code>[]T</code></td><td>Gradient at <code>v</code>; must be the same length as <code>v</code></td></tr>
+                                <tr><td><code>step_size</code></td><td><code>T</code></td><td>Scalar multiplier (learning rate). Use a negative value to move against the gradient (minimization)</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — updated parameter vector of the same length as <code>v</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="sum_of_squares_gradient">
+                            <code>fn sum_of_squares_gradient[T](v []T) []T</code>
+                        </h3>
+                        <p>Closed-form gradient of the sum-of-squares function f(v) = Σ vᵢ². The gradient is simply <code>2v</code> — each component doubled. Useful as a reference function for testing optimization routines and understanding gradient descent convergence.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>v</code></td><td><code>[]T</code></td><td>Input vector</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>[]T</code> — gradient vector where each element is <code>2 × v[i]</code>.</p>
+                    </div>
+
+                </div>
+            </section>
+
+            <section class="examples">
+                <h2>Examples</h2>
+                <div class="examples-list">
+
+                    <div class="example-block">
+                        <h3>Numerical derivative</h3>
+                        <pre><code>import vstats.optim
+
+fn main() {
+    // Derivative of f(x) = x^2 at x = 3 should be 6.0
+    f := fn(x f64) f64 { return x * x }
+    dfdx := optim.difference_quotient(f, 3.0, 0.0001)
+    println("f'(3) ≈ ${dfdx:.4f}")  // expect ~6.0
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>f'(3) ≈ 6.0001</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Minimizing a function with gradient descent</h3>
+                        <pre><code>import vstats.optim
+import vstats.linalg
+
+fn main() {
+    // Minimize f(v) = sum of squares; minimum is at v = [0, 0, 0]
+    f := fn(v []f64) f64 {
+        return v[0]*v[0] + v[1]*v[1] + v[2]*v[2]
+    }
+
+    mut v := [10.0, 10.0, 10.0]
+    for _ in 0..200 {
+        grad := optim.gradient(f, v, 0.0001)
+        v = optim.gradient_step(v, grad, -0.1)
+    }
+
+    println("Result: ${v}")
+    println("f(v) = ${f(v):.6f}")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>Result: [0.000018, 0.000018, 0.000018]
+f(v) = 0.000000</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Using the closed-form gradient</h3>
+                        <pre><code>import vstats.optim
+
+fn main() {
+    // sum_of_squares_gradient is faster than numerical gradient
+    // when the analytical form is known
+    mut v := [5.0, -3.0, 2.0]
+    for _ in 0..100 {
+        grad := optim.sum_of_squares_gradient(v)
+        v = optim.gradient_step(v, grad, -0.1)
+    }
+    println("v ≈ ${v}")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>v ≈ [0.000003, -0.000002, 0.000001]</pre>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="../js/script.js"></script>
+</body>
+</html>

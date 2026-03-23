@@ -1,6 +1,8 @@
 dev_docs/
 .tmp/
 .venv/
+.claude/
+.opencode/
 *.md
 !README.md
 examples/breast_cancer_classification

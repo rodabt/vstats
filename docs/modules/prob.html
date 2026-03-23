@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>prob - VStats</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="../index.html" class="logo"><span>V</span>Stats</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../concepts.html">Concepts</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                </ul>
+                <span class="nav-section-label">Modules</span>
+                <ul class="nav-list">
+                    <li><a href="../modules/linalg.html">linalg</a></li>
+                    <li><a href="../modules/stats.html">stats</a></li>
+                    <li><a href="../modules/prob.html" class="active">prob</a></li>
+                    <li><a href="../modules/hypothesis.html">hypothesis</a></li>
+                    <li><a href="../modules/optim.html">optim</a></li>
+                    <li><a href="../modules/ml.html">ml</a></li>
+                    <li><a href="../modules/nn.html">nn</a></li>
+                    <li><a href="../modules/experiment.html">experiment</a></li>
+                    <li><a href="../modules/growth.html">growth</a></li>
+                    <li><a href="../modules/utils.html">utils</a></li>
+                </ul>
+                <div class="toc">
+                    <h3>On this page</h3>
+                    <ul class="toc-list">
+                        <li><a href="#normal_cdf">normal_cdf</a></li>
+                        <li><a href="#inverse_normal_cdf">inverse_normal_cdf</a></li>
+                        <li><a href="#bernoulli_pdf">bernoulli_pdf</a></li>
+                        <li><a href="#bernoulli_cdf">bernoulli_cdf</a></li>
+                        <li><a href="#binomial_pdf">binomial_pdf</a></li>
+                        <li><a href="#poisson_pdf">poisson_pdf</a></li>
+                        <li><a href="#poisson_cdf">poisson_cdf</a></li>
+                        <li><a href="#exponential_pdf">exponential_pdf</a></li>
+                        <li><a href="#exponential_cdf">exponential_cdf</a></li>
+                        <li><a href="#gamma_pdf">gamma_pdf</a></li>
+                        <li><a href="#chi_squared_pdf">chi_squared_pdf</a></li>
+                        <li><a href="#students_t_pdf">students_t_pdf</a></li>
+                        <li><a href="#f_distribution_pdf">f_distribution_pdf</a></li>
+                        <li><a href="#beta_pdf">beta_pdf</a></li>
+                        <li><a href="#uniform_pdf">uniform_pdf</a></li>
+                        <li><a href="#uniform_cdf">uniform_cdf</a></li>
+                        <li><a href="#negative_binomial_pdf">negative_binomial_pdf</a></li>
+                        <li><a href="#negative_binomial_cdf">negative_binomial_cdf</a></li>
+                        <li><a href="#multinomial_pdf">multinomial_pdf</a></li>
+                        <li><a href="#expectation">expectation</a></li>
+                        <li><a href="#beta_function">beta_function</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+        <main class="content">
+            <header class="module-header">
+                <h1>prob</h1>
+                <p class="module-description">Probability Distributions — PDFs, CDFs, and the inverse CDF for common discrete and continuous distributions</p>
+            </header>
+
+            <section class="theory">
+                <h2>Overview</h2>
+                <div class="theory-content">import vstats.prob
+
+// Continuous distributions
+p := prob.normal_cdf(1.96, 0.0, 1.0)          // P(Z <= 1.96) ≈ 0.975
+x := prob.inverse_normal_cdf(0.975, 0.0, 1.0) // critical value ≈ 1.96
+
+// Discrete distributions
+p_k  := prob.binomial_pdf(3, 10, 0.5)   // P(X = 3) where X ~ Bin(10, 0.5)
+p_le := prob.poisson_cdf(4, 3.0)        // P(X <= 4) where X ~ Pois(3)
+
+// Discrete expectation
+e := prob.expectation([1.0, 2.0, 3.0], [0.2, 0.5, 0.3])  // E[X] = 2.1
+
+// DistribParams controls tolerance for inverse_normal_cdf
+dp := prob.DistribParams{ tolerance: 0.000001 }</div>
+                <p style="margin-top:1rem">Functions named <code>_pdf</code> return the probability density (continuous) or probability mass (discrete) at a point. Functions named <code>_cdf</code> return the cumulative probability P(X ≤ x). The <code>DistribParams</code> struct accepts <code>tolerance f64 = 0.00001</code> and controls convergence in iterative methods.</p>
+            </section>
+
+            <section class="functions">
+                <h2>API Reference</h2>
+                <div class="function-list">
+
+                    <div class="function-item">
+                        <h3 id="normal_cdf">
+                            <code>fn normal_cdf(x f64, mu f64, sigma f64) f64</code>
+                        </h3>
+                        <p>Cumulative distribution function of the normal distribution. Returns P(X ≤ x) where X ~ N(mu, sigma²).</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>f64</code></td><td>Value at which to evaluate the CDF</td></tr>
+                                <tr><td><code>mu</code></td><td><code>f64</code></td><td>Mean of the distribution</td></tr>
+                                <tr><td><code>sigma</code></td><td><code>f64</code></td><td>Standard deviation; must be positive</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — probability in [0, 1].</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="inverse_normal_cdf">
+                            <code>fn inverse_normal_cdf(p f64, mu f64, sigma f64, dp DistribParams) f64</code>
+                        </h3>
+                        <p>Quantile function (inverse CDF) of the normal distribution. Returns the value x such that P(X ≤ x) = p, found via bisection search. Used to compute critical values and confidence interval bounds.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>p</code></td><td><code>f64</code></td><td>Target cumulative probability; must be in (0, 1)</td></tr>
+                                <tr><td><code>mu</code></td><td><code>f64</code></td><td>Mean of the distribution</td></tr>
+                                <tr><td><code>sigma</code></td><td><code>f64</code></td><td>Standard deviation; must be positive</td></tr>
+                                <tr><td><code>dp</code></td><td><code>DistribParams</code></td><td>Optional. <code>tolerance</code> for bisection convergence, default <code>0.00001</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — the value x such that normal_cdf(x, mu, sigma) ≈ p.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="bernoulli_pdf">
+                            <code>fn bernoulli_pdf(x f64, p f64) f64</code>
+                        </h3>
+                        <p>Probability mass function of the Bernoulli distribution. Returns P(X = x) where X ~ Bernoulli(p). Valid for x = 0 or x = 1.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>f64</code></td><td>Outcome; must be 0 or 1</td></tr>
+                                <tr><td><code>p</code></td><td><code>f64</code></td><td>Probability of success (x = 1); must be in [0, 1]</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — <code>p</code> if x = 1; <code>1 - p</code> if x = 0.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="bernoulli_cdf">
+                            <code>fn bernoulli_cdf(x f64, p f64) f64</code>
+                        </h3>
+                        <p>Cumulative distribution function of the Bernoulli distribution. Returns P(X ≤ x).</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>f64</code></td><td>Value at which to evaluate the CDF</td></tr>
+                                <tr><td><code>p</code></td><td><code>f64</code></td><td>Probability of success; must be in [0, 1]</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — 0 if x &lt; 0; <code>1 - p</code> if 0 ≤ x &lt; 1; 1 if x ≥ 1.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="binomial_pdf">
+                            <code>fn binomial_pdf(k int, n int, p f64) f64</code>
+                        </h3>
+                        <p>Probability mass function of the binomial distribution. Returns P(X = k) where X ~ Bin(n, p) — the probability of exactly <code>k</code> successes in <code>n</code> independent Bernoulli trials each with success probability <code>p</code>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>k</code></td><td><code>int</code></td><td>Number of successes; must be in [0, n]</td></tr>
+                                <tr><td><code>n</code></td><td><code>int</code></td><td>Number of trials; must be non-negative</td></tr>
+                                <tr><td><code>p</code></td><td><code>f64</code></td><td>Probability of success per trial; must be in [0, 1]</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — P(X = k) = C(n, k) × pᵏ × (1 − p)ⁿ⁻ᵏ.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="poisson_pdf">
+                            <code>fn poisson_pdf(k int, lambda f64) f64</code>
+                        </h3>
+                        <p>Probability mass function of the Poisson distribution. Returns P(X = k) where X ~ Pois(lambda). Models the number of events in a fixed interval when events occur independently at a constant average rate.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>k</code></td><td><code>int</code></td><td>Number of events; must be non-negative</td></tr>
+                                <tr><td><code>lambda</code></td><td><code>f64</code></td><td>Average event rate (mean); must be positive</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — P(X = k) = e⁻ᵏ × lambdaᵏ / k!.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="poisson_cdf">
+                            <code>fn poisson_cdf(k int, lambda f64) f64</code>
+                        </h3>
+                        <p>Cumulative distribution function of the Poisson distribution. Returns P(X ≤ k) — the probability of observing at most <code>k</code> events.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>k</code></td><td><code>int</code></td><td>Upper bound on number of events</td></tr>
+                                <tr><td><code>lambda</code></td><td><code>f64</code></td><td>Average event rate; must be positive</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — cumulative probability Σᵢ₌₀ᵏ poisson_pdf(i, lambda).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="exponential_pdf">
+                            <code>fn exponential_pdf(x f64, lambda f64) f64</code>
+                        </h3>
+                        <p>Probability density function of the exponential distribution. Models the time between events in a Poisson process. The mean of the distribution is <code>1 / lambda</code>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>f64</code></td><td>Non-negative value at which to evaluate the density</td></tr>
+                                <tr><td><code>lambda</code></td><td><code>f64</code></td><td>Rate parameter; must be positive</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — f(x) = lambda × e^(−lambda × x) for x ≥ 0; 0 otherwise.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="exponential_cdf">
+                            <code>fn exponential_cdf(x f64, lambda f64) f64</code>
+                        </h3>
+                        <p>Cumulative distribution function of the exponential distribution. Returns P(X ≤ x) — the probability an event occurs within time <code>x</code>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>f64</code></td><td>Non-negative time value</td></tr>
+                                <tr><td><code>lambda</code></td><td><code>f64</code></td><td>Rate parameter; must be positive</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — F(x) = 1 − e^(−lambda × x) for x ≥ 0; 0 otherwise.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="gamma_pdf">
+                            <code>fn gamma_pdf(x f64, k f64, theta f64) f64</code>
+                        </h3>
+                        <p>Probability density function of the gamma distribution. A flexible distribution for non-negative skewed data. Generalizes the exponential; the chi-squared distribution is a special case with k = df/2 and theta = 2.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>f64</code></td><td>Non-negative value at which to evaluate the density</td></tr>
+                                <tr><td><code>k</code></td><td><code>f64</code></td><td>Shape parameter; must be positive</td></tr>
+                                <tr><td><code>theta</code></td><td><code>f64</code></td><td>Scale parameter; must be positive. Mean = k × theta</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — probability density at <code>x</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="chi_squared_pdf">
+                            <code>fn chi_squared_pdf(x f64, df int) f64</code>
+                        </h3>
+                        <p>Probability density function of the chi-squared distribution (a special case of the gamma). Used in chi-squared hypothesis tests and confidence intervals for variance.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>f64</code></td><td>Non-negative value at which to evaluate the density</td></tr>
+                                <tr><td><code>df</code></td><td><code>int</code></td><td>Degrees of freedom; must be positive</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — probability density at <code>x</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="students_t_pdf">
+                            <code>fn students_t_pdf(x f64, df int) f64</code>
+                        </h3>
+                        <p>Probability density function of Student's t-distribution. Symmetric and bell-shaped like the normal but with heavier tails. Used in t-tests and inference when the population variance is unknown.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>f64</code></td><td>Value at which to evaluate the density</td></tr>
+                                <tr><td><code>df</code></td><td><code>int</code></td><td>Degrees of freedom; must be positive. As df → ∞ the distribution approaches N(0, 1)</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — probability density at <code>x</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="f_distribution_pdf">
+                            <code>fn f_distribution_pdf(x f64, d1 int, d2 int) f64</code>
+                        </h3>
+                        <p>Probability density function of the F-distribution. Used in ANOVA and regression to test variance ratios between groups.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>f64</code></td><td>Non-negative value at which to evaluate the density</td></tr>
+                                <tr><td><code>d1</code></td><td><code>int</code></td><td>Numerator degrees of freedom; must be positive</td></tr>
+                                <tr><td><code>d2</code></td><td><code>int</code></td><td>Denominator degrees of freedom; must be positive</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — probability density at <code>x</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="beta_pdf">
+                            <code>fn beta_pdf(x f64, alpha f64, beta f64) f64</code>
+                        </h3>
+                        <p>Probability density function of the beta distribution. Defined on [0, 1]; commonly used to model probabilities and proportions. The conjugate prior for Bernoulli/binomial likelihoods in Bayesian inference.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>f64</code></td><td>Value in [0, 1] at which to evaluate the density</td></tr>
+                                <tr><td><code>alpha</code></td><td><code>f64</code></td><td>Shape parameter α; must be positive. Informally: successes + 1</td></tr>
+                                <tr><td><code>beta</code></td><td><code>f64</code></td><td>Shape parameter β; must be positive. Informally: failures + 1</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — probability density at <code>x</code>.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="uniform_pdf">
+                            <code>fn uniform_pdf(x f64, a f64, b f64) f64</code>
+                        </h3>
+                        <p>Probability density function of the continuous uniform distribution. All values in [a, b] are equally likely.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>f64</code></td><td>Value at which to evaluate the density</td></tr>
+                                <tr><td><code>a</code></td><td><code>f64</code></td><td>Lower bound of the interval</td></tr>
+                                <tr><td><code>b</code></td><td><code>f64</code></td><td>Upper bound; must satisfy b &gt; a</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — <code>1 / (b - a)</code> if a ≤ x ≤ b; 0 otherwise.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="uniform_cdf">
+                            <code>fn uniform_cdf(x f64, a f64, b f64) f64</code>
+                        </h3>
+                        <p>Cumulative distribution function of the continuous uniform distribution. Returns P(X ≤ x) where X ~ U(a, b).</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>f64</code></td><td>Value at which to evaluate the CDF</td></tr>
+                                <tr><td><code>a</code></td><td><code>f64</code></td><td>Lower bound of the interval</td></tr>
+                                <tr><td><code>b</code></td><td><code>f64</code></td><td>Upper bound; must satisfy b &gt; a</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — 0 if x &lt; a; <code>(x - a) / (b - a)</code> if a ≤ x ≤ b; 1 if x &gt; b.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="negative_binomial_pdf">
+                            <code>fn negative_binomial_pdf(k int, r int, p f64) f64</code>
+                        </h3>
+                        <p>Probability mass function of the negative binomial distribution. Returns the probability of observing exactly <code>k</code> failures before achieving <code>r</code> successes.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>k</code></td><td><code>int</code></td><td>Number of failures; must be non-negative</td></tr>
+                                <tr><td><code>r</code></td><td><code>int</code></td><td>Number of required successes; must be positive</td></tr>
+                                <tr><td><code>p</code></td><td><code>f64</code></td><td>Probability of success per trial; must be in (0, 1]</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — P(X = k) = C(k + r − 1, k) × pʳ × (1 − p)ᵏ.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="negative_binomial_cdf">
+                            <code>fn negative_binomial_cdf(k int, r int, p f64) f64</code>
+                        </h3>
+                        <p>Cumulative distribution function of the negative binomial. Returns P(X ≤ k) — the probability of at most <code>k</code> failures before achieving <code>r</code> successes.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>k</code></td><td><code>int</code></td><td>Upper bound on failures</td></tr>
+                                <tr><td><code>r</code></td><td><code>int</code></td><td>Number of required successes; must be positive</td></tr>
+                                <tr><td><code>p</code></td><td><code>f64</code></td><td>Probability of success per trial; must be in (0, 1]</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — cumulative probability Σᵢ₌₀ᵏ negative_binomial_pdf(i, r, p).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="multinomial_pdf">
+                            <code>fn multinomial_pdf(x []int, p []f64) f64</code>
+                        </h3>
+                        <p>Probability mass function of the multinomial distribution. Generalizes the binomial to multiple outcome categories. Returns the probability of observing exactly the counts in <code>x</code> given category probabilities <code>p</code>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]int</code></td><td>Observed count per category; all non-negative, summing to the total number of trials</td></tr>
+                                <tr><td><code>p</code></td><td><code>[]f64</code></td><td>Probability per category; same length as <code>x</code>, must sum to 1</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — P(X = x) = n! / (x₀! × … × xₖ!) × p₀^x₀ × … × pₖ^xₖ, where n = Σ xᵢ.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="expectation">
+                            <code>fn expectation[T](x []T, p []T) T</code>
+                        </h3>
+                        <p>Expected value of a discrete random variable. Computes E[X] = Σ xᵢ × pᵢ — the probability-weighted average of possible outcomes.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]T</code></td><td>Possible values of the random variable</td></tr>
+                                <tr><td><code>p</code></td><td><code>[]T</code></td><td>Corresponding probabilities; same length as <code>x</code>, must sum to 1</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>T</code> — the expected value E[X].</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="beta_function">
+                            <code>fn beta_function(x f64, y f64) f64</code>
+                        </h3>
+                        <p>Euler's beta function B(x, y) = Γ(x)Γ(y) / Γ(x + y). Used internally as the normalizing constant for the beta and F distributions. Satisfies B(x, y) = B(y, x).</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>f64</code></td><td>First argument; must be positive</td></tr>
+                                <tr><td><code>y</code></td><td><code>f64</code></td><td>Second argument; must be positive</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>f64</code> — value of the beta function B(x, y).</p>
+                    </div>
+
+                </div>
+            </section>
+
+            <section class="examples">
+                <h2>Examples</h2>
+                <div class="examples-list">
+
+                    <div class="example-block">
+                        <h3>Normal distribution: probability and critical value</h3>
+                        <pre><code>import vstats.prob
+
+fn main() {
+    // P(Z <= 1.96) for standard normal
+    p := prob.normal_cdf(1.96, 0.0, 1.0)
+    println("P(Z <= 1.96) = ${p:.4f}")
+
+    // 97.5th percentile: two-tailed 95% CI critical value
+    z := prob.inverse_normal_cdf(0.975, 0.0, 1.0)
+    println("z_0.975 = ${z:.4f}")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>P(Z <= 1.96) = 0.9750
+z_0.975 = 1.9600</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Binomial probabilities</h3>
+                        <pre><code>import vstats.prob
+
+fn main() {
+    // X ~ Bin(10, 0.5): probability of each outcome
+    for k in 0..11 {
+        p := prob.binomial_pdf(k, 10, 0.5)
+        println("P(X=${k:2}) = ${p:.4f}")
+    }
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>P(X= 0) = 0.0010
+P(X= 5) = 0.2461
+P(X=10) = 0.0010</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Discrete expectation</h3>
+                        <pre><code>import vstats.prob
+
+fn main() {
+    // Fair die: E[X] = 3.5
+    values := [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    probs  := [1.0/6, 1.0/6, 1.0/6, 1.0/6, 1.0/6, 1.0/6]
+    e := prob.expectation(values, probs)
+    println("E[die] = ${e:.4f}")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>E[die] = 3.5000</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Beta distribution for Bayesian A/B testing</h3>
+                        <pre><code>import vstats.prob
+
+fn main() {
+    // After observing 30 conversions from 100 visitors:
+    // Posterior is Beta(31, 71)
+    alpha := 31.0
+    beta  := 71.0
+
+    for pct in [20, 25, 30, 35, 40] {
+        x := f64(pct) / 100.0
+        d := prob.beta_pdf(x, alpha, beta)
+        println("density at ${pct}% = ${d:.3f}")
+    }
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>density at 20% = 0.142
+density at 25% = 3.821
+density at 30% = 4.156
+density at 35% = 2.317
+density at 40% = 0.381</pre>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="../js/script.js"></script>
+</body>
+</html>

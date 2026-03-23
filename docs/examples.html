@@ -10,26 +10,64 @@
     <div class="layout">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <a href="index.html" class="logo">VStats</a>
+                <a href="index.html" class="logo"><span>V</span>Stats</a>
             </div>
 	<nav class="sidebar-nav">
 			<ul class="nav-list">
 				<li><a href="index.html">Home</a></li>
 				<li><a href="concepts.html">Concepts</a></li>
 				<li><a href="examples.html" class="active">Examples</a></li>
-				<li><a href="api.html">API Reference</a></li>
+			</ul>
+			<span class="nav-section-label">Modules</span>
+			<ul class="nav-list">
+				<li><a href="modules/linalg.html">linalg</a></li>
+				<li><a href="modules/stats.html">stats</a></li>
+				<li><a href="modules/prob.html">prob</a></li>
+				<li><a href="modules/hypothesis.html">hypothesis</a></li>
+				<li><a href="modules/optim.html">optim</a></li>
+				<li><a href="modules/ml.html">ml</a></li>
+				<li><a href="modules/nn.html">nn</a></li>
+				<li><a href="modules/experiment.html">experiment</a></li>
+				<li><a href="modules/growth.html">growth</a></li>
+				<li><a href="modules/utils.html">utils</a></li>
 			</ul>
 		</nav>
 		<div class="toc">
 			<h3>On This Page</h3>
 			<ul class="toc-list">
-				<li><a href="#product-analytics">Product Analytics</a></li>
-				<li><a href="#experimentation">Experimentation</a></li>
-				<li><a href="#case-studies">Case Studies</a></li>
-				<li><a href="#workflows">Complete Workflows</a></li>
-				<li><a href="#statistical-guidance">Statistical Guidance</a></li>
-				<li><a href="#anti-patterns">Anti-Patterns</a></li>
-				<li><a href="#quick-reference">Quick Reference</a></li>
+				<li><a href="#product-analytics">1. Product Analytics</a></li>
+				<li><a href="#growth-metrics-deep-dive" style="padding-left:2.25rem">Growth Metrics Deep Dive</a></li>
+				<li><a href="#saas-metrics-suite" style="padding-left:3rem">SaaS Metrics Suite</a></li>
+				<li><a href="#cohort-retention-detail" style="padding-left:3rem">Cohort Retention</a></li>
+				<li><a href="#funnel-analysis" style="padding-left:3rem">Funnel Analysis</a></li>
+				<li><a href="#marketing-attribution-analysis" style="padding-left:3rem">Marketing Attribution</a></li>
+				<li><a href="#saas-dashboard" style="padding-left:2.25rem">SaaS Metrics Dashboard</a></li>
+				<li><a href="#ecommerce-funnel" style="padding-left:2.25rem">E-commerce Funnel</a></li>
+				<li><a href="#marketing-attribution" style="padding-left:2.25rem">Marketing Attribution</a></li>
+				<li><a href="#cohort-retention" style="padding-left:2.25rem">Cohort Retention</a></li>
+				<li><a href="#experimentation">2. Experimentation</a></li>
+				<li><a href="#conversion-rate-test" style="padding-left:2.25rem">Conversion Rate Test</a></li>
+				<li><a href="#continuous-metric-test" style="padding-left:2.25rem">Continuous Metric Test</a></li>
+				<li><a href="#sequential-testing" style="padding-left:2.25rem">Sequential Testing</a></li>
+				<li><a href="#bayesian-test" style="padding-left:2.25rem">Bayesian A/B Test</a></li>
+				<li><a href="#case-studies">3. Case Studies</a></li>
+				<li><a href="#case-saas-retention" style="padding-left:2.25rem">SaaS Retention Strategy</a></li>
+				<li><a href="#workflows">4. Workflows</a></li>
+				<li><a href="#workflow-analytics" style="padding-left:2.25rem">Analytics Pipeline</a></li>
+				<li><a href="#workflow-experiment" style="padding-left:2.25rem">Experiment Pipeline</a></li>
+				<li><a href="#statistical-guidance">5. Statistical Guidance</a></li>
+				<li><a href="#choosing-tests" style="padding-left:2.25rem">Choosing a Test</a></li>
+				<li><a href="#misconceptions" style="padding-left:2.25rem">Misconceptions</a></li>
+				<li><a href="#anti-patterns">6. Anti-Patterns</a></li>
+				<li><a href="#peeking" style="padding-left:2.25rem">Peeking at Results</a></li>
+				<li><a href="#data-leakage" style="padding-left:2.25rem">Data Leakage</a></li>
+				<li><a href="#multiple-comparisons" style="padding-left:2.25rem">Multiple Comparisons</a></li>
+				<li><a href="#simpsons-paradox" style="padding-left:2.25rem">Simpson's Paradox</a></li>
+				<li><a href="#wrong-metric" style="padding-left:2.25rem">Wrong Metric</a></li>
+				<li><a href="#quick-reference">7. Quick Reference</a></li>
+				<li><a href="#ref-ml-algorithms" style="padding-left:2.25rem">ML Algorithms</a></li>
+				<li><a href="#ref-stat-tests" style="padding-left:2.25rem">Statistical Tests</a></li>
+				<li><a href="#ref-patterns" style="padding-left:2.25rem">VStats Patterns</a></li>
 			</ul>
 		</div>
 	</aside>
@@ -41,10 +79,10 @@
 <h2>1. Product Analytics</h2>
 <p class="lead">Comprehensive examples for SaaS metrics, cohort analysis, funnel optimization, and growth analytics.</p>
 
-<h3>Growth Metrics Deep Dive</h3>
+<h3 id="growth-metrics-deep-dive">Growth Metrics Deep Dive</h3>
 
 <div class="example-item">
-<h4>SaaS Metrics Suite</h4>
+<h4 id="saas-metrics-suite">SaaS Metrics Suite</h4>
 <p>Track key subscription business metrics: MRR, ARR, ARPA, ARPU, and retention rates.</p>
 
 <div class="business-context">
@@ -133,7 +171,7 @@ fn main() {
 </div>
 
 <div class="example-item">
-<h4>Cohort Retention Analysis</h4>
+<h4 id="cohort-retention-detail">Cohort Retention Analysis</h4>
 <p>Track user retention over time to identify when and why users churn.</p>
 
 <div class="business-context">
@@ -221,7 +259,7 @@ fn main() {
 </div>
 
 <div class="example-item">
-<h4>Funnel Analysis & Optimization</h4>
+<h4 id="funnel-analysis">Funnel Analysis & Optimization</h4>
 <p>Analyze conversion funnels to identify the biggest opportunities for improvement.</p>
 
 <div class="business-context">
@@ -303,7 +341,7 @@ fn main() {
 </div>
 
 <div class="example-item">
-<h4>Marketing Attribution Analysis</h4>
+<h4 id="marketing-attribution-analysis">Marketing Attribution Analysis</h4>
 <p>Compare attribution models to understand true channel ROI and optimize budget allocation.</p>
 
 <div class="business-context">
@@ -428,7 +466,7 @@ fn main() {
                 <h2>Product Analytics</h2>
 
                 <div class="example-item">
-                    <h3>SaaS Metrics Dashboard</h3>
+                    <h3 id="saas-dashboard">SaaS Metrics Dashboard</h3>
                     <p>Track key business metrics.</p>
                     <pre><code>import vstats.growth
 
@@ -442,7 +480,7 @@ fn main() {
                 </div>
 
                 <div class="example-item">
-                    <h3>E-commerce Funnel Optimization</h3>
+                    <h3 id="ecommerce-funnel">E-commerce Funnel Optimization</h3>
                     <p>Analyze conversion funnels to identify drop-off points.</p>
                     <pre><code>import vstats.growth
 
@@ -457,7 +495,7 @@ fn main() {
                 </div>
 
                 <div class="example-item">
-                    <h3>Marketing Attribution</h3>
+                    <h3 id="marketing-attribution">Marketing Attribution</h3>
                     <p>Compare attribution models to optimize marketing spend.</p>
                     <pre><code>import vstats.growth
 
@@ -470,7 +508,7 @@ fn main() {
                 </div>
 
                 <div class="example-item">
-                    <h3>Cohort Retention Analysis</h3>
+                    <h3 id="cohort-retention">Cohort Retention Analysis</h3>
                     <p>Track user retention over time.</p>
                     <pre><code>import vstats.growth
 
@@ -486,7 +524,7 @@ fn main() {
 <h2 id="experimentation">2. Experimentation Workflows</h2>
 <p class="lead">End-to-end examples for designing, running, and interpreting A/B experiments.</p>
 
-<h3>Workflow 1: Conversion Rate Test</h3>
+<h3 id="conversion-rate-test">Workflow 1: Conversion Rate Test</h3>
 <div class="business-context">
 <strong>Business Context:</strong> Your landing page has a 5% signup rate. You want to test a redesigned hero section and need to detect at least a 1 percentage-point improvement (5% &rarr; 6%). You have 80% power budget and use a 5% significance level.
 </div>
@@ -519,7 +557,7 @@ fn main() {
     // Interpretation: The new design increased signups by 1.42pp (28% relative lift).
     // This exceeds our MDE of 1pp and is statistically significant. Ship it.</code></pre>
 
-<h3>Workflow 2: Continuous Metric Test (Revenue)</h3>
+<h3 id="continuous-metric-test">Workflow 2: Continuous Metric Test (Revenue)</h3>
 <div class="business-context">
 <strong>Business Context:</strong> Average revenue per user is $45 with a standard deviation of $20. You want to detect a $3 increase (6.7% lift). Calculate sample size, run the experiment, then analyze with a t-test.
 </div>
@@ -548,7 +586,7 @@ fn main() {
     println('Significant:    ${result.significant}')
 }</code></pre>
 
-<h3>Workflow 3: Sequential Testing (Safe Early Stopping)</h3>
+<h3 id="sequential-testing">Workflow 3: Sequential Testing (Safe Early Stopping)</h3>
 <div class="business-context">
 <strong>Business Context:</strong> You're running a high-traffic experiment where results come in fast. You want to check daily and stop early if a clear winner emerges &mdash; without inflating your false positive rate.
 </div>
@@ -581,7 +619,7 @@ fn main() {
     println('Lower boundary: ${r10.lower_boundary:.3f}')  // ~-1.56
 }</code></pre>
 
-<h3>Workflow 4: Bayesian A/B Test</h3>
+<h3 id="bayesian-test">Workflow 4: Bayesian A/B Test</h3>
 <div class="business-context">
 <strong>Business Context:</strong> You have a smaller experiment (300 users per group) and want to make a decision even before reaching classical significance. The Bayesian approach gives you a direct probability that variant B is better.
 </div>
@@ -624,7 +662,7 @@ fn main() {
 <p class="lead">Real-world examples with business context, methodology, and impact.</p>
 
 <div class="case-study">
-<h3>Case Study 1: SaaS Cohort-Based Retention Strategy</h3>
+<h3 id="case-saas-retention">Case Study 1: SaaS Cohort-Based Retention Strategy</h3>
 
 <div class="case-context">
 <h4>Scenario</h4>
@@ -764,7 +802,7 @@ fn main() {
 <p class="lead">End-to-end pipelines from raw data to actionable insights.</p>
 
 <div class="workflow">
-<h3>Workflow 1: Product Analytics Pipeline</h3>
+<h3 id="workflow-analytics">Workflow 1: Product Analytics Pipeline</h3>
 <p>From raw event data to executive dashboard.</p>
 
 <div class="workflow-steps">
@@ -820,7 +858,7 @@ fn aggregate_events(events []Event) []UserDay {
 </div>
 
 <div class="workflow">
-<h3>Workflow 2: Experiment Analysis Pipeline</h3>
+<h3 id="workflow-experiment">Workflow 2: Experiment Analysis Pipeline</h3>
 <p>From raw experiment data to business recommendation.</p>
 
 <div class="workflow-steps">
@@ -868,7 +906,7 @@ fn aggregate_events(events []Event) []UserDay {
 <h2>5. Statistical Guidance</h2>
 <p class="lead">When to use which test, and how to interpret results correctly.</p>
 
-<h3>Choosing the Right Statistical Test</h3>
+<h3 id="choosing-tests">Choosing the Right Statistical Test</h3>
 
 <div class="decision-tree">
 <h4>Decision Tree</h4>
@@ -1032,7 +1070,7 @@ What type of data do you have?
 </div>
 </div>
 
-<h3>Common Misconceptions in A/B Testing</h3>
+<h3 id="misconceptions">Common Misconceptions in A/B Testing</h3>
 
 <div class="misconceptions">
 <div class="misconception">
@@ -1062,7 +1100,7 @@ What type of data do you have?
 <p class="lead">Common mistakes and how to avoid them.</p>
 
 <div class="anti-pattern">
-<h3>Anti-Pattern 1: Peeking at Results</h3>
+<h3 id="peeking">Anti-Pattern 1: Peeking at Results</h3>
 
 <div class="bad-example">
 <h4>Wrong: Checking p-value Daily</h4>
@@ -1094,7 +1132,7 @@ if current_sample &gt;= n_required {
 </div>
 
 <div class="anti-pattern">
-<h3>Anti-Pattern 2: Data Leakage in ML</h3>
+<h3 id="data-leakage">Anti-Pattern 2: Data Leakage in ML</h3>
 
 <div class="bad-example">
 <h4>Wrong: Normalize Before Split</h4>
@@ -1122,7 +1160,7 @@ test_norm := utils.apply_normalization(test_data, means, stds)
 </div>
 
 <div class="anti-pattern">
-<h3>Anti-Pattern 3: Multiple Comparisons</h3>
+<h3 id="multiple-comparisons">Anti-Pattern 3: Multiple Comparisons</h3>
 
 <div class="bad-example">
 <h4>Wrong: Testing Many Metrics Uncorrected</h4>
@@ -1153,7 +1191,7 @@ for m in metrics {
 </div>
 
 <div class="anti-pattern">
-<h3>Anti-Pattern 4: Simpson's Paradox</h3>
+<h3 id="simpsons-paradox">Anti-Pattern 4: Simpson's Paradox</h3>
 
 <div class="example-scenario">
 <h4>Scenario</h4>
@@ -1178,7 +1216,7 @@ for seg in segments {
 </div>
 
 <div class="anti-pattern">
-<h3>Anti-Pattern 5: Optimizing Wrong Metric</h3>
+<h3 id="wrong-metric">Anti-Pattern 5: Optimizing Wrong Metric</h3>
 
 <div class="bad-example">
 <h4>Wrong: Accuracy on Imbalanced Data</h4>
@@ -1215,7 +1253,7 @@ println("AUC: ${roc.auc:.3f}")</code></pre>
 <p class="lead">Fast answers to common questions.</p>
 
 <div class="reference-card">
-<h3>ML Algorithm Selection</h3>
+<h3 id="ref-ml-algorithms">ML Algorithm Selection</h3>
 <table>
 <thead>
 <tr>
@@ -1260,7 +1298,7 @@ println("AUC: ${roc.auc:.3f}")</code></pre>
 </div>
 
 <div class="reference-card">
-<h3>Statistical Test Quick Guide</h3>
+<h3 id="ref-stat-tests">Statistical Test Quick Guide</h3>
 <table>
 <thead>
 <tr>
@@ -1310,7 +1348,7 @@ println("AUC: ${roc.auc:.3f}")</code></pre>
 </div>
 
 <div class="reference-card">
-<h3>Common VStats Patterns</h3>
+<h3 id="ref-patterns">Common VStats Patterns</h3>
 
 <div class="pattern-group">
 <h4>Data Loading & Splitting</h4>

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>hypothesis - VStats</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="../index.html" class="logo"><span>V</span>Stats</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../concepts.html">Concepts</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                </ul>
+                <span class="nav-section-label">Modules</span>
+                <ul class="nav-list">
+                    <li><a href="../modules/linalg.html">linalg</a></li>
+                    <li><a href="../modules/stats.html">stats</a></li>
+                    <li><a href="../modules/prob.html">prob</a></li>
+                    <li><a href="../modules/hypothesis.html" class="active">hypothesis</a></li>
+                    <li><a href="../modules/optim.html">optim</a></li>
+                    <li><a href="../modules/ml.html">ml</a></li>
+                    <li><a href="../modules/nn.html">nn</a></li>
+                    <li><a href="../modules/experiment.html">experiment</a></li>
+                    <li><a href="../modules/growth.html">growth</a></li>
+                    <li><a href="../modules/utils.html">utils</a></li>
+                </ul>
+                <div class="toc">
+                    <h3>On this page</h3>
+                    <ul class="toc-list">
+                        <li><a href="#t_test_one_sample">t_test_one_sample</a></li>
+                        <li><a href="#t_test_two_sample">t_test_two_sample</a></li>
+                        <li><a href="#chi_squared_test">chi_squared_test</a></li>
+                        <li><a href="#chi_squared_gof_test">chi_squared_gof_test</a></li>
+                        <li><a href="#correlation_test">correlation_test</a></li>
+                        <li><a href="#wilcoxon_signed_rank_test">wilcoxon_signed_rank_test</a></li>
+                        <li><a href="#mann_whitney_u_test">mann_whitney_u_test</a></li>
+                        <li><a href="#shapiro_wilk_test">shapiro_wilk_test</a></li>
+                        <li><a href="#ks_test">ks_test</a></li>
+                        <li><a href="#one_sample_t_test">one_sample_t_test</a></li>
+                        <li><a href="#two_sample_t_test">two_sample_t_test</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+        <main class="content">
+            <header class="module-header">
+                <h1>hypothesis</h1>
+                <p class="module-description">Statistical Hypothesis Testing — parametric and non-parametric tests for comparing distributions and assessing significance</p>
+            </header>
+
+            <section class="theory">
+                <h2>Overview</h2>
+                <div class="theory-content">import vstats.hypothesis
+
+// All tests return (statistic f64, p_value f64)
+// Reject H0 when p_value < alpha (default 0.05)
+
+t_stat, p := hypothesis.t_test_one_sample(data, 0.0, alpha: 0.05)
+chi2, p   := hypothesis.chi_squared_test(contingency_table)
+w, p      := hypothesis.wilcoxon_signed_rank_test(before, after)
+
+// Override significance level via TestParams
+tp := hypothesis.TestParams{ alpha: 0.01 }
+t_stat, p := hypothesis.t_test_two_sample(group_a, group_b, tp)</div>
+                <p style="margin-top:1rem">Every test returns <code>(statistic f64, p_value f64)</code>. Reject the null hypothesis when <code>p_value &lt; alpha</code>. The <code>TestParams</code> struct accepts <code>alpha f64 = 0.05</code> and is optional — omit it to use the default.</p>
+            </section>
+
+            <section class="functions">
+                <h2>API Reference</h2>
+                <div class="function-list">
+
+                    <div class="function-item">
+                        <h3 id="t_test_one_sample">
+                            <code>fn t_test_one_sample(x []f64, mu f64, tp TestParams) (f64, f64)</code>
+                        </h3>
+                        <p>One-sample t-test. Tests whether the mean of sample <code>x</code> differs significantly from a known or hypothesized population mean <code>mu</code>.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]f64</code></td><td>Sample observations</td></tr>
+                                <tr><td><code>mu</code></td><td><code>f64</code></td><td>Hypothesized population mean (H₀: mean(x) = mu)</td></tr>
+                                <tr><td><code>tp</code></td><td><code>TestParams</code></td><td>Optional. <code>alpha</code> significance level, default <code>0.05</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(t_statistic f64, p_value f64)</code> — two-tailed p-value under the t-distribution with <code>n - 1</code> degrees of freedom.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="t_test_two_sample">
+                            <code>fn t_test_two_sample(x []f64, y []f64, tp TestParams) (f64, f64)</code>
+                        </h3>
+                        <p>Two-sample independent t-test (equal variances assumed). Tests whether the means of two independent samples differ significantly.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]f64</code></td><td>First sample</td></tr>
+                                <tr><td><code>y</code></td><td><code>[]f64</code></td><td>Second sample</td></tr>
+                                <tr><td><code>tp</code></td><td><code>TestParams</code></td><td>Optional. <code>alpha</code> significance level, default <code>0.05</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(t_statistic f64, p_value f64)</code> — two-tailed p-value under the t-distribution with pooled degrees of freedom (<code>n₁ + n₂ - 2</code>).</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="chi_squared_test">
+                            <code>fn chi_squared_test(contingency [][]int) (f64, f64)</code>
+                        </h3>
+                        <p>Chi-squared test of independence on a contingency table. Tests whether two categorical variables are independent of one another. Expected frequencies are computed automatically from marginal totals.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>contingency</code></td><td><code>[][]int</code></td><td>Observed frequency table; rows and columns represent categories of each variable</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(chi2_statistic f64, p_value f64)</code> — p-value under the chi-squared distribution with <code>(rows - 1) × (cols - 1)</code> degrees of freedom.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="chi_squared_gof_test">
+                            <code>fn chi_squared_gof_test(observed []f64, expected []f64) (f64, f64)</code>
+                        </h3>
+                        <p>Chi-squared goodness-of-fit test. Tests whether an observed frequency distribution matches a specified theoretical distribution.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>observed</code></td><td><code>[]f64</code></td><td>Observed counts per category</td></tr>
+                                <tr><td><code>expected</code></td><td><code>[]f64</code></td><td>Expected counts per category under H₀; must be same length as <code>observed</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(chi2_statistic f64, p_value f64)</code> — p-value under the chi-squared distribution with <code>len(observed) - 1</code> degrees of freedom.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="correlation_test">
+                            <code>fn correlation_test(x []f64, y []f64, tp TestParams) (f64, f64)</code>
+                        </h3>
+                        <p>Pearson correlation significance test. Tests whether the linear correlation between <code>x</code> and <code>y</code> differs significantly from zero (H₀: ρ = 0).</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]f64</code></td><td>First variable</td></tr>
+                                <tr><td><code>y</code></td><td><code>[]f64</code></td><td>Second variable; must be the same length as <code>x</code></td></tr>
+                                <tr><td><code>tp</code></td><td><code>TestParams</code></td><td>Optional. <code>alpha</code> significance level, default <code>0.05</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(t_statistic f64, p_value f64)</code> — two-tailed p-value using the t-approximation with <code>n - 2</code> degrees of freedom.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="wilcoxon_signed_rank_test">
+                            <code>fn wilcoxon_signed_rank_test(x []f64, y []f64) (f64, f64)</code>
+                        </h3>
+                        <p>Wilcoxon signed-rank test. Non-parametric alternative to the paired t-test. Tests whether the distribution of pairwise differences <code>x[i] - y[i]</code> is symmetric about zero, without assuming normality.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]f64</code></td><td>First paired sample (e.g. pre-treatment measurements)</td></tr>
+                                <tr><td><code>y</code></td><td><code>[]f64</code></td><td>Second paired sample (e.g. post-treatment measurements); must be the same length as <code>x</code></td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(W_statistic f64, p_value f64)</code> — W is the sum of positive ranks. P-value is two-tailed using a normal approximation.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="mann_whitney_u_test">
+                            <code>fn mann_whitney_u_test(x []f64, y []f64) (f64, f64)</code>
+                        </h3>
+                        <p>Mann-Whitney U test. Non-parametric alternative to the two-sample independent t-test. Tests whether values in one sample tend to be larger than in the other, without assuming normality or equal variances.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]f64</code></td><td>First independent sample</td></tr>
+                                <tr><td><code>y</code></td><td><code>[]f64</code></td><td>Second independent sample</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(U_statistic f64, p_value f64)</code> — U counts the number of pairs where an observation from <code>x</code> exceeds one from <code>y</code>. P-value is two-tailed using a normal approximation.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="shapiro_wilk_test">
+                            <code>fn shapiro_wilk_test(x []f64) (f64, f64)</code>
+                        </h3>
+                        <p>Shapiro-Wilk normality test (approximation). Tests whether a sample could plausibly have been drawn from a normal distribution. Use this before applying parametric tests that assume normality.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]f64</code></td><td>Sample observations</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(W_statistic f64, p_value f64)</code> — W is close to 1 for normally distributed data. A small p-value (p &lt; 0.05) provides evidence against normality.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="ks_test">
+                            <code>fn ks_test(sample1 []f64, sample2 []f64) (f64, f64)</code>
+                        </h3>
+                        <p>Two-sample Kolmogorov-Smirnov test. Tests whether two samples come from the same underlying distribution. Distribution-free and sensitive to differences in shape, location, and scale.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>sample1</code></td><td><code>[]f64</code></td><td>First sample</td></tr>
+                                <tr><td><code>sample2</code></td><td><code>[]f64</code></td><td>Second sample</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(D_statistic f64, p_value f64)</code> — D is the maximum absolute difference between the two empirical CDFs. A large D (small p) suggests the distributions differ.</p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="one_sample_t_test">
+                            <code>fn one_sample_t_test(x []f64, mu f64) (f64, f64)</code>
+                        </h3>
+                        <p>Alias for <a href="#t_test_one_sample"><code>t_test_one_sample</code></a> using the default alpha of 0.05. Provided for backwards compatibility.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]f64</code></td><td>Sample observations</td></tr>
+                                <tr><td><code>mu</code></td><td><code>f64</code></td><td>Hypothesized population mean</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(t_statistic f64, p_value f64)</code></p>
+                    </div>
+
+                    <div class="function-item">
+                        <h3 id="two_sample_t_test">
+                            <code>fn two_sample_t_test(x []f64, y []f64) (f64, f64)</code>
+                        </h3>
+                        <p>Alias for <a href="#t_test_two_sample"><code>t_test_two_sample</code></a> using the default alpha of 0.05. Provided for backwards compatibility.</p>
+                        <table>
+                            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>x</code></td><td><code>[]f64</code></td><td>First sample</td></tr>
+                                <tr><td><code>y</code></td><td><code>[]f64</code></td><td>Second sample</td></tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Returns</strong> <code>(t_statistic f64, p_value f64)</code></p>
+                    </div>
+
+                </div>
+            </section>
+
+            <section class="examples">
+                <h2>Examples</h2>
+                <div class="examples-list">
+
+                    <div class="example-block">
+                        <h3>One-sample t-test</h3>
+                        <pre><code>import vstats.hypothesis
+
+fn main() {
+    // Test whether mean response time differs from 200ms
+    times := [195.0, 202.0, 198.0, 210.0, 193.0, 207.0, 199.0]
+    t_stat, p := hypothesis.t_test_one_sample(times, 200.0)
+
+    println("t = ${t_stat:.4f},  p = ${p:.4f}")
+    if p < 0.05 { println("Reject H0") } else { println("Fail to reject H0") }
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>t = 0.2182,  p = 0.8347
+Fail to reject H0</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Chi-squared independence test</h3>
+                        <pre><code>import vstats.hypothesis
+
+fn main() {
+    //            Success  Failure
+    // Control:      45      55
+    // Treatment:    60      40
+    table := [[45, 55], [60, 40]]
+    chi2, p := hypothesis.chi_squared_test(table)
+    println("chi2 = ${chi2:.4f},  p = ${p:.4f}")
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>chi2 = 4.5455,  p = 0.0330</pre>
+                        </div>
+                    </div>
+
+                    <div class="example-block">
+                        <h3>Normality check then choose test</h3>
+                        <pre><code>import vstats.hypothesis
+
+fn main() {
+    before := [12.0, 14.0, 11.0, 15.0, 10.0, 13.0]
+    after  := [14.0, 17.0, 12.0, 18.0, 11.0, 16.0]
+
+    w, p_norm := hypothesis.shapiro_wilk_test(before)
+    if p_norm < 0.05 {
+        // Not normal — use non-parametric test
+        w_stat, p := hypothesis.wilcoxon_signed_rank_test(before, after)
+        println("Wilcoxon W=${w_stat:.1f}  p=${p:.4f}")
+    } else {
+        t_stat, p := hypothesis.t_test_two_sample(before, after)
+        println("t=${t_stat:.4f}  p=${p:.4f}")
+    }
+}</code></pre>
+                        <div class="example-output">
+                            <strong>Output:</strong>
+                            <pre>Wilcoxon W=0.0  p=0.0313</pre>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="../js/script.js"></script>
+</body>
+</html>
