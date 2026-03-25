@@ -5,6 +5,7 @@ dev_docs/
 .opencode/
 *.md
 !README.md
+!SEQUENTIAL_ROLLOUT.md
 examples/breast_cancer_classification
 examples/generic_types_example
 examples/iris_logistic_classification
