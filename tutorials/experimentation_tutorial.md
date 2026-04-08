@@ -14,6 +14,64 @@ arise depending on how and when the feature ships.
 
 ---
 
+## Terminology
+
+### Core concepts
+
+**A/B test** — A controlled experiment that randomly assigns users to two groups (control and treatment) simultaneously. Because assignment is random and concurrent, any difference in outcomes can be attributed to the treatment rather than to pre-existing user differences or external trends.
+
+**MDE (Minimum Detectable Effect)** — The smallest true effect you want your experiment to reliably detect. You specify this before launch to determine how many users you need. Smaller MDEs require more users. Set MDE at the smallest business-meaningful change, not the largest you could imagine.
+
+**Statistical power (1 − β)** — The probability that the test correctly detects a true effect. Conventionally set to 0.80 (80%). A 20% false-negative rate means that if the feature really does work, you have a 1-in-5 chance of incorrectly concluding it doesn't.
+
+**Alpha (α) / significance level** — The false-positive rate you're willing to tolerate: the probability of declaring an effect when there is none. Conventionally 0.05. A p-value below α is the frequentist threshold for calling a result "significant."
+
+**p-value** — The probability of observing a result at least as extreme as yours *if* the null hypothesis (no effect) were true. A small p-value is evidence against the null; it is not the probability that the treatment works.
+
+**Confidence interval (CI)** — A range that contains the true effect with a given probability (usually 95%). Prefer CIs over p-values alone: they tell you *how large* the effect is, not just whether it exists.
+
+**Effect size (Cohen's d)** — A standardised measure of effect magnitude: the difference in means divided by the pooled standard deviation. Allows comparison across studies with different units.
+
+---
+
+### Methods
+
+**SPRT (Sequential Probability Ratio Test)** — A sequential testing method that computes a likelihood ratio after each observation and stops as soon as the evidence crosses a boundary in either direction (reject null, or accept null). Unlike fixed-horizon tests, SPRT controls the false-positive rate even when you peek at results continuously. Used here for progressive rollouts where data accumulates over time.
+
+Key output: a log-likelihood ratio (LLR) compared against upper (reject) and lower (accept) boundaries derived from α, β, and the MDE.
+
+**CUPED (Controlled-experiment Using Pre-Experiment Data)** — A variance-reduction technique. If you have a pre-experiment measurement of the same metric (e.g., last month's revenue), you regress it out of the post-experiment outcome. This removes user-level baseline noise without changing the expected effect estimate. The benefit is a tighter confidence interval — effectively the same as having more users at no extra cost.
+
+Variance reduction = 1 − (1 − r²), where r is the correlation between the covariate and the outcome. A pre-metric with r = 0.8 delivers 64% variance reduction.
+
+**Bayesian A/B test** — An alternative inference framework that produces a posterior distribution over conversion rates rather than a p-value. Key outputs are P(B beats A) and the *expected loss* of each decision — the average regret if you're wrong. Expected loss lets you make a business-calibrated decision: "deploying B risks losing 0.002pp on average."
+
+**DiD (Difference-in-Differences)** — A quasi-experimental method for observational data. It estimates the causal effect of a treatment by comparing how the treated group changed relative to how an untreated control group changed over the same period. DiD removes confounders that affect both groups equally, as long as the **parallel trends assumption** holds.
+
+```
+DiD = (Treated_post − Treated_pre) − (Control_post − Control_pre)
+```
+
+**Parallel trends assumption** — The core identifying assumption of DiD: in the absence of treatment, both groups would have followed the same trend. This cannot be proven (the counterfactual is unobserved), but you can test whether it held in pre-treatment periods using `test_parallel_trends`. Violation invalidates the causal interpretation.
+
+**Event study** — An extension of DiD that estimates a separate treatment effect for each time period relative to launch (t = −3, −2, −1, 0, 1, …). Pre-treatment estimates should be near zero (confirming no pre-existing trend); the effect should emerge precisely at t = 0. A "correct timing" pattern strengthens the causal argument substantially.
+
+**PSM (Propensity Score Matching)** — A pre-processing step for observational data that creates a synthetic control group by matching treated units to control units with similar covariate profiles. Not used in this tutorial, but available in `experiment/psm.v` for cases where no natural control group exists.
+
+---
+
+### Decision framework summary
+
+| Framework | Key output | When to use |
+|---|---|---|
+| Frequentist (z/t-test) | p-value, CI | Classic A/B with pre-set sample size |
+| Bayesian | P(B > A), expected loss | When you want probability statements or business-calibrated decisions |
+| SPRT | LLR vs. boundaries | Ongoing rollout where you peek at results continuously |
+| DiD | Causal effect estimate | Observational data with a concurrent untreated group |
+| CUPED | Variance reduction % | Any test where pre-experiment data is available |
+
+---
+
 ## Part 1 — Classic A/B Test
 
 Random assignment: half of new users see the old onboarding (control), half see the
@@ -720,3 +778,85 @@ experiment.did_2x2(y_treat_before, y_treat_after, y_ctrl_before, y_ctrl_after)
 experiment.did_regression(y, x, group, time)
 experiment.event_study(y, group, relative_time)
 ```
+
+---
+
+## Common Pitfalls
+
+### 1. Peeking at p-values in a fixed-horizon test
+
+**What happens**: you run a t-test or z-test once a day and stop as soon as p < 0.05. Because you're making multiple comparisons over time, the false-positive rate inflates — up to 37% if you check daily for a month.
+
+**Fix**: decide in advance when you will analyse (one analysis date, after your planned sample size is reached) and stick to it. If you genuinely need to monitor continuously, switch to SPRT — it's designed for sequential looks.
+
+---
+
+### 2. Stopping an experiment early because it looks good
+
+**What happens**: the first 100 users show a huge effect. You stop, declare victory, and ship. But early samples are noisy; the "effect" often regresses toward the true (smaller) value as more data accumulates.
+
+**Fix**: run until your pre-planned sample size. If the business cannot wait, use SPRT with explicit stopping boundaries, and plan a smaller, faster experiment rather than shortcutting a larger one.
+
+---
+
+### 3. Running the experiment too long
+
+**What happens**: you overshoot your planned sample size by 3×. With enough users, even trivial effects become statistically significant — a 0.1pp lift that moves no revenue needle can reach p < 0.001.
+
+**Fix**: pre-commit to a sample size and an analysis date. A statistically significant result does not automatically mean a business-meaningful one — always inspect the effect size and confidence interval.
+
+---
+
+### 4. Sample Ratio Mismatch (SRM)
+
+**What happens**: your randomisation bug, bot traffic, or logging issue causes 52% of events to land in control and 48% in treatment instead of the planned 50/50. Any effect estimate is now biased.
+
+**Fix**: before analysing results, check that the group sizes are consistent with your intended split using a chi-squared test (e.g., `experiment.proportion_test` on raw counts). A p-value below 0.01 is a red flag — investigate the assignment pipeline before trusting any outcome metric.
+
+---
+
+### 5. Using a weak CUPED covariate
+
+**What happens**: you apply CUPED with a covariate that has low correlation with the outcome (r < 0.3). Variance reduction is near zero, but you've added complexity and a potential bias if the covariate is not from the pre-experiment period.
+
+**Fix**: before running CUPED, compute the Pearson correlation between your covariate and outcome. Variance reduction ≈ r². A covariate with r < 0.3 yields < 9% reduction — often not worth the trouble. Use the most predictive pre-experiment signal available (same metric, previous period).
+
+---
+
+### 6. Pre/post without checking for concurrent events
+
+**What happens**: you compare revenue before and after a campaign and conclude it caused a 34% lift. But the post-period includes a product launch, a holiday, or a price change that independently drove growth.
+
+**Fix**: audit your calendar for any other changes in the post-period. If a concurrent untreated group exists (another region, another cohort), switch to DiD — it explicitly subtracts out the concurrent trend. If no control group is available, state the causal limitation explicitly and treat the estimate as an upper bound.
+
+---
+
+### 7. Skipping the parallel trends test in DiD
+
+**What happens**: you apply DiD without verifying that treated and control groups trended similarly before treatment. If they diverged pre-treatment, the DiD estimate is confounded and the causal interpretation is invalid.
+
+**Fix**: always call `experiment.test_parallel_trends` with at least two pre-treatment periods. If the slope difference is significant (p < 0.05), DiD is not valid as-is. Consider adding covariates via `did_regression`, using a different comparison group, or switching to a synthetic control approach.
+
+---
+
+### 8. Novelty effect / survivorship bias
+
+**What happens**: users engage with a new feature simply because it's new, not because it's better. The effect appears large in the first two weeks, then decays. Alternatively, only users who survive through a funnel step are included, systematically excluding the lowest-value users from one group.
+
+**Fix**: run experiments long enough to outlast initial novelty (usually 2–4 weeks for engagement metrics). For survivorship bias, define the analysis population before the experiment and use the same inclusion criterion for both groups.
+
+---
+
+### 9. Multiple metric testing without correction
+
+**What happens**: you test 20 metrics simultaneously at α = 0.05. By chance alone, you expect 1 false positive. You report the 2 metrics that reached significance and ignore the 18 that didn't.
+
+**Fix**: pre-register your primary metric before launch. Apply Bonferroni or Benjamini-Hochberg correction when testing secondary metrics. Treat exploratory findings as hypotheses for future experiments, not shipped conclusions.
+
+---
+
+### 10. Interpreting "not significant" as "no effect"
+
+**What happens**: p = 0.12, so you conclude the feature doesn't work and roll it back. But your confidence interval is [−1pp, +9pp] — you lacked the power to rule out a meaningful positive effect.
+
+**Fix**: distinguish between "we found no effect" and "we couldn't detect an effect with the data we had." Check whether your confidence interval excludes business-meaningful magnitudes. If the CI is wide, your sample was too small — either collect more data or accept the uncertainty rather than making a strong negative claim.
