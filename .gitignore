@@ -5,10 +5,10 @@ dev_docs/
 .opencode/
 *.md
 !README.md
-!SEQUENTIAL_ROLLOUT.md
-!chatbot_rollout_tutorial.md
 !tutorials/*
 examples/breast_cancer_classification
 examples/generic_types_example
 examples/iris_logistic_classification
 examples/titanic_random_forest_test
+chatbot_rollout_tutorial.md
+sequential_rollout.md
