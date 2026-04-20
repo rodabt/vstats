@@ -364,8 +364,6 @@ fn main() {
     lower_b, upper_b := stats.confidence_interval_mean(post_b, 0.95)
     println('   Group B: [${lower_b:.2f}, ${upper_b:.2f}]')
 }
-
-import math
 ```
 
 ---
@@ -459,8 +457,6 @@ fn main() {
     println('   Monthly Burn: $${burn:,.0f}')
     println('   Runway: ${runway:.0f} months')
 }
-
-import math
 ```
 
 ### 7. E-commerce Funnel Optimization
@@ -540,8 +536,6 @@ fn main() {
         }
     }
 }
-
-import math
 ```
 
 ### 8. Marketing Attribution Analysis
@@ -772,8 +766,6 @@ fn main() {
         }
     }
 }
-
-import math
 ```
 
 ### 10. Time Series Anomaly Detection
@@ -865,8 +857,6 @@ fn main() {
         println('  Significant trend ${if trend_change > 0 { "upward" } else { "downward" }} detected')
     }
 }
-
-import math
 ```
 
 ---
@@ -1015,8 +1005,6 @@ fn normalize_matrix(data [][]f64) [][]f64 {
     }
     return normalized
 }
-
-import math
 ```
 
 ---

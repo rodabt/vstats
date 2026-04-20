@@ -44,7 +44,7 @@ Key output: a log-likelihood ratio (LLR) compared against upper (reject) and low
 
 Variance reduction = 1 − (1 − r²), where r is the correlation between the covariate and the outcome. A pre-metric with r = 0.8 delivers 64% variance reduction.
 
-**Bayesian A/B test** — An alternative inference framework that produces a posterior distribution over conversion rates rather than a p-value. Key outputs are P(B beats A) and the *expected loss* of each decision — the average regret if you're wrong. Expected loss lets you make a business-calibrated decision: "deploying B risks losing 0.002pp on average."
+**Bayesian A/B test** — An alternative inference framework that produces a posterior distribution over conversion rates rather than a p-value. Key outputs are P(B beats A) and the *expected loss* of each decision — the average regret if you're wrong. Expected loss lets you make a business-calibrated decision: "deploying B risks losing 0.001pp on average."
 
 **DiD (Difference-in-Differences)** — A quasi-experimental method for observational data. It estimates the causal effect of a treatment by comparing how the treated group changed relative to how an untreated control group changed over the same period. DiD removes confounders that affect both groups equally, as long as the **parallel trends assumption** holds.
 
@@ -93,15 +93,15 @@ fn main() {
     act := experiment.sample_size_proportions(0.32, 0.06, 0.05, 0.80)
     println('Activation: ${act.n_per_group} users/group (${act.total_n} total)')
     println('  Effect size: ${act.effect_size:.3f}')
-    // Activation: 445 users/group (890 total)
-    //   Effect size: 0.130
+    // Activation: 991 users/group (1982 total)
+    //   Effect size: 0.126
 
     // Continuous metric: first-month revenue.
     // Baseline: $48 mean, $14 std dev. Minimum detectable effect: +$6.
     rev := experiment.sample_size_means(48.0, 14.0, 6.0, 0.05, 0.80)
     println('Revenue:    ${rev.n_per_group} users/group')
     println("  Cohen's d: ${rev.effect_size:.3f}")
-    // Revenue:    87 users/group
+    // Revenue:    87 users/group  (uses t-distribution, matches R power.t.test)
     //   Cohen's d: 0.429
 }
 ```
@@ -177,7 +177,7 @@ fn main() {
     // Control:   $48.20 ± $10.13
     // Treatment: $64.20 ± $10.13
     // Lift:      +$16.00 (+33.2%)
-    // Cohen's d: 1.580
+    // Cohen's d: 1.579
     // t:         4.993
     // p-value:   0.000001
     // 95% CI:    [$9.72, $22.28]
@@ -220,18 +220,20 @@ fn main() {
     println('Adjusted result:')
     println('  Treatment – Control: \$${c.adjusted_result.treatment_mean - c.adjusted_result.control_mean:.2f}')
     println('  p-value:             ${c.adjusted_result.p_value:.6f}')
-    // Theta (regression coeff): 1.038
-    // Variance reduction:       66.1%
+    // Theta (regression coeff): 1.073
+    // Variance reduction:       67.7%
     // Adjusted result:
-    //   Treatment – Control: $16.00
+    //   Treatment – Control: $14.39
     //   p-value:             0.000000
 }
 ```
 
-**What the numbers tell you**: CUPED reduced variance by 66%, shrinking the
-confidence interval substantially. The effect estimate is unchanged ($16.00) because
-CUPED removes noise but not signal. Use CUPED whenever you have pre-experiment data —
-it is always at least as powerful as a standard t-test.
+**What the numbers tell you**: CUPED reduced variance by 68%, shrinking the
+confidence interval substantially. The adjusted estimate ($14.39) differs slightly
+from the raw estimate ($16.00) because the two groups' pre-experiment covariate means
+are not perfectly balanced (a normal consequence of random sampling). With larger
+samples or perfectly balanced randomization the estimates converge. Use CUPED whenever
+you have pre-experiment data — it is always at least as powerful as a standard t-test.
 
 ---
 
@@ -254,23 +256,23 @@ fn main() {
     println('P(B beats A):     ${r.prob_b_beats_a * 100:.1f}%%')
     println('Expected loss if you deploy B:  ${r.expected_loss_b * 100:.3f} pp')
     println('Expected loss if you keep A:    ${r.expected_loss_a * 100:.3f} pp')
-    // Posterior rate A: 32.0%  95% CI [29.1%, 34.9%]
-    // Posterior rate B: 38.2%  95% CI [35.2%, 41.2%]
-    // P(B beats A):     99.7%
-    // Expected loss if you deploy B:  0.002 pp
-    // Expected loss if you keep A:    6.187 pp
+    // Posterior rate A: 32.0%  95% CI [29.2%, 34.9%]
+    // Posterior rate B: 38.2%  95% CI [35.3%, 41.3%]
+    // P(B beats A):     99.8%
+    // Expected loss if you deploy B:  0.001 pp
+    // Expected loss if you keep A:    6.151 pp
 }
 ```
 
-**What the numbers tell you**: there is a 99.7% probability that the new onboarding
-is better. Deploying it risks losing a negligible 0.002pp on average; keeping the
+**What the numbers tell you**: there is a 99.8% probability that the new onboarding
+is better. Deploying it risks losing a negligible 0.001pp on average; keeping the
 old flow risks forgoing 6.2pp on average. Deploy B.
 
 | Decision framework | Threshold | Conclusion |
 |---|---|---|
 | Frequentist | p < 0.05 | Ship (p = 0.004) |
-| Bayesian | P(B > A) > 95% | Ship (99.7%) |
-| Expected loss | loss_B < 0.5pp | Ship (0.002pp) |
+| Bayesian | P(B > A) > 95% | Ship (99.8%) |
+| Expected loss | loss_B < 0.5pp | Ship (0.001pp) |
 
 ---
 
@@ -394,7 +396,7 @@ fn main() {
     // Before: $42.13/user  After: $56.53/user
     // Observed change: +$14.40 (+34.2%)
     // p-value: 0.00000  Significant: true
-    // 95% CI: [$11.26, $17.54]
+    // 95% CI: [$9.97, $18.83]
 }
 ```
 
@@ -441,7 +443,7 @@ fn main() {
     println('Variance reduction: ${c.variance_reduction * 100:.1f}%%')
     println('Adjusted change:    +\$${c.adjusted_result.treatment_mean - c.adjusted_result.control_mean:.2f}')
     println('Adjusted p-value:   ${c.adjusted_result.p_value:.5f}')
-    // Variance reduction: 94.3%
+    // Variance reduction: 65.5%
     // Adjusted change:    +$14.40
     // Adjusted p-value:   0.00000
 }
@@ -561,10 +563,10 @@ fn main() {
     // Treated cities:  +$1617  (before → after)
     // Control cities:  +$100   (before → after)
     // DiD effect:       $1517
-    // Std error:        $188
-    // t-statistic:     8.07
+    // Std error:        $171
+    // t-statistic:     8.88
     // p-value:         0.0000
-    // 95% CI:          [$1148, $1885]
+    // 95% CI:          [$1182, $1851]
 }
 ```
 
@@ -623,11 +625,11 @@ fn main() {
     println('95%% CI:         [\$${r.did_ci_lower:.0f}, \$${r.did_ci_upper:.0f}]')
     println('R²:             ${r.r_squared:.3f}')
     // DiD coefficient: $1517/week
-    // Std error:       $170
-    // t-statistic:    8.92
+    // Std error:       $171
+    // t-statistic:    8.88
     // p-value:        0.0000
-    // 95% CI:         [$1183, $1850]
-    // R²:             0.975
+    // 95% CI:         [$1182, $1851]
+    // R²:             0.938
 }
 ```
 
@@ -699,10 +701,10 @@ fn main() {
     }
     // Period  Effect        95% CI                  p-value
     // ------  ------        -------                  -------
-    //   t=-3   $    0    [$   -369, $    369]    1.0000
-    //   t=-2   $    0    [$   -369, $    369]    1.0000
-    //   t= 0   $ 1517    [$ 1148,  $ 1885]       0.0000
-    //   t= 1   $ 1617    [$ 1248,  $ 1985]       0.0000
+    //   t=-3   $    0    [$   -323, $    323]    1.0000
+    //   t=-2   $    0    [$   -323, $    323]    1.0000
+    //   t= 0   $ 1517    [$ 1182,  $ 1851]       0.0000
+    //   t= 1   $ 1617    [$ 1282,  $ 1951]       0.0000
 }
 ```
 

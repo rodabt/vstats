@@ -3,6 +3,7 @@ dev_docs/
 .venv/
 .claude/
 .opencode/
+kb/
 *.md
 !README.md
 !tutorials/*

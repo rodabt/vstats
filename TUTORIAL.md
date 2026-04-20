@@ -124,7 +124,7 @@ fn main() {
     
     // Matrix transpose
     m := [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
-    mt := linalg.transpose_f64(m)
+    mt := linalg.transpose[f64](m)
     println("Transposed: ${mt}")
     // [[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]]
     
@@ -219,7 +219,7 @@ fn main() {
     
     // Correlation coefficient
     corr := stats.correlation(x, y)
-    println("Correlation: ${corr}")  // ~0.832
+    println("Correlation: ${corr}")  // 0.7745966692414834
 }
 ```
 
@@ -530,7 +530,6 @@ fn main() {
     learning_rate := 0.1
     model := ml.logistic_regression(x_train, y_train, iterations, learning_rate)
     
-    println("Trained: ${model.trained}")
     println("Intercept: ${model.intercept}")
     println("Coefficients: ${model.coefficients}")
     
@@ -919,15 +918,15 @@ fn main() {
     
     // Factorial
     fact := utils.factorial(5)
-    println("5! = ${fact}")  // 120
+    println("5! = ${fact}")  // 120.0
     
     // Combinations
     combo := utils.combinations(10, 3)
-    println("C(10,3) = ${combo}")  // 120
+    println("C(10,3) = ${combo}")  // 120.0
     
     // Permutations
     perm := utils.permutations(10, 3)
-    println("P(10,3) = ${perm}")  // 720
+    println("P(10,3) = ${perm}")  // 720.0
     
     // Power
     pow := utils.ipow(2, 10)

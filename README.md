@@ -1,4 +1,4 @@
-# VStats 0.2.0
+# VStats 0.2.1
 
 A dependency-free statistics, linear algebra, and machine learning library for the [V programming language](https://vlang.io), with a focus on product analytics and experimentation. Includes A/B testing, funnel analysis, cohort retention, causal inference, and growth metrics alongside classical stats and ML — all built from scratch with no external dependencies.
 

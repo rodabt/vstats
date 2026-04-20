@@ -690,19 +690,19 @@ fn main() {
 
 ## Key Formulas
 
-| Metric | Formula |
-|--------|---------|
-| ARPA | Revenue / Accounts |
-| ARPU | Revenue / Users |
-| CAC | Acquisition Spend / New Customers |
-| LTV | ARPU × Customer Lifespan |
-| Churn Rate | Customers Lost / Total Customers |
-| Retention Rate | 1 - Churn Rate |
-| NRR | (MRR_end - Churn_MRR) / MRR_start |
-| GRR | (MRR_start - Churn_MRR) / MRR_start |
-| Payback Period | CAC / Monthly ARPU |
-| Magic Number | (Net New ARR × Gross Margin) / S&M Spend |
-| ROAS | Revenue / Ad Spend |
+| Metric         | Formula                                  |
+| -------------- | ---------------------------------------- |
+| ARPA           | Revenue / Accounts                       |
+| ARPU           | Revenue / Users                          |
+| CAC            | Acquisition Spend / New Customers        |
+| LTV            | ARPU × Customer Lifespan                 |
+| Churn Rate     | Customers Lost / Total Customers         |
+| Retention Rate | 1 - Churn Rate                           |
+| NRR            | (MRR_end - Churn_MRR) / MRR_start        |
+| GRR            | (MRR_start - Churn_MRR) / MRR_start      |
+| Payback Period | CAC / Monthly ARPU                       |
+| Magic Number   | (Net New ARR × Gross Margin) / S&M Spend |
+| ROAS           | Revenue / Ad Spend                       |
 
 ---
 

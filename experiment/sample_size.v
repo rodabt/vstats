@@ -35,9 +35,10 @@ pub fn sample_size_proportions(baseline_rate f64, mde f64, alpha f64, power f64)
 	z_alpha := prob.inverse_normal_cdf(1.0 - alpha / 2.0, 0.0, 1.0)
 	z_beta := prob.inverse_normal_cdf(power, 0.0, 1.0)
 
-	numerator := math.pow(z_alpha + z_beta, 2) * (p1 * (1.0 - p1) + p2 * (1.0 - p2))
-	denominator := math.pow(p2 - p1, 2)
-	n_raw := numerator / denominator
+	p_bar := (p1 + p2) / 2.0
+	var_null := 2.0 * p_bar * (1.0 - p_bar)
+	var_alt := p1 * (1.0 - p1) + p2 * (1.0 - p2)
+	n_raw := math.pow(z_alpha * math.sqrt(var_null) + z_beta * math.sqrt(var_alt), 2) / math.pow(p2 - p1, 2)
 	n := int(math.ceil(n_raw))
 
 	pooled_var := (p1 * (1.0 - p1) + p2 * (1.0 - p2)) / 2.0
@@ -73,8 +74,17 @@ pub fn sample_size_means(baseline_mean f64, baseline_std f64, mde_absolute f64, 
 	z_alpha := prob.inverse_normal_cdf(1.0 - alpha / 2.0, 0.0, 1.0)
 	z_beta := prob.inverse_normal_cdf(power, 0.0, 1.0)
 
-	n_raw := 2.0 * math.pow((z_alpha + z_beta) * baseline_std / mde_absolute, 2)
-	n := int(math.ceil(n_raw))
+	// Initial estimate via normal approximation, then refine with t-quantiles
+	// (matches R's power.t.test iterative approach)
+	mut n := int(math.ceil(2.0 * math.pow((z_alpha + z_beta) * baseline_std / mde_absolute, 2)))
+	for {
+		df := 2 * n - 2
+		t_alpha := prob.inverse_students_t_cdf(1.0 - alpha / 2.0, df)
+		t_beta  := prob.inverse_students_t_cdf(power, df)
+		n_new := int(math.ceil(2.0 * math.pow((t_alpha + t_beta) * baseline_std / mde_absolute, 2)))
+		if n_new == n { break }
+		n = n_new
+	}
 	cohens_d := mde_absolute / baseline_std
 
 	return SampleSizeResult{

@@ -117,10 +117,41 @@ pub fn chi_squared_pdf(x f64, df int) f64 {
 }
 
 
-// t-Student's PDF
+// t-Student's PDF — computed in log space to avoid gamma overflow for large df
 pub fn students_t_pdf(x f64, df int) f64 {
-    coef := math.gamma((f64(df) + 1.0) / 2.0) / (math.sqrt(f64(df) * math.pi) * math.gamma(f64(df) / 2.0))
-    return coef * math.pow(1.0 + (x * x) / df, -(f64(df) + 1.0) / 2.0)
+    fdf := f64(df)
+    log_coef := math.log_gamma((fdf + 1.0) / 2.0) - 0.5 * math.log(fdf * math.pi) - math.log_gamma(fdf / 2.0)
+    return math.exp(log_coef + (-(fdf + 1.0) / 2.0) * math.log(1.0 + x * x / fdf))
+}
+
+// t-Student's CDF via Simpson's rule numerical integration
+pub fn students_t_cdf(x f64, df int) f64 {
+    lower := -30.0
+    if x <= lower { return 0.0 }
+    n := 1000
+    h := (x - lower) / f64(n)
+    mut s := students_t_pdf(lower, df) + students_t_pdf(x, df)
+    for i in 1..n {
+        coeff := if i % 2 == 0 { 2.0 } else { 4.0 }
+        s += coeff * students_t_pdf(lower + f64(i) * h, df)
+    }
+    result := s * h / 3.0
+    return if result > 1.0 { 1.0 } else { result }
+}
+
+// Inverse t-Student's CDF via binary search on students_t_cdf
+pub fn inverse_students_t_cdf(p f64, df int) f64 {
+    mut lo := -30.0
+    mut hi := 30.0
+    for hi - lo > 0.00001 {
+        mid := (lo + hi) / 2.0
+        if students_t_cdf(mid, df) < p {
+            lo = mid
+        } else {
+            hi = mid
+        }
+    }
+    return (lo + hi) / 2.0
 }
 
 
