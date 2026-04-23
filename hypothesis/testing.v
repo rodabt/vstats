@@ -227,6 +227,65 @@ pub fn shapiro_wilk_test(x []f64) (f64, f64) {
 	return w_stat, p_val
 }
 
+// rank_array returns the 1-based rank of each element in x (first occurrence wins for ties)
+fn rank_array(x []f64) []f64 {
+	mut sorted := x.clone()
+	sorted.sort()
+	mut ranks := []f64{len: x.len}
+	for i := 0; i < x.len; i++ {
+		for j, v in sorted {
+			if v == x[i] {
+				ranks[i] = f64(j + 1)
+				break
+			}
+		}
+	}
+	return ranks
+}
+
+// Spearman rank correlation test (non-parametric independence test)
+// H₀: ρ_s = 0 (the two variables are independent / no monotonic association)
+pub fn spearman_correlation_test(x []f64, y []f64, tp TestParams) (f64, f64) {
+	assert x.len == y.len, 'samples must have the same length'
+	assert x.len >= 3, 'sample size must be at least 3'
+	rx := rank_array(x)
+	ry := rank_array(y)
+	rho := stats.correlation(rx, ry)
+	n := f64(x.len)
+	t_stat := rho * math.sqrt((n - 2) / (1.0 - rho * rho))
+	p_val := 2.0 * (1.0 - normal_cdf_approx(math.abs(t_stat)))
+	return rho, p_val
+}
+
+// Wald-Wolfowitz runs test for randomness
+// H₀: the sequence is random (above/below-median signs appear in random order)
+pub fn runs_test(x []f64) (f64, f64) {
+	assert x.len >= 10, 'sample size must be at least 10 for the runs test'
+	median := stats.median(x)
+	mut signs := []int{}
+	for v in x {
+		if v > median {
+			signs << 1
+		} else if v < median {
+			signs << -1
+		}
+	}
+	n_plus := f64(signs.filter(it == 1).len)
+	n_minus := f64(signs.filter(it == -1).len)
+	mut runs := 1
+	for i := 1; i < signs.len; i++ {
+		if signs[i] != signs[i - 1] {
+			runs++
+		}
+	}
+	r := f64(runs)
+	expected := 2.0 * n_plus * n_minus / (n_plus + n_minus) + 1.0
+	variance := (expected - 1.0) * (expected - 2.0) / (n_plus + n_minus - 1.0)
+	z := (r - expected) / math.sqrt(variance)
+	p_val := 2.0 * (1.0 - normal_cdf_approx(math.abs(z)))
+	return z, p_val
+}
+
 // Helper: normal CDF approximation (using error function)
 fn normal_cdf_approx(z f64) f64 {
 	return (1 + math.erf(z / math.sqrt(2))) / 2

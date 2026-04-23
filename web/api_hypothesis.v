@@ -93,6 +93,23 @@ pub fn (app &App) api_hypothesis(mut ctx Context) veb.Result {
 			stat, p := hypothesis.wilcoxon_signed_rank_test(req.x, req.y)
 			return ctx.json(HypothesisResponse{ test: req.test, statistic: stat, p_value: p, significant: p < alpha })
 		}
+		'spearman_correlation' {
+			if req.x.len < 3 || req.y.len < 3 {
+				return api_error(mut ctx, 'need at least 3 observations per variable')
+			}
+			if req.x.len != req.y.len {
+				return api_error(mut ctx, 'x and y must have the same length')
+			}
+			stat, p := hypothesis.spearman_correlation_test(req.x, req.y, tp)
+			return ctx.json(HypothesisResponse{ test: req.test, statistic: stat, p_value: p, significant: p < alpha })
+		}
+		'runs_test' {
+			if req.x.len < 10 {
+				return api_error(mut ctx, 'need at least 10 observations for the runs test')
+			}
+			stat, p := hypothesis.runs_test(req.x)
+			return ctx.json(HypothesisResponse{ test: req.test, statistic: stat, p_value: p, significant: p < alpha })
+		}
 		else {
 			return api_error(mut ctx, 'unknown test: ${req.test}')
 		}

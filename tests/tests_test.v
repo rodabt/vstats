@@ -122,3 +122,19 @@ fn test__shapiro_wilk_test() {
 	assert w_stat >= 0.0 && w_stat <= 1.0
 	assert p_val >= 0.0 && p_val <= 1.0
 }
+
+fn test__spearman_correlation_test() {
+	x := [2.0, 4, 4, 4, 5, 7, 9, 10, 10, 12]
+	y := [1.0, 2, 3, 5, 5, 6, 8,  9, 10, 12]
+	rho, p_val := hypothesis.spearman_correlation_test(x, y, hypothesis.TestParams{})
+	assert rho > 0.9
+	assert p_val < 0.001
+}
+
+fn test__runs_test_trend() {
+	// Strictly increasing sequence → very few runs → significant non-randomness
+	x := [1.0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+	z, p_val := hypothesis.runs_test(x)
+	assert math.abs(z) > 1.0
+	assert p_val >= 0.0 && p_val <= 1.0
+}

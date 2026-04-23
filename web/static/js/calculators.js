@@ -209,7 +209,7 @@ function hypothesisCalc() {
     f: { x: '', y: '', mu: 0, alpha: 0.05, contingency: '' },
     result: null, error: null, loading: false,
 
-    needsTwo() { return ['t_test_two_sample','mann_whitney','ks_test','correlation','wilcoxon'].indexOf(this.test) >= 0; },
+    needsTwo() { return ['t_test_two_sample','mann_whitney','ks_test','correlation','wilcoxon','spearman_correlation'].indexOf(this.test) >= 0; },
     needsOne() { return ['t_test_one_sample','shapiro_wilk'].indexOf(this.test) >= 0; },
 
     testDesc() {
@@ -221,7 +221,9 @@ function hypothesisCalc() {
         chi_squared:       { when: 'Tests independence between two categorical variables. Enter a contingency table — rows are groups, columns are outcomes.', ex: 'Did the new onboarding flow change the mix of free vs paid sign-ups? Row 1 = old, Row 2 = new; columns = free, paid.' },
         shapiro_wilk:      { when: 'Tests whether a sample is normally distributed. Run this before choosing between a t-test and Mann-Whitney.', ex: 'Paste your metric values. p < 0.05 means normality is rejected → use a non-parametric test.' },
         correlation:       { when: 'Tests whether two continuous variables are linearly associated (Pearson r). X and Y must be paired and the same length.', ex: 'Is session duration correlated with purchase value? Enter paired observations.' },
-        wilcoxon:          { when: 'Paired non-parametric test for before/after measurements on the same units. X = before, Y = after.', ex: 'Did satisfaction scores improve after a redesign? Each user\'s before score in X, after score in Y.' }
+        wilcoxon:          { when: 'Paired non-parametric test for before/after measurements on the same units. X = before, Y = after.', ex: 'Did satisfaction scores improve after a redesign? Each user\'s before score in X, after score in Y.' },
+        spearman_correlation: { when: 'Non-parametric test for monotonic association between two continuous variables. Use instead of Pearson when data is skewed, ordinal, or the relationship may be non-linear but monotonic. H₀: ρ_s = 0 (variables are independent).', ex: 'Do users who spend more time on the app tend to spend more money? Enter paired session-time and revenue values.' },
+        runs_test:         { when: 'Tests whether the order of values in a sequence is random. Classifies each observation as above or below the median and counts "runs" (consecutive same-side sequences). H₀: the sequence is random. Use to detect trends, seasonality, or clustering over time.', ex: 'Daily conversion rates over 30 days: are they randomly scattered around the median, or do they show a drift?' }
       };
       return d[this.test] || { when: '', ex: '' };
     },
@@ -250,6 +252,11 @@ function hypothesisCalc() {
       } else if (this.test === 'wilcoxon') {
         this.f.x = ['4.2','5.1','3.8','4.7','5.3','4.0'].join(nl);
         this.f.y = ['5.8','6.2','5.4','6.7','5.9','5.6'].join(nl);
+      } else if (this.test === 'spearman_correlation') {
+        this.f.x = ['2','4','4','4','5','7','9','10','10','12'].join(nl);
+        this.f.y = ['1','2','3','5','5','6','8','9','10','12'].join(nl);
+      } else if (this.test === 'runs_test') {
+        this.f.x = ['1.2','3.5','2.1','4.8','3.2','5.1','4.4','6.2','5.8','7.1','6.3','8.0','7.2','9.1','8.5'].join(nl);
       }
     },
 
@@ -261,12 +268,15 @@ function hypothesisCalc() {
           payload.x = parseCSV(this.f.x);
           payload.y = parseCSV(this.f.y);
           if (payload.x.length < 2 || payload.y.length < 2) throw new Error('Each group needs at least 2 observations');
-          if (this.test === 'wilcoxon' && payload.x.length !== payload.y.length)
-            throw new Error('Wilcoxon requires equal-length paired arrays');
+          if ((this.test === 'wilcoxon' || this.test === 'spearman_correlation') && payload.x.length !== payload.y.length)
+            throw new Error('This test requires equal-length paired arrays');
         } else if (this.needsOne()) {
           payload.x = parseCSV(this.f.x);
           if (payload.x.length < 3) throw new Error('Need at least 3 observations');
           payload.mu = this.f.mu;
+        } else if (this.test === 'runs_test') {
+          payload.x = parseCSV(this.f.x);
+          if (payload.x.length < 10) throw new Error('Need at least 10 observations for the runs test');
         } else if (this.test === 'chi_squared') {
           var nl = String.fromCharCode(10);
           payload.contingency = this.f.contingency.trim().split(nl).map(function(row) {
@@ -285,7 +295,7 @@ function hypothesisCalc() {
 }
 
 function hypStatLabel(test) {
-  var labels = { t_test_two_sample:'t-statistic', t_test_one_sample:'t-statistic', mann_whitney:'U-statistic', ks_test:'D-statistic', chi_squared:'χ²-statistic', shapiro_wilk:'W-statistic', correlation:'r (Pearson)', wilcoxon:'W+' };
+  var labels = { t_test_two_sample:'t-statistic', t_test_one_sample:'t-statistic', mann_whitney:'U-statistic', ks_test:'D-statistic', chi_squared:'χ²-statistic', shapiro_wilk:'W-statistic', correlation:'r (Pearson)', wilcoxon:'W+', spearman_correlation:'Spearman ρ', runs_test:'Runs Z' };
   return labels[test] || 'Statistic';
 }
 

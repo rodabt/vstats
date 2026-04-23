@@ -16,6 +16,8 @@
         <option value="shapiro_wilk">Shapiro-Wilk (normality)</option>
         <option value="correlation">Pearson correlation</option>
         <option value="wilcoxon">Wilcoxon signed-rank</option>
+        <option value="spearman_correlation">Spearman correlation (independence)</option>
+        <option value="runs_test">Runs test (randomness)</option>
       </select>
     </div>
 
@@ -46,7 +48,7 @@
       </div>
     </template>
 
-    <div class="field" style="max-width:160px" x-show="test !== 'chi_squared' && test !== 'mann_whitney' && test !== 'wilcoxon' && test !== 'ks_test' && test !== 'shapiro_wilk'">
+    <div class="field" style="max-width:160px" x-show="test !== 'chi_squared' && test !== 'mann_whitney' && test !== 'wilcoxon' && test !== 'ks_test' && test !== 'shapiro_wilk' && test !== 'runs_test'">
       <label>Alpha (&#945;)</label>
       <input type="number" step="0.01" min="0.01" max="0.2" x-model.number="f.alpha">
     </div>
