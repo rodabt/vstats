@@ -21,14 +21,14 @@
 
     <template x-if="needsTwo()">
       <div>
-        <div class="field"><label x-text="test==='wilcoxon' ? 'Before (paired)' : 'Group A / Sample 1'"></label><textarea x-model="f.x" placeholder="1.2, 2.3, 3.1, ..."></textarea></div>
-        <div class="field"><label x-text="test==='wilcoxon' ? 'After (paired)' : 'Group B / Sample 2'"></label><textarea x-model="f.y" placeholder="1.5, 2.1, 3.4, ..."></textarea></div>
+        <div class="field"><label x-text="test==='wilcoxon' ? 'Before (paired)' : 'Group A / Sample 1'"></label><textarea x-model="f.x" placeholder="1.2&#10;2.3&#10;3.1&#10;..."></textarea></div>
+        <div class="field"><label x-text="test==='wilcoxon' ? 'After (paired)' : 'Group B / Sample 2'"></label><textarea x-model="f.y" placeholder="1.5&#10;2.1&#10;3.4&#10;..."></textarea></div>
       </div>
     </template>
 
     <template x-if="needsOne()">
       <div>
-        <div class="field"><label>Sample data</label><textarea x-model="f.x" placeholder="1.2, 2.3, 3.1, ..."></textarea></div>
+        <div class="field"><label>Sample data</label><textarea x-model="f.x" placeholder="1.2&#10;2.3&#10;3.1&#10;..."></textarea></div>
         <div class="field" x-show="test==='t_test_one_sample'" style="max-width:200px"><label>Hypothesised mean (&#956;&#8320;)</label><input type="number" step="any" x-model.number="f.mu"></div>
       </div>
     </template>

@@ -147,7 +147,7 @@ h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: .25rem; }
   border-color: var(--teal);
   box-shadow: 0 0 0 3px rgba(14,165,160,.12);
 }
-.field textarea { resize: vertical; min-height: 80px; font-family: monospace; font-size: .8rem; }
+.field textarea { resize: vertical; min-height: 120px; font-family: monospace; font-size: .8rem; }
 .field .hint { font-size: .75rem; color: var(--muted); margin-top: .25rem; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }

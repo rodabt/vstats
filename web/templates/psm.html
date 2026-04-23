@@ -8,8 +8,8 @@
     <p style="font-size:.875rem;color:var(--muted);margin-bottom:1.25rem;">
       Each row represents one unit. All columns must have the same number of rows.
     </p>
-    <div class="field"><label>Treatment assignment (0/1, comma-separated)</label><textarea x-model="f.treatment" placeholder="0, 1, 0, 0, 1, 1, 0, 1, ..."></textarea></div>
-    <div class="field"><label>Outcome variable Y (one value per unit)</label><textarea x-model="f.y" placeholder="12.4, 15.2, 11.8, 13.0, ..."></textarea></div>
+    <div class="field"><label>Treatment assignment (0 or 1, one per row)</label><textarea x-model="f.treatment" placeholder="0&#10;1&#10;0&#10;0&#10;1&#10;..."></textarea></div>
+    <div class="field"><label>Outcome variable Y (one per row)</label><textarea x-model="f.y" placeholder="12.4&#10;15.2&#10;11.8&#10;13.0&#10;..."></textarea></div>
     <div class="field">
       <label>Covariates X &mdash; one unit per line, covariate values comma-separated</label>
       <textarea x-model="f.x" rows="5" placeholder="25, 50000&#10;32, 62000&#10;28, 45000&#10;..."></textarea>
