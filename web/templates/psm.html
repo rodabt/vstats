@@ -1,0 +1,47 @@
+
+<h1>Propensity Score Matching</h1>
+<p class="subtitle">Estimate causal effects from observational data using logistic-regression-based matching.</p>
+
+<div x-data="psmCalc()" x-cloak>
+
+  <div class="card">
+    <p style="font-size:.875rem;color:var(--muted);margin-bottom:1.25rem;">
+      Each row represents one unit. All columns must have the same number of rows.
+    </p>
+    <div class="field"><label>Treatment assignment (0/1, comma-separated)</label><textarea x-model="f.treatment" placeholder="0, 1, 0, 0, 1, 1, 0, 1, ..."></textarea></div>
+    <div class="field"><label>Outcome variable Y (one value per unit)</label><textarea x-model="f.y" placeholder="12.4, 15.2, 11.8, 13.0, ..."></textarea></div>
+    <div class="field">
+      <label>Covariates X &mdash; one unit per line, covariate values comma-separated</label>
+      <textarea x-model="f.x" rows="5" placeholder="25, 50000&#10;32, 62000&#10;28, 45000&#10;..."></textarea>
+      <div class="hint">Example: age and income as two covariates &mdash; one unit per line</div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Caliper (&minus;1 = no caliper)</label><input type="number" step="0.01" x-model.number="f.caliper"></div>
+      <div class="field"><label>Logistic iterations</label><input type="number" min="100" x-model.number="f.iterations"></div>
+    </div>
+
+    <div class="error-banner" x-show="error" x-text="error"></div>
+    <button class="btn btn-primary" @click="submit()" :disabled="loading">
+      <span x-show="loading" class="spinner"></span>
+      <span x-text="loading ? 'Matching...' : 'Run PSM'"></span>
+    </button>
+  </div>
+
+  <div class="result-card" x-show="result">
+    <div class="result-header">
+      <h2>PSM Result</h2>
+      <span class="badge" :class="result && result.ate && result.ate.p_value < 0.05 ? 'badge-sig' : 'badge-nosig'"
+            x-text="result && result.ate && result.ate.p_value < 0.05 ? 'Significant ATE' : 'Not Significant'"></span>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="label">ATE</div><div class="value" x-text="result && result.ate ? fmt(result.ate.ate, 3) : ''"></div></div>
+      <div class="stat-box"><div class="label">p-value</div><div class="value" :class="result && result.ate && result.ate.p_value < 0.05 ? 'sig' : 'nosig'" x-text="result && result.ate ? fmt(result.ate.p_value) : ''"></div></div>
+      <div class="stat-box"><div class="label">95% CI</div><div class="value" style="font-size:1rem" x-text="result && result.ate ? ciRange(result.ate.ci_lower, result.ate.ci_upper, 3) : ''"></div></div>
+      <div class="stat-box"><div class="label">Matched pairs</div><div class="value" x-text="result && result.matching ? result.matching.n_matched_treated : ''"></div></div>
+      <div class="stat-box"><div class="label">Avg PS distance</div><div class="value" x-text="result && result.matching ? fmt(result.matching.avg_distance, 4) : ''"></div></div>
+      <div class="stat-box"><div class="label">Balance (SMD after)</div><div class="value" x-text="result && result.balance ? fmt(result.balance.mean_abs_smd_after, 3) : ''"></div></div>
+    </div>
+    <div class="interp" x-text="psmInterp(result)"></div>
+  </div>
+
+</div>

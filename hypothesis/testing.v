@@ -5,6 +5,7 @@ import stats
 
 @[params]
 pub struct TestParams {
+pub:
 	alpha f64 = 0.05
 }
 

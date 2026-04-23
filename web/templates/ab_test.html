@@ -1,0 +1,77 @@
+
+<h1>A/B Test Calculator</h1>
+<p class="subtitle">Welch's t-test for continuous metrics &middot; two-proportion z-test for binary outcomes.</p>
+
+<div x-data="abTest()" x-cloak>
+
+  <div class="card">
+    <div class="mode-toggle">
+      <button :class="metric==='proportion' ? 'active' : ''" @click="metric='proportion'">Proportion (Binary)</button>
+      <button :class="metric==='continuous' ? 'active' : ''" @click="metric='continuous'">Continuous</button>
+    </div>
+
+    <template x-if="metric==='proportion'">
+      <div>
+        <div class="field-row">
+          <div class="field"><label>Control successes</label><input type="number" min="0" x-model.number="p.successes_a"></div>
+          <div class="field"><label>Control total (n)</label><input type="number" min="1" x-model.number="p.n_a"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Treatment successes</label><input type="number" min="0" x-model.number="p.successes_b"></div>
+          <div class="field"><label>Treatment total (n)</label><input type="number" min="1" x-model.number="p.n_b"></div>
+        </div>
+        <div class="field" style="max-width:160px"><label>Alpha (&#945;)</label><input type="number" step="0.01" min="0.01" max="0.2" x-model.number="p.alpha"></div>
+      </div>
+    </template>
+
+    <template x-if="metric==='continuous'">
+      <div>
+        <div class="field"><label>Control data (comma-separated)</label><textarea x-model="raw.control_data" placeholder="12.1, 11.8, 13.4, 12.0, ..."></textarea></div>
+        <div class="field"><label>Treatment data (comma-separated)</label><textarea x-model="raw.treatment_data" placeholder="13.5, 14.2, 12.9, 13.8, ..."></textarea></div>
+        <div class="field" style="max-width:160px"><label>Alpha (&#945;)</label><input type="number" step="0.01" min="0.01" max="0.2" x-model.number="raw.alpha"></div>
+      </div>
+    </template>
+
+    <div class="error-banner" x-show="error" x-text="error"></div>
+    <button class="btn btn-primary" @click="submit()" :disabled="loading">
+      <span x-show="loading" class="spinner"></span>
+      <span x-text="loading ? 'Calculating...' : 'Calculate'"></span>
+    </button>
+  </div>
+
+  <div class="result-card" x-show="result">
+    <div class="result-header">
+      <h2>Result</h2>
+      <span class="badge" :class="result && result.significant ? 'badge-sig' : 'badge-nosig'"
+            x-text="result && result.significant ? 'Significant' : 'Not Significant'"></span>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="label">p-value</div>
+        <div class="value" :class="result && result.significant ? 'sig' : 'nosig'" x-text="result ? fmt(result.p_value) : ''"></div>
+      </div>
+      <div class="stat-box" x-show="result && result.t_statistic !== 0">
+        <div class="label">t-statistic</div>
+        <div class="value" x-text="result ? fmt(result.t_statistic, 3) : ''"></div>
+      </div>
+      <div class="stat-box" x-show="result && result.z_statistic !== 0">
+        <div class="label">z-statistic</div>
+        <div class="value" x-text="result ? fmt(result.z_statistic, 3) : ''"></div>
+      </div>
+      <div class="stat-box">
+        <div class="label">Relative Lift</div>
+        <div class="value" x-text="result ? pct(result.relative_lift) : ''"></div>
+      </div>
+      <div class="stat-box" x-show="result && result.effect_size !== 0">
+        <div class="label">Effect Size (d)</div>
+        <div class="value" x-text="result ? fmt(result.effect_size, 3) : ''"></div>
+      </div>
+      <div class="stat-box">
+        <div class="label">95% CI</div>
+        <div class="value" style="font-size:1rem" x-text="result ? ciRange(result.ci_lower, result.ci_upper) : ''"></div>
+      </div>
+    </div>
+    <div class="interp" x-text="abInterp(result)"></div>
+  </div>
+
+</div>

@@ -1,0 +1,126 @@
+
+<h1>Difference-in-Differences</h1>
+<p class="subtitle">Measure policy or treatment effects using DiD, regression, parallel trends test, and event study.</p>
+
+<div x-data="didCalc()" x-cloak>
+
+  <div class="card">
+    <div class="mode-toggle" style="flex-wrap:wrap">
+      <button :class="method==='simple'?'active':''"      @click="method='simple'">2&#215;2 DiD</button>
+      <button :class="method==='regression'?'active':''" @click="method='regression'">DiD Regression</button>
+      <button :class="method==='parallel'?'active':''"   @click="method='parallel'">Parallel Trends</button>
+      <button :class="method==='event'?'active':''"      @click="method='event'">Event Study</button>
+    </div>
+
+    <template x-if="method==='simple'">
+      <div>
+        <div class="field-row">
+          <div class="field"><label>Treated &mdash; pre-period</label><textarea x-model="s.y_treat_pre" placeholder="10.1, 10.4, 9.8, ..."></textarea></div>
+          <div class="field"><label>Treated &mdash; post-period</label><textarea x-model="s.y_treat_post" placeholder="12.1, 11.8, 12.5, ..."></textarea></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Control &mdash; pre-period</label><textarea x-model="s.y_ctrl_pre" placeholder="9.9, 10.2, 10.0, ..."></textarea></div>
+          <div class="field"><label>Control &mdash; post-period</label><textarea x-model="s.y_ctrl_post" placeholder="10.2, 10.0, 10.3, ..."></textarea></div>
+        </div>
+      </div>
+    </template>
+
+    <template x-if="method==='regression'">
+      <div>
+        <div class="field"><label>Outcome Y (one value per observation)</label><textarea x-model="r.y" placeholder="10.1, 10.4, 12.1, 11.8, ..."></textarea></div>
+        <div class="field"><label>Group (0=control, 1=treated, one per observation)</label><textarea x-model="r.group" placeholder="0, 0, 1, 1, 0, 1, ..."></textarea></div>
+        <div class="field"><label>Time (0=pre, 1=post, one per observation)</label><textarea x-model="r.time" placeholder="0, 1, 0, 1, 0, 1, ..."></textarea></div>
+        <div class="field">
+          <label>Additional covariates X (one row per observation, comma-separated; leave empty if none)</label>
+          <textarea x-model="r.x" placeholder="25, 1&#10;32, 0&#10;..."></textarea>
+        </div>
+      </div>
+    </template>
+
+    <template x-if="method==='parallel'">
+      <div>
+        <p style="font-size:.875rem;color:var(--muted);margin-bottom:1rem;">Tests whether treated and control groups had parallel pre-trends.</p>
+        <div class="field"><label>Treated pre-period values (time-ordered)</label><textarea x-model="pt.y_treated_pre" placeholder="9.8, 10.0, 10.1, 10.4, ..."></textarea></div>
+        <div class="field"><label>Control pre-period values (time-ordered)</label><textarea x-model="pt.y_control_pre" placeholder="9.9, 10.1, 10.2, 10.3, ..."></textarea></div>
+        <div class="field"><label>Time indices (integers, one per observation)</label><textarea x-model="pt.time_pre" placeholder="1, 2, 3, 4, ..."></textarea></div>
+      </div>
+    </template>
+
+    <template x-if="method==='event'">
+      <div>
+        <div class="field"><label>Outcome Y (all periods)</label><textarea x-model="ev.y" placeholder="9.8, 10.0, 10.1, 12.1, 12.5, ..."></textarea></div>
+        <div class="field"><label>Group (0=control, 1=treated, one per observation)</label><textarea x-model="ev.group" placeholder="0, 0, 1, 1, 0, 1, ..."></textarea></div>
+        <div class="field"><label>Relative time (periods relative to treatment; &minus;2, &minus;1, 0, 1, 2, ...)</label><textarea x-model="ev.relative_time" placeholder="-2, -1, 0, 1, -2, -1, ..."></textarea></div>
+      </div>
+    </template>
+
+    <div class="field" style="max-width:160px"><label>Alpha (&#945;)</label><input type="number" step="0.01" min="0.01" max="0.2" x-model.number="alpha"></div>
+
+    <div class="error-banner" x-show="error" x-text="error"></div>
+    <button class="btn btn-primary" @click="submit()" :disabled="loading">
+      <span x-show="loading" class="spinner"></span>
+      <span x-text="loading ? 'Calculating...' : 'Run DiD'"></span>
+    </button>
+  </div>
+
+  <div class="result-card" x-show="result">
+    <div class="result-header">
+      <h2>DiD Result</h2>
+      <span class="badge" :class="didIsSig(result, method) ? 'badge-sig' : 'badge-nosig'"
+            x-text="didIsSig(result, method) ? 'Significant' : 'Not Significant'"></span>
+    </div>
+
+    <template x-if="method==='simple' && result">
+      <div class="stat-grid">
+        <div class="stat-box"><div class="label">DiD Effect</div><div class="value" x-text="fmt(result.did_effect,3)"></div></div>
+        <div class="stat-box"><div class="label">p-value</div><div class="value" :class="didIsSig(result,method)?'sig':'nosig'" x-text="fmt(result.p_value)"></div></div>
+        <div class="stat-box"><div class="label">95% CI</div><div class="value" style="font-size:1rem" x-text="ciRange(result.ci_lower, result.ci_upper, 3)"></div></div>
+        <div class="stat-box"><div class="label">Treated change</div><div class="value" x-text="fmt(result.treated_change,3)"></div></div>
+        <div class="stat-box"><div class="label">Control change</div><div class="value" x-text="fmt(result.control_change,3)"></div></div>
+      </div>
+    </template>
+
+    <template x-if="method==='regression' && result">
+      <div class="stat-grid">
+        <div class="stat-box"><div class="label">DiD coefficient</div><div class="value" x-text="fmt(result.did_coefficient,3)"></div></div>
+        <div class="stat-box"><div class="label">p-value</div><div class="value" :class="didIsSig(result,method)?'sig':'nosig'" x-text="fmt(result.did_p_value)"></div></div>
+        <div class="stat-box"><div class="label">95% CI</div><div class="value" style="font-size:1rem" x-text="ciRange(result.did_ci_lower, result.did_ci_upper, 3)"></div></div>
+        <div class="stat-box"><div class="label">R&#178;</div><div class="value" x-text="fmt(result.r_squared,3)"></div></div>
+        <div class="stat-box"><div class="label">N</div><div class="value" x-text="result.n"></div></div>
+      </div>
+    </template>
+
+    <template x-if="method==='parallel' && result">
+      <div class="stat-grid">
+        <div class="stat-box"><div class="label">Slope difference</div><div class="value" x-text="fmt(result.slope_difference,3)"></div></div>
+        <div class="stat-box"><div class="label">p-value</div><div class="value" :class="didIsSig(result,method)?'sig':'nosig'" x-text="fmt(result.p_value)"></div></div>
+        <div class="stat-box"><div class="label">Parallel trends</div><div class="value" :class="result.parallel_trends_hold?'sig':'nosig'" x-text="result.parallel_trends_hold?'Hold':'Violated'"></div></div>
+      </div>
+    </template>
+
+    <template x-if="method==='event' && result">
+      <div>
+        <p style="font-size:.875rem;color:var(--muted);margin-bottom:.75rem">Effects by relative time period:</p>
+        <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+          <thead><tr style="border-bottom:1px solid var(--border)">
+            <th style="text-align:left;padding:.4rem">Period</th>
+            <th>Effect</th><th>SE</th><th>p-value</th>
+          </tr></thead>
+          <tbody>
+            <template x-for="(t, i) in result.relative_times" :key="i">
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:.4rem" x-text="t >= 0 ? '+' + t : '' + t"></td>
+                <td style="text-align:center" x-text="fmt(result.effects[i],3)"></td>
+                <td style="text-align:center" x-text="fmt(result.std_errors[i],3)"></td>
+                <td style="text-align:center" :style="result.p_values[i] < 0.05 ? 'color:var(--green)' : ''" x-text="fmt(result.p_values[i])"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </template>
+
+    <div class="interp" x-text="didInterp(result, method)"></div>
+  </div>
+
+</div>

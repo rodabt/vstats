@@ -1,0 +1,55 @@
+
+<h1>Power Analysis</h1>
+<p class="subtitle">Calculate the required sample size per group before launching your experiment.</p>
+
+<div x-data="powerCalc()" x-cloak>
+
+  <div class="card">
+    <div class="mode-toggle">
+      <button :class="metric==='continuous'?'active':''" @click="metric='continuous'">Continuous</button>
+      <button :class="metric==='proportion'?'active':''" @click="metric='proportion'">Proportion</button>
+    </div>
+
+    <template x-if="metric==='continuous'">
+      <div class="field-row-3">
+        <div class="field">
+          <label>Effect size (Cohen's d)</label>
+          <input type="number" step="0.01" min="0.01" x-model.number="c.effect_size">
+          <div class="hint">Small=0.2, Medium=0.5, Large=0.8</div>
+        </div>
+        <div class="field"><label>Alpha (&#945;)</label><input type="number" step="0.01" min="0.01" max="0.2" x-model.number="c.alpha"></div>
+        <div class="field"><label>Power (1 &minus; &#946;)</label><input type="number" step="0.01" min="0.5" max="0.99" x-model.number="c.power"></div>
+      </div>
+    </template>
+
+    <template x-if="metric==='proportion'">
+      <div>
+        <div class="field-row">
+          <div class="field"><label>Baseline conversion rate</label><input type="number" step="0.001" min="0.001" max="0.999" x-model.number="pr.p_baseline"></div>
+          <div class="field"><label>Target conversion rate</label><input type="number" step="0.001" min="0.001" max="0.999" x-model.number="pr.p_treatment"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Alpha (&#945;)</label><input type="number" step="0.01" min="0.01" max="0.2" x-model.number="pr.alpha"></div>
+          <div class="field"><label>Power (1 &minus; &#946;)</label><input type="number" step="0.01" min="0.5" max="0.99" x-model.number="pr.power"></div>
+        </div>
+      </div>
+    </template>
+
+    <div class="error-banner" x-show="error" x-text="error"></div>
+    <button class="btn btn-primary" @click="submit()" :disabled="loading">
+      <span x-show="loading" class="spinner"></span>
+      <span x-text="loading ? 'Calculating...' : 'Calculate Sample Size'"></span>
+    </button>
+  </div>
+
+  <div class="result-card" x-show="result">
+    <div class="result-header"><h2>Required Sample Size</h2></div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="label">Per group</div><div class="value" x-text="result ? result.n_per_group.toLocaleString() : ''"></div></div>
+      <div class="stat-box"><div class="label">Total</div><div class="value" x-text="result ? (result.n_per_group * 2).toLocaleString() : ''"></div></div>
+      <div class="stat-box" x-show="result && result.mde"><div class="label">MDE</div><div class="value" x-text="result ? pct(result.mde) : ''"></div></div>
+    </div>
+    <div class="interp" x-text="powerInterp(result)"></div>
+  </div>
+
+</div>

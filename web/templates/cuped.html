@@ -1,0 +1,41 @@
+
+<h1>CUPED</h1>
+<p class="subtitle">Controlled-experiment Using Pre-Experiment Data &mdash; reduce metric variance using pre-experiment covariates.</p>
+
+<div x-data="cupedCalc()" x-cloak>
+
+  <div class="card">
+    <p style="font-size:.875rem;color:var(--muted);margin-bottom:1rem;">
+      Enter post-experiment metric values and pre-experiment covariate values for both groups.
+      CUPED uses the covariate to subtract variance unrelated to the treatment.
+    </p>
+    <div class="field"><label>Control &mdash; post-experiment values</label><textarea x-model="f.control_post" placeholder="12.1, 11.8, 13.4, 12.0, ..."></textarea></div>
+    <div class="field"><label>Control &mdash; pre-experiment values (covariate)</label><textarea x-model="f.control_pre" placeholder="11.9, 12.1, 13.0, 11.8, ..."></textarea></div>
+    <div class="field"><label>Treatment &mdash; post-experiment values</label><textarea x-model="f.treatment_post" placeholder="13.5, 14.2, 12.9, 13.8, ..."></textarea></div>
+    <div class="field"><label>Treatment &mdash; pre-experiment values (covariate)</label><textarea x-model="f.treatment_pre" placeholder="13.1, 13.8, 12.7, 13.4, ..."></textarea></div>
+    <div class="field" style="max-width:160px"><label>Alpha (&#945;)</label><input type="number" step="0.01" min="0.01" max="0.2" x-model.number="f.alpha"></div>
+
+    <div class="error-banner" x-show="error" x-text="error"></div>
+    <button class="btn btn-primary" @click="submit()" :disabled="loading">
+      <span x-show="loading" class="spinner"></span>
+      <span x-text="loading ? 'Calculating...' : 'Run CUPED'"></span>
+    </button>
+  </div>
+
+  <div class="result-card" x-show="result">
+    <div class="result-header">
+      <h2>CUPED Result</h2>
+      <span class="badge" :class="result && result.adjusted && result.adjusted.significant ? 'badge-sig' : 'badge-nosig'"
+            x-text="result && result.adjusted && result.adjusted.significant ? 'Significant' : 'Not Significant'"></span>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="label">&#952; (covariate weight)</div><div class="value" x-text="result ? fmt(result.theta, 3) : ''"></div></div>
+      <div class="stat-box"><div class="label">Variance Reduction</div><div class="value" x-text="result ? pct(result.variance_reduction) : ''"></div></div>
+      <div class="stat-box"><div class="label">Adjusted p-value</div><div class="value" :class="result && result.adjusted && result.adjusted.significant ? 'sig' : 'nosig'" x-text="result && result.adjusted ? fmt(result.adjusted.p_value) : ''"></div></div>
+      <div class="stat-box"><div class="label">Adjusted Lift</div><div class="value" x-text="result && result.adjusted ? pct(result.adjusted.relative_lift) : ''"></div></div>
+      <div class="stat-box"><div class="label">95% CI</div><div class="value" style="font-size:1rem" x-text="result && result.adjusted ? ciRange(result.adjusted.ci_lower, result.adjusted.ci_upper) : ''"></div></div>
+    </div>
+    <div class="interp" x-text="cupedInterp(result)"></div>
+  </div>
+
+</div>
