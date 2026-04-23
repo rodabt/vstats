@@ -7,7 +7,8 @@
   <div class="card">
     <div class="mode-toggle">
       <button :class="metric==='proportion' ? 'active' : ''" @click="metric='proportion'">Proportion (Binary)</button>
-      <button :class="metric==='continuous' ? 'active' : ''" @click="metric='continuous'">Continuous</button>
+      <button :class="metric==='summary' ? 'active' : ''" @click="metric='summary'">Continuous (Summary)</button>
+      <button :class="metric==='continuous' ? 'active' : ''" @click="metric='continuous'">Continuous (Raw data)</button>
     </div>
 
     <template x-if="metric==='proportion'">
@@ -21,6 +22,24 @@
           <div class="field"><label>Treatment total (n)</label><input type="number" min="1" x-model.number="p.n_b"></div>
         </div>
         <div class="field" style="max-width:160px"><label>Alpha (&#945;)</label><input type="number" step="0.01" min="0.01" max="0.2" x-model.number="p.alpha"></div>
+      </div>
+    </template>
+
+    <template x-if="metric==='summary'">
+      <div>
+        <p style="font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:.75rem;">Control group</p>
+        <div class="field-row">
+          <div class="field"><label>Mean</label><input type="number" step="any" x-model.number="s.control_mean"></div>
+          <div class="field"><label>Std Dev</label><input type="number" min="0" step="any" x-model.number="s.control_std"></div>
+          <div class="field"><label>n</label><input type="number" min="2" x-model.number="s.control_n"></div>
+        </div>
+        <p style="font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:.75rem;">Treatment group</p>
+        <div class="field-row">
+          <div class="field"><label>Mean</label><input type="number" step="any" x-model.number="s.treatment_mean"></div>
+          <div class="field"><label>Std Dev</label><input type="number" min="0" step="any" x-model.number="s.treatment_std"></div>
+          <div class="field"><label>n</label><input type="number" min="2" x-model.number="s.treatment_n"></div>
+        </div>
+        <div class="field" style="max-width:160px"><label>Alpha (&#945;)</label><input type="number" step="0.01" min="0.01" max="0.2" x-model.number="s.alpha"></div>
       </div>
     </template>
 

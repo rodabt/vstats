@@ -2,5 +2,13 @@
 <footer style="text-align:center;padding:2rem;color:var(--muted);font-size:.8rem;">
   Powered by <a href="https://github.com/vlang/vstats" style="color:var(--teal);">vstats</a> &amp; <a href="https://vlang.io" style="color:var(--teal);">V</a>
 </footer>
+<script>
+(function() {
+  var path = window.location.pathname;
+  document.querySelectorAll('nav a[href]').forEach(function(a) {
+    if (a.getAttribute('href') === path) a.classList.add('active');
+  });
+})();
+</script>
 </body>
 </html>

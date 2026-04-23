@@ -11,6 +11,7 @@ function abTest() {
   return {
     metric: 'proportion',
     p: { successes_a: 500, n_a: 10000, successes_b: 550, n_b: 10000, alpha: 0.05 },
+    s: { control_mean: 12.5, control_std: 2.3, control_n: 1000, treatment_mean: 13.1, treatment_std: 2.4, treatment_n: 1000, alpha: 0.05 },
     raw: { control_data: '', treatment_data: '', alpha: 0.05 },
     result: null, error: null, loading: false,
 
@@ -24,6 +25,14 @@ function abTest() {
           if (sa > na || sb > nb) throw new Error('Successes cannot exceed group size');
           if (al <= 0 || al >= 1) throw new Error('Alpha must be between 0 and 1');
           payload = { metric: 'proportion', successes_a: sa, n_a: na, successes_b: sb, n_b: nb, alpha: al };
+        } else if (this.metric === 'summary') {
+          var cm = this.s.control_mean, cs = this.s.control_std, cn = this.s.control_n;
+          var tm = this.s.treatment_mean, ts = this.s.treatment_std, tn = this.s.treatment_n;
+          var al = this.s.alpha;
+          if (cn < 2 || tn < 2) throw new Error('Each group needs at least 2 observations');
+          if (cs < 0 || ts < 0) throw new Error('Standard deviations must be non-negative');
+          if (al <= 0 || al >= 1) throw new Error('Alpha must be between 0 and 1');
+          payload = { metric: 'summary', control_mean: cm, control_std: cs, control_n: cn, treatment_mean: tm, treatment_std: ts, treatment_n: tn, alpha: al };
         } else {
           var ctrl = parseCSV(this.raw.control_data);
           var trt  = parseCSV(this.raw.treatment_data);
