@@ -6,13 +6,17 @@
 
   <div class="card">
     <div class="mode-toggle">
-      <button :class="metric==='proportion' ? 'active' : ''" @click="metric='proportion'">Proportion (Binary)</button>
-      <button :class="metric==='summary' ? 'active' : ''" @click="metric='summary'">Continuous (Summary)</button>
-      <button :class="metric==='continuous' ? 'active' : ''" @click="metric='continuous'">Continuous (Raw data)</button>
+      <button :class="metric==='proportion' ? 'active' : ''" @click="metric='proportion';result=null;error=null">Proportion (Binary)</button>
+      <button :class="metric==='summary' ? 'active' : ''" @click="metric='summary';result=null;error=null">Continuous (Summary)</button>
+      <button :class="metric==='continuous' ? 'active' : ''" @click="metric='continuous';result=null;error=null">Continuous (Raw data)</button>
     </div>
 
     <template x-if="metric==='proportion'">
       <div>
+        <div class="did-explainer">
+          <p><strong>When to use:</strong> Your metric is binary &mdash; each user either converts or not (sign-up, purchase, click). Enter the cumulative success count and total users for each group. Uses a two-proportion z-test.</p>
+          <p class="did-example"><em>Example:</em> 10,000 users per group in a checkout-flow test. The new flow got 530 sign-ups vs 480 on the old one.</p>
+        </div>
         <div class="field-row">
           <div class="field"><label>Control successes</label><input type="number" min="0" x-model.number="p.successes_a"></div>
           <div class="field"><label>Control total (n)</label><input type="number" min="1" x-model.number="p.n_a"></div>
@@ -27,6 +31,10 @@
 
     <template x-if="metric==='summary'">
       <div>
+        <div class="did-explainer">
+          <p><strong>When to use:</strong> You already have aggregated statistics from your data warehouse &mdash; mean, standard deviation, and sample size for each group. Uses Welch's t-test from summary statistics.</p>
+          <p class="did-example"><em>Example:</em> Your analytics tool reports: control avg order value $12.50 (&sigma;=2.30, n=1,000), treatment $13.10 (&sigma;=2.40, n=1,000).</p>
+        </div>
         <p style="font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:.75rem;">Control group</p>
         <div class="field-row">
           <div class="field"><label>Mean</label><input type="number" step="any" x-model.number="s.control_mean"></div>
@@ -45,6 +53,10 @@
 
     <template x-if="metric==='continuous'">
       <div>
+        <div class="did-explainer">
+          <p><strong>When to use:</strong> You have individual-level metric values for each user. Paste them one per row. Uses Welch's t-test on the raw data.</p>
+          <p class="did-example"><em>Example:</em> Session duration in seconds for each user in your experiment. Export from your event log and paste the column directly.</p>
+        </div>
         <div class="field"><label>Control data</label><textarea x-model="raw.control_data" placeholder="12.1&#10;11.8&#10;13.4&#10;12.0&#10;..."></textarea></div>
         <div class="field"><label>Treatment data</label><textarea x-model="raw.treatment_data" placeholder="13.5&#10;14.2&#10;12.9&#10;13.8&#10;..."></textarea></div>
         <div class="field" style="max-width:160px"><label>Alpha (&#945;)</label><input type="number" step="0.01" min="0.01" max="0.2" x-model.number="raw.alpha"></div>
@@ -52,10 +64,13 @@
     </template>
 
     <div class="error-banner" x-show="error" x-text="error"></div>
-    <button class="btn btn-primary" @click="submit()" :disabled="loading">
-      <span x-show="loading" class="spinner"></span>
-      <span x-text="loading ? 'Calculating...' : 'Calculate'"></span>
-    </button>
+    <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary" @click="submit()" :disabled="loading">
+        <span x-show="loading" class="spinner"></span>
+        <span x-text="loading ? 'Calculating...' : 'Calculate'"></span>
+      </button>
+      <button class="btn btn-secondary" @click="loadExample()">Load example</button>
+    </div>
   </div>
 
   <div class="result-card" x-show="result">

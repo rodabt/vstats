@@ -5,6 +5,12 @@
 <div x-data="sprtCalc()" x-cloak>
 
   <div class="card">
+    <div class="did-explainer">
+      <p><strong>When to use:</strong> You want to monitor a running experiment and stop as soon as there is enough evidence &mdash; without the multiple-comparison penalty of peeking. Enter the <strong>cumulative</strong> totals as data accumulates. Re-run this calculator each time you check (daily, weekly) and follow the decision.</p>
+      <p><strong>MDE</strong> (Minimum Detectable Effect) is the smallest absolute rate difference you care about detecting. Set it to the smallest lift that would be worth acting on.</p>
+      <p class="did-example"><em>Example:</em> Day 14 of a sign-up rate test. 10,000 users per group so far. Control: 480 sign-ups. Treatment: 530. You want to detect any difference &ge; 1 percentage point (MDE = 0.01).</p>
+    </div>
+
     <div class="field-row">
       <div class="field"><label>Control successes (cumulative)</label><input type="number" min="0" x-model.number="f.successes_a"></div>
       <div class="field"><label>Control total n (cumulative)</label><input type="number" min="1" x-model.number="f.n_a"></div>
@@ -24,10 +30,13 @@
     </div>
 
     <div class="error-banner" x-show="error" x-text="error"></div>
-    <button class="btn btn-primary" @click="submit()" :disabled="loading">
-      <span x-show="loading" class="spinner"></span>
-      <span x-text="loading ? 'Calculating...' : 'Check Decision'"></span>
-    </button>
+    <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary" @click="submit()" :disabled="loading">
+        <span x-show="loading" class="spinner"></span>
+        <span x-text="loading ? 'Calculating...' : 'Check Decision'"></span>
+      </button>
+      <button class="btn btn-secondary" @click="loadExample()">Load example</button>
+    </div>
   </div>
 
   <div class="result-card" x-show="result">

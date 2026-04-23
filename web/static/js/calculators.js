@@ -15,6 +15,21 @@ function abTest() {
     raw: { control_data: '', treatment_data: '', alpha: 0.05 },
     result: null, error: null, loading: false,
 
+    loadExample() {
+      var nl = String.fromCharCode(10);
+      this.result = null; this.error = null;
+      if (this.metric === 'proportion') {
+        this.p.successes_a = 480; this.p.n_a = 10000; this.p.successes_b = 530; this.p.n_b = 10000; this.p.alpha = 0.05;
+      } else if (this.metric === 'summary') {
+        this.s.control_mean = 12.5; this.s.control_std = 2.3; this.s.control_n = 1000;
+        this.s.treatment_mean = 13.1; this.s.treatment_std = 2.4; this.s.treatment_n = 1000; this.s.alpha = 0.05;
+      } else {
+        this.raw.control_data  = ['12.1','11.8','13.4','12.0','11.5','12.8','11.9','12.3','11.7','12.6'].join(nl);
+        this.raw.treatment_data = ['13.5','14.2','12.9','13.8','14.1','13.2','14.4','13.0','14.3','13.7'].join(nl);
+        this.raw.alpha = 0.05;
+      }
+    },
+
     async submit() {
       this.error = null; this.result = null; this.loading = true;
       try {
@@ -62,6 +77,12 @@ function sprtCalc() {
     f: { successes_a: 480, n_a: 10000, successes_b: 530, n_b: 10000, mde: 0.01, alpha: 0.05, beta: 0.20 },
     result: null, error: null, loading: false,
 
+    loadExample() {
+      this.result = null; this.error = null;
+      this.f.successes_a = 480; this.f.n_a = 10000; this.f.successes_b = 530; this.f.n_b = 10000;
+      this.f.mde = 0.01; this.f.alpha = 0.05; this.f.beta = 0.20;
+    },
+
     async submit() {
       this.error = null; this.result = null; this.loading = true;
       try {
@@ -102,6 +123,15 @@ function powerCalc() {
     pr: { p_baseline: 0.10, p_treatment: 0.12, alpha: 0.05, power: 0.8 },
     result: null, error: null, loading: false,
 
+    loadExample() {
+      this.result = null; this.error = null;
+      if (this.metric === 'continuous') {
+        this.c.effect_size = 0.2; this.c.alpha = 0.05; this.c.power = 0.8;
+      } else {
+        this.pr.p_baseline = 0.10; this.pr.p_treatment = 0.12; this.pr.alpha = 0.05; this.pr.power = 0.8;
+      }
+    },
+
     async submit() {
       this.error = null; this.result = null; this.loading = true;
       try {
@@ -135,6 +165,16 @@ function cupedCalc() {
   return {
     f: { control_post: '', control_pre: '', treatment_post: '', treatment_pre: '', alpha: 0.05 },
     result: null, error: null, loading: false,
+
+    loadExample() {
+      var nl = String.fromCharCode(10);
+      this.result = null; this.error = null;
+      this.f.control_post   = ['10.2','9.8','10.5','10.1','9.9'].join(nl);
+      this.f.control_pre    = ['9.9','9.5','10.2','9.8','9.6'].join(nl);
+      this.f.treatment_post = ['12.1','11.8','12.5','11.9','12.3'].join(nl);
+      this.f.treatment_pre  = ['10.1','9.8','10.4','10.0','9.9'].join(nl);
+      this.f.alpha = 0.05;
+    },
 
     async submit() {
       this.error = null; this.result = null; this.loading = true;
@@ -171,6 +211,47 @@ function hypothesisCalc() {
 
     needsTwo() { return ['t_test_two_sample','mann_whitney','ks_test','correlation','wilcoxon'].indexOf(this.test) >= 0; },
     needsOne() { return ['t_test_one_sample','shapiro_wilk'].indexOf(this.test) >= 0; },
+
+    testDesc() {
+      var d = {
+        t_test_two_sample: { when: 'Compare means of two independent groups. Best when data is approximately normal or n > 30.', ex: 'Are users from landing page A spending more time on-site than landing page B? Enter session durations for each group.' },
+        t_test_one_sample: { when: 'Test whether a group\'s mean differs from a known benchmark (μ₀).', ex: 'Is average checkout time different from the target of 5 minutes? Enter times and set μ₀ = 5.' },
+        mann_whitney:      { when: 'Non-parametric alternative to the two-sample t-test. Use when data is skewed, has outliers, or sample is small.', ex: 'Compare revenue per user between two variants when the distribution is right-skewed.' },
+        ks_test:           { when: 'Tests whether two samples come from the same distribution — sensitive to differences in shape, not just means.', ex: 'Does the time-to-purchase distribution differ between mobile and desktop users?' },
+        chi_squared:       { when: 'Tests independence between two categorical variables. Enter a contingency table — rows are groups, columns are outcomes.', ex: 'Did the new onboarding flow change the mix of free vs paid sign-ups? Row 1 = old, Row 2 = new; columns = free, paid.' },
+        shapiro_wilk:      { when: 'Tests whether a sample is normally distributed. Run this before choosing between a t-test and Mann-Whitney.', ex: 'Paste your metric values. p < 0.05 means normality is rejected → use a non-parametric test.' },
+        correlation:       { when: 'Tests whether two continuous variables are linearly associated (Pearson r). X and Y must be paired and the same length.', ex: 'Is session duration correlated with purchase value? Enter paired observations.' },
+        wilcoxon:          { when: 'Paired non-parametric test for before/after measurements on the same units. X = before, Y = after.', ex: 'Did satisfaction scores improve after a redesign? Each user\'s before score in X, after score in Y.' }
+      };
+      return d[this.test] || { when: '', ex: '' };
+    },
+
+    loadExample() {
+      var nl = String.fromCharCode(10);
+      this.result = null; this.error = null;
+      if (this.test === 't_test_two_sample') {
+        this.f.x = ['4.2','5.1','3.8','4.7','5.3','4.0','4.9'].join(nl);
+        this.f.y = ['5.8','6.2','5.4','6.7','5.9','6.1','6.5'].join(nl);
+      } else if (this.test === 't_test_one_sample') {
+        this.f.x = ['4.2','5.1','3.8','4.7','5.3','4.0','4.9'].join(nl); this.f.mu = 5.0;
+      } else if (this.test === 'mann_whitney') {
+        this.f.x = ['1.2','2.4','1.8','3.1','1.5','2.0'].join(nl);
+        this.f.y = ['4.2','5.8','3.9','6.1','4.7','5.2'].join(nl);
+      } else if (this.test === 'ks_test') {
+        this.f.x = ['1.0','1.5','2.0','2.5','3.0','1.2'].join(nl);
+        this.f.y = ['2.0','3.5','4.0','4.5','5.0','3.8'].join(nl);
+      } else if (this.test === 'chi_squared') {
+        this.f.contingency = '30, 10' + nl + '20, 40';
+      } else if (this.test === 'shapiro_wilk') {
+        this.f.x = ['4.2','5.1','3.8','4.7','5.3','4.0','4.9','5.5','4.3','4.8'].join(nl);
+      } else if (this.test === 'correlation') {
+        this.f.x = ['1','2','3','4','5','6','7'].join(nl);
+        this.f.y = ['2.1','4.3','5.8','8.2','9.7','11.3','13.1'].join(nl);
+      } else if (this.test === 'wilcoxon') {
+        this.f.x = ['4.2','5.1','3.8','4.7','5.3','4.0'].join(nl);
+        this.f.y = ['5.8','6.2','5.4','6.7','5.9','5.6'].join(nl);
+      }
+    },
 
     async submit() {
       this.error = null; this.result = null; this.loading = true;
@@ -220,6 +301,16 @@ function psmCalc() {
   return {
     f: { treatment: '', y: '', x: '', caliper: -1, iterations: 1000 },
     result: null, error: null, loading: false,
+
+    loadExample() {
+      var nl = String.fromCharCode(10);
+      this.result = null; this.error = null;
+      this.f.treatment = ['0','0','0','0','0','1','1','1','1','1'].join(nl);
+      this.f.y  = ['10.5','11.2','10.8','11.0','10.3','13.2','12.8','13.5','12.9','14.1'].join(nl);
+      this.f.x  = ['28, 365','35, 730','42, 180','25, 90','31, 540',
+                   '29, 400','36, 700','43, 200','26, 120','32, 500'].join(nl);
+      this.f.caliper = -1; this.f.iterations = 1000;
+    },
 
     async submit() {
       this.error = null; this.result = null; this.loading = true;

@@ -7,7 +7,7 @@
   <div class="card">
     <div class="field">
       <label>Test</label>
-      <select x-model="test">
+      <select x-model="test" @change="result=null;error=null">
         <option value="t_test_two_sample">Two-sample t-test</option>
         <option value="t_test_one_sample">One-sample t-test</option>
         <option value="mann_whitney">Mann-Whitney U (non-parametric)</option>
@@ -17,6 +17,11 @@
         <option value="correlation">Pearson correlation</option>
         <option value="wilcoxon">Wilcoxon signed-rank</option>
       </select>
+    </div>
+
+    <div class="did-explainer">
+      <p><strong>When to use:</strong> <span x-text="testDesc().when"></span></p>
+      <p class="did-example"><em>Example:</em> <span x-text="testDesc().ex"></span></p>
     </div>
 
     <template x-if="needsTwo()">
@@ -35,9 +40,9 @@
 
     <template x-if="test==='chi_squared'">
       <div class="field">
-        <label>Contingency table (one row per line, comma-separated values)</label>
+        <label>Contingency table &mdash; one row per line, comma-separated values</label>
         <textarea x-model="f.contingency" rows="4" placeholder="10, 20&#10;30, 40"></textarea>
-        <div class="hint">Example 2&#215;2 table: first row on line 1, second row on line 2</div>
+        <div class="hint">Rows = groups &nbsp;|&nbsp; Columns = outcomes. Example 2&times;2: row 1 = control (free, paid), row 2 = treatment (free, paid)</div>
       </div>
     </template>
 
@@ -47,10 +52,13 @@
     </div>
 
     <div class="error-banner" x-show="error" x-text="error"></div>
-    <button class="btn btn-primary" @click="submit()" :disabled="loading">
-      <span x-show="loading" class="spinner"></span>
-      <span x-text="loading ? 'Calculating...' : 'Run Test'"></span>
-    </button>
+    <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary" @click="submit()" :disabled="loading">
+        <span x-show="loading" class="spinner"></span>
+        <span x-text="loading ? 'Calculating...' : 'Run Test'"></span>
+      </button>
+      <button class="btn btn-secondary" @click="loadExample()">Load example</button>
+    </div>
   </div>
 
   <div class="result-card" x-show="result">
