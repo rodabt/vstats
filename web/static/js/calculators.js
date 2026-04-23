@@ -252,6 +252,7 @@ function psmInterp(result) {
 // ── DiD ───────────────────────────────────────────────────────────────────────
 
 function didCalc() {
+  var nl = String.fromCharCode(10);
   return {
     method: 'simple',
     alpha: 0.05,
@@ -260,6 +261,47 @@ function didCalc() {
     pt: { y_treated_pre: '', y_control_pre: '', time_pre: '' },
     ev: { y: '', group: '', relative_time: '' },
     result: null, error: null, loading: false,
+
+    loadExample() {
+      this.result = null; this.error = null;
+      if (this.method === 'simple') {
+        // 5 stores each; promotion raised treated by ~2 units, control unchanged
+        this.s.y_treat_pre  = ['10.2','9.8','10.5','10.1','9.9'].join(nl);
+        this.s.y_treat_post = ['12.1','11.8','12.5','11.9','12.3'].join(nl);
+        this.s.y_ctrl_pre   = ['9.9','10.2','10.0','10.3','9.7'].join(nl);
+        this.s.y_ctrl_post  = ['10.1','10.4','10.0','10.2','9.8'].join(nl);
+      } else if (this.method === 'regression') {
+        // 8 obs: ctrl pre/post × 2 units, treated pre/post × 2 units (2 repeats each)
+        this.r.y     = ['10.0','10.2','9.9','10.1','9.8','12.1','9.9','12.3'].join(nl);
+        this.r.group = ['0','0','0','0','1','1','1','1'].join(nl);
+        this.r.time  = ['0','1','0','1','0','1','0','1'].join(nl);
+        this.r.x = '';
+      } else if (this.method === 'parallel') {
+        // 4 pre-periods; both groups trend upward at similar rate
+        this.pt.y_treated_pre = ['9.8','10.0','10.1','10.4'].join(nl);
+        this.pt.y_control_pre = ['9.9','10.1','10.2','10.3'].join(nl);
+        this.pt.time_pre      = ['1','2','3','4'].join(nl);
+      } else if (this.method === 'event') {
+        // 2 periods before & after; control obs interleaved with treated
+        // 3 control units × 4 periods + 3 treated units × 4 periods = 24 rows
+        var y   = [], grp = [], rt = [];
+        var cPre  = [9.8, 10.0, 9.9],  cPost = [10.1, 10.2, 10.0];
+        var tPre  = [10.1, 9.9, 10.2], tPost = [12.3, 12.0, 12.5];
+        for (var t = -2; t <= 1; t++) {
+          for (var u = 0; u < 3; u++) {
+            var cVal = t < 0 ? cPre[u] + (t + 2) * 0.1 : cPost[u] + t * 0.1;
+            y.push(cVal.toFixed(1)); grp.push('0'); rt.push(String(t));
+          }
+          for (var u = 0; u < 3; u++) {
+            var tVal = t < 0 ? tPre[u] + (t + 2) * 0.1 : tPost[u] + t * 0.2;
+            y.push(tVal.toFixed(1)); grp.push('1'); rt.push(String(t));
+          }
+        }
+        this.ev.y             = y.join(nl);
+        this.ev.group         = grp.join(nl);
+        this.ev.relative_time = rt.join(nl);
+      }
+    },
 
     async submit() {
       this.error = null; this.result = null; this.loading = true;

@@ -1,60 +1,121 @@
 
 <h1>Difference-in-Differences</h1>
-<p class="subtitle">Measure policy or treatment effects using DiD, regression, parallel trends test, and event study.</p>
+<p class="subtitle">Estimate causal effects by comparing how a treated group changed relative to a control group over time.</p>
 
 <div x-data="didCalc()" x-cloak>
 
   <div class="card">
     <div class="mode-toggle" style="flex-wrap:wrap">
-      <button :class="method==='simple'?'active':''"      @click="method='simple'">2&#215;2 DiD</button>
-      <button :class="method==='regression'?'active':''" @click="method='regression'">DiD Regression</button>
-      <button :class="method==='parallel'?'active':''"   @click="method='parallel'">Parallel Trends</button>
-      <button :class="method==='event'?'active':''"      @click="method='event'">Event Study</button>
+      <button :class="method==='simple'?'active':''"      @click="method='simple';result=null;error=null">2&times;2 DiD</button>
+      <button :class="method==='regression'?'active':''" @click="method='regression';result=null;error=null">DiD Regression</button>
+      <button :class="method==='parallel'?'active':''"   @click="method='parallel';result=null;error=null">Parallel Trends</button>
+      <button :class="method==='event'?'active':''"      @click="method='event';result=null;error=null">Event Study</button>
     </div>
 
+    <!-- 2×2 DiD ----------------------------------------------------------------->
     <template x-if="method==='simple'">
       <div>
-        <div class="field-row">
-          <div class="field"><label>Treated &mdash; pre-period</label><textarea x-model="s.y_treat_pre" placeholder="10.1&#10;10.4&#10;9.8&#10;..."></textarea></div>
-          <div class="field"><label>Treated &mdash; post-period</label><textarea x-model="s.y_treat_post" placeholder="12.1&#10;11.8&#10;12.5&#10;..."></textarea></div>
+        <div class="did-explainer">
+          <p><strong>When to use:</strong> You have one pre-period and one post-period, and two groups (treated and control). Enter the raw metric values for each combination.</p>
+          <div class="did-grid-diagram">
+            <div class="did-cell did-header"></div>
+            <div class="did-cell did-header">Pre</div>
+            <div class="did-cell did-header">Post</div>
+            <div class="did-cell did-header">Treated</div>
+            <div class="did-cell">A</div>
+            <div class="did-cell">B</div>
+            <div class="did-cell did-header">Control</div>
+            <div class="did-cell">C</div>
+            <div class="did-cell">D</div>
+          </div>
+          <p class="did-formula">DiD effect = (B &minus; A) &minus; (D &minus; C)</p>
+          <p class="did-example"><em>Example:</em> A new in-app feature was rolled out to 5 markets. Enter their weekly revenue before and after the rollout, plus 5 control markets that saw no change.</p>
         </div>
         <div class="field-row">
-          <div class="field"><label>Control &mdash; pre-period</label><textarea x-model="s.y_ctrl_pre" placeholder="9.9&#10;10.2&#10;10.0&#10;..."></textarea></div>
-          <div class="field"><label>Control &mdash; post-period</label><textarea x-model="s.y_ctrl_post" placeholder="10.2&#10;10.0&#10;10.3&#10;..."></textarea></div>
+          <div class="field"><label>Treated &mdash; pre-period</label><textarea x-model="s.y_treat_pre" placeholder="10.2&#10;9.8&#10;10.5&#10;10.1&#10;9.9"></textarea></div>
+          <div class="field"><label>Treated &mdash; post-period</label><textarea x-model="s.y_treat_post" placeholder="12.1&#10;11.8&#10;12.5&#10;11.9&#10;12.3"></textarea></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Control &mdash; pre-period</label><textarea x-model="s.y_ctrl_pre" placeholder="9.9&#10;10.2&#10;10.0&#10;10.3&#10;9.7"></textarea></div>
+          <div class="field"><label>Control &mdash; post-period</label><textarea x-model="s.y_ctrl_post" placeholder="10.1&#10;10.4&#10;10.0&#10;10.2&#10;9.8"></textarea></div>
         </div>
       </div>
     </template>
 
+    <!-- DiD Regression ---------------------------------------------------------->
     <template x-if="method==='regression'">
       <div>
-        <div class="field"><label>Outcome Y (one per row)</label><textarea x-model="r.y" placeholder="10.1&#10;10.4&#10;12.1&#10;11.8&#10;..."></textarea></div>
-        <div class="field"><label>Group (0=control, 1=treated, one per row)</label><textarea x-model="r.group" placeholder="0&#10;0&#10;1&#10;1&#10;..."></textarea></div>
-        <div class="field"><label>Time (0=pre, 1=post, one per row)</label><textarea x-model="r.time" placeholder="0&#10;1&#10;0&#10;1&#10;..."></textarea></div>
+        <div class="did-explainer">
+          <p><strong>When to use:</strong> You have many individual observations (users, stores, …) each with a group label and a time label. Rows across all three fields must align — row&nbsp;1 in Y corresponds to row&nbsp;1 in Group and row&nbsp;1 in Time.</p>
+          <div class="did-grid-diagram" style="grid-template-columns: repeat(4,auto)">
+            <div class="did-cell did-header">Row</div>
+            <div class="did-cell did-header">Y</div>
+            <div class="did-cell did-header">Group</div>
+            <div class="did-cell did-header">Time</div>
+            <div class="did-cell">1</div><div class="did-cell">10.0</div><div class="did-cell">0</div><div class="did-cell">0</div>
+            <div class="did-cell">2</div><div class="did-cell">10.2</div><div class="did-cell">0</div><div class="did-cell">1</div>
+            <div class="did-cell">3</div><div class="did-cell">9.9</div><div class="did-cell">1</div><div class="did-cell">0</div>
+            <div class="did-cell">4</div><div class="did-cell">12.1</div><div class="did-cell">1</div><div class="did-cell">1</div>
+          </div>
+          <p class="did-example"><em>Example:</em> 100 users, each measured in period 0 (before) and period 1 (after). Half are in the treated group (1), half in control (0). You have 200 rows total.</p>
+        </div>
+        <div class="field"><label>Outcome Y (one per row)</label><textarea x-model="r.y" placeholder="10.0&#10;10.2&#10;9.9&#10;12.1&#10;..."></textarea></div>
+        <div class="field-row">
+          <div class="field"><label>Group &mdash; 0 = control, 1 = treated</label><textarea x-model="r.group" placeholder="0&#10;0&#10;1&#10;1&#10;..."></textarea></div>
+          <div class="field"><label>Time &mdash; 0 = pre, 1 = post</label><textarea x-model="r.time" placeholder="0&#10;1&#10;0&#10;1&#10;..."></textarea></div>
+        </div>
         <div class="field">
-          <label>Additional covariates X (one row per observation, comma-separated; leave empty if none)</label>
+          <label>Covariates X &mdash; one row per observation, comma-separated (leave empty if none)</label>
           <textarea x-model="r.x" placeholder="25, 1&#10;32, 0&#10;..."></textarea>
+          <div class="hint">Example: age and gender for each observation on the same row</div>
         </div>
       </div>
     </template>
 
+    <!-- Parallel Trends --------------------------------------------------------->
     <template x-if="method==='parallel'">
       <div>
-        <p style="font-size:.875rem;color:var(--muted);margin-bottom:1rem;">Tests whether treated and control groups had parallel pre-trends.</p>
-        <div class="field"><label>Treated pre-period values (time-ordered)</label><textarea x-model="pt.y_treated_pre" placeholder="9.8&#10;10.0&#10;10.1&#10;10.4&#10;..."></textarea></div>
-        <div class="field"><label>Control pre-period values (time-ordered)</label><textarea x-model="pt.y_control_pre" placeholder="9.9&#10;10.1&#10;10.2&#10;10.3&#10;..."></textarea></div>
-        <div class="field"><label>Time indices (integers, one per row)</label><textarea x-model="pt.time_pre" placeholder="1&#10;2&#10;3&#10;4&#10;..."></textarea></div>
+        <div class="did-explainer">
+          <p><strong>When to use:</strong> Before running DiD, test whether the parallel trends assumption holds. Both groups should have been changing at the same rate <em>before</em> the treatment. This test uses only pre-period data.</p>
+          <p class="did-example"><em>Example:</em> You have monthly revenue for 4 months before the campaign launched. Enter those 4 values for the treated stores and the 4 values for the control stores, plus the time indices 1, 2, 3, 4. A non-significant p-value means trends were parallel &#x2714;</p>
+        </div>
+        <div class="field"><label>Treated &mdash; pre-period values in time order (one per row)</label><textarea x-model="pt.y_treated_pre" placeholder="9.8&#10;10.0&#10;10.1&#10;10.4&#10;..."></textarea></div>
+        <div class="field"><label>Control &mdash; pre-period values in time order (one per row)</label><textarea x-model="pt.y_control_pre" placeholder="9.9&#10;10.1&#10;10.2&#10;10.3&#10;..."></textarea></div>
+        <div class="field" style="max-width:300px"><label>Time indices &mdash; integer label per period (one per row)</label><textarea x-model="pt.time_pre" placeholder="1&#10;2&#10;3&#10;4&#10;..."></textarea></div>
       </div>
     </template>
 
+    <!-- Event Study ------------------------------------------------------------->
     <template x-if="method==='event'">
       <div>
-        <div class="field"><label>Outcome Y (all periods, one per row)</label><textarea x-model="ev.y" placeholder="9.8&#10;10.0&#10;10.1&#10;12.1&#10;..."></textarea></div>
-        <div class="field"><label>Group (0=control, 1=treated, one per row)</label><textarea x-model="ev.group" placeholder="0&#10;0&#10;1&#10;1&#10;..."></textarea></div>
-        <div class="field"><label>Relative time (periods since treatment; one per row)</label><textarea x-model="ev.relative_time" placeholder="-2&#10;-1&#10;0&#10;1&#10;..."></textarea></div>
+        <div class="did-explainer">
+          <p><strong>When to use:</strong> You want to see how the treatment effect evolves over several periods. Use <em>relative time</em>: the period treatment happened is 0, periods before are negative (&#x2212;1, &#x2212;2&hellip;), periods after are positive (+1, +2&hellip;). Control units always get a relative time based on the same calendar period.</p>
+          <div class="did-grid-diagram" style="grid-template-columns: repeat(4,auto)">
+            <div class="did-cell did-header">Row</div>
+            <div class="did-cell did-header">Y</div>
+            <div class="did-cell did-header">Group</div>
+            <div class="did-cell did-header">Rel. time</div>
+            <div class="did-cell">1</div><div class="did-cell">9.9</div><div class="did-cell">0</div><div class="did-cell">&minus;2</div>
+            <div class="did-cell">2</div><div class="did-cell">10.0</div><div class="did-cell">0</div><div class="did-cell">&minus;1</div>
+            <div class="did-cell">3</div><div class="did-cell">10.1</div><div class="did-cell">1</div><div class="did-cell">&minus;2</div>
+            <div class="did-cell">4</div><div class="did-cell">10.2</div><div class="did-cell">1</div><div class="did-cell">&minus;1</div>
+            <div class="did-cell">5</div><div class="did-cell">10.2</div><div class="did-cell">0</div><div class="did-cell">0</div>
+            <div class="did-cell">6</div><div class="did-cell">12.1</div><div class="did-cell">1</div><div class="did-cell">0</div>
+          </div>
+          <p class="did-example"><em>Example:</em> A feature launched in week 0. You have 2 weeks before and 2 weeks after, for 10 treated users and 10 control users &rarr; 40 rows total.</p>
+        </div>
+        <div class="field"><label>Outcome Y (all periods, one per row)</label><textarea x-model="ev.y" placeholder="9.9&#10;10.0&#10;10.1&#10;10.2&#10;..."></textarea></div>
+        <div class="field-row">
+          <div class="field"><label>Group &mdash; 0 = control, 1 = treated</label><textarea x-model="ev.group" placeholder="0&#10;0&#10;1&#10;1&#10;..."></textarea></div>
+          <div class="field"><label>Relative time &mdash; 0 = treatment period</label><textarea x-model="ev.relative_time" placeholder="-2&#10;-1&#10;0&#10;1&#10;..."></textarea></div>
+        </div>
       </div>
     </template>
 
-    <div class="field" style="max-width:160px"><label>Alpha (&#945;)</label><input type="number" step="0.01" min="0.01" max="0.2" x-model.number="alpha"></div>
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-top:.5rem">
+      <div class="field" style="max-width:160px;margin:0"><label>Alpha (&#945;)</label><input type="number" step="0.01" min="0.01" max="0.2" x-model.number="alpha"></div>
+      <button class="btn btn-secondary" @click="loadExample()" style="margin-top:1.4rem">Load example</button>
+    </div>
 
     <div class="error-banner" x-show="error" x-text="error"></div>
     <button class="btn btn-primary" @click="submit()" :disabled="loading">
@@ -94,13 +155,13 @@
       <div class="stat-grid">
         <div class="stat-box"><div class="label">Slope difference</div><div class="value" x-text="fmt(result.slope_difference,3)"></div></div>
         <div class="stat-box"><div class="label">p-value</div><div class="value" :class="didIsSig(result,method)?'sig':'nosig'" x-text="fmt(result.p_value)"></div></div>
-        <div class="stat-box"><div class="label">Parallel trends</div><div class="value" :class="result.parallel_trends_hold?'sig':'nosig'" x-text="result.parallel_trends_hold?'Hold':'Violated'"></div></div>
+        <div class="stat-box"><div class="label">Parallel trends</div><div class="value" :class="result.parallel_trends_hold?'sig':'nosig'" x-text="result.parallel_trends_hold?'Hold ✔':'Violated ⚠'"></div></div>
       </div>
     </template>
 
     <template x-if="method==='event' && result">
       <div>
-        <p style="font-size:.875rem;color:var(--muted);margin-bottom:.75rem">Effects by relative time period:</p>
+        <p style="font-size:.875rem;color:var(--muted);margin-bottom:.75rem">Treatment effects by relative time period:</p>
         <table style="width:100%;border-collapse:collapse;font-size:.85rem">
           <thead><tr style="border-bottom:1px solid var(--border)">
             <th style="text-align:left;padding:.4rem">Period</th>

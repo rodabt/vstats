@@ -168,6 +168,8 @@ h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: .25rem; }
 .btn:active { transform: scale(.98); }
 .btn-primary { background: var(--teal); color: #fff; }
 .btn-primary:hover { opacity: .9; }
+.btn-secondary { background: transparent; color: var(--teal); border: 1.5px solid var(--teal); }
+.btn-secondary:hover { background: var(--teal-l); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ── Results ────────────────────────────────────── */
@@ -257,3 +259,35 @@ h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: .25rem; }
   .field-row, .field-row-3 { grid-template-columns: 1fr; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── DiD explainer ──────────────────────────────── */
+.did-explainer {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  font-size: .875rem;
+  line-height: 1.6;
+}
+.did-explainer p { margin-bottom: .5rem; }
+.did-explainer p:last-child { margin-bottom: 0; }
+.did-example { color: var(--muted); }
+.did-formula { font-family: monospace; font-size: .85rem; color: var(--navy); margin: .5rem 0; }
+.did-grid-diagram {
+  display: inline-grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin: .75rem 0;
+  font-size: .8rem;
+  overflow: hidden;
+}
+.did-cell {
+  padding: .3rem .75rem;
+  background: var(--white);
+  text-align: center;
+}
+.did-header { background: var(--navy); color: #fff; font-weight: 600; }
