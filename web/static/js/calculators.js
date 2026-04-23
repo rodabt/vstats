@@ -210,7 +210,7 @@ function hypothesisCalc() {
     result: null, error: null, loading: false,
 
     needsTwo() { return ['t_test_two_sample','mann_whitney','ks_test','correlation','wilcoxon','spearman_correlation'].indexOf(this.test) >= 0; },
-    needsOne() { return ['t_test_one_sample','shapiro_wilk'].indexOf(this.test) >= 0; },
+    needsOne() { return ['t_test_one_sample','shapiro_wilk','runs_test'].indexOf(this.test) >= 0; },
 
     testDesc() {
       var d = {
