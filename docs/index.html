@@ -40,6 +40,79 @@
   </aside>
   <main class="content">
     <h1 id="vstats">VStats</h1>
+<p>A dependency-free statistics, linear algebra, and machine learning library for V.</p>
+<hr />
+<p><strong>New here?</strong> → <a href="getting-started.html">Getting Started (Python/R users)</a></p>
+<p><strong>Know what you want?</strong> → <a href="modules/stats.html">Module Reference</a></p>
+<hr />
+<h2 id="what-is-vstats">What is VStats?</h2>
+<p>VStats gives you the statistical and ML toolkit you'd normally reach for in Python
+(scipy, sklearn, statsmodels) — in pure V, with no external dependencies.</p>
+<ul>
+<li><strong>Zero dependencies</strong> — ships as pure V source</li>
+<li><strong>Generic types</strong> — most functions accept <code>int</code> or <code>f64</code>; aggregations return <code>f64</code></li>
+<li><strong>Product analytics focus</strong> — <code>experiment</code> and <code>growth</code> modules cover A/B testing,
+  causal inference, funnels, attribution, and SaaS metrics out of the box</li>
+</ul>
+<h2 id="modules">Modules</h2>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>linalg</code></td>
+<td>Vectors and matrices</td>
+</tr>
+<tr>
+<td><code>stats</code></td>
+<td>Descriptive stats, multiple testing, delta method, bootstrap</td>
+</tr>
+<tr>
+<td><code>prob</code></td>
+<td>Probability distributions (PDF/CDF/inverse)</td>
+</tr>
+<tr>
+<td><code>optim</code></td>
+<td>Gradient descent</td>
+</tr>
+<tr>
+<td><code>utils</code></td>
+<td>Datasets, metrics, feature scaling</td>
+</tr>
+<tr>
+<td><code>ml</code></td>
+<td>Regression, classification, clustering</td>
+</tr>
+<tr>
+<td><code>nn</code></td>
+<td>Neural network layers and training</td>
+</tr>
+<tr>
+<td><code>hypothesis</code></td>
+<td>Statistical tests</td>
+</tr>
+<tr>
+<td><code>experiment</code></td>
+<td>A/B testing, CUPED, DiD, PSM, ANCOVA, ITT/PP</td>
+</tr>
+<tr>
+<td><code>growth</code></td>
+<td>Funnels, cohorts, attribution, SaaS metrics</td>
+</tr>
+</tbody>
+</table>
+<h2 id="install">Install</h2>
+<pre><code class="language-bash">v install https://github.com/rodabt/vstats
+</code></pre>
+<h2 id="build-test">Build &amp; Test</h2>
+<pre><code class="language-bash">make test       # run all tests
+make fulltest   # verbose output
+make docs       # regenerate HTML docs from docs/src/
+</code></pre>
   </main>
 </div>
 <script src="js/script.js"></script>
