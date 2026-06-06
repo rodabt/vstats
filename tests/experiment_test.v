@@ -282,3 +282,30 @@ fn test__event_study_shape() {
 	assert result.ci_lowers.len == 3
 	assert result.ci_uppers.len == 3
 }
+
+// ============================================================================
+// ANCOVA Tests
+// ============================================================================
+
+fn test__ancova_no_covariate() {
+	// Without covariates, ancova should detect a clear +2 effect
+	ctrl := [10.0, 10.1, 9.9, 10.0, 10.1, 9.8, 10.2, 10.0, 9.9, 10.1]
+	trt  := [12.0, 12.1, 11.9, 12.0, 12.1, 11.8, 12.2, 12.0, 11.9, 12.1]
+	result := experiment.ancova(ctrl, trt, [][]f64{}, [][]f64{})
+	assert result.significant == true
+	assert math.abs(result.adjusted_effect - 2.0) < 0.1
+	assert result.p_value < 0.05
+}
+
+fn test__ancova_covariate_recovers_effect() {
+	// Baseline covariate correlated with outcome; treatment effect = +2 with some noise
+	ctrl   := [10.1, 11.0, 12.2, 12.9, 14.1, 9.8, 11.3, 12.0, 13.1, 14.0]
+	trt    := [12.0, 13.1, 14.0, 15.2, 16.1, 11.9, 13.0, 14.2, 15.0, 16.2]
+	x_ctrl := [[10.0], [11.0], [12.0], [13.0], [14.0], [10.0], [11.0], [12.0], [13.0], [14.0]]
+	x_trt  := [[10.0], [11.0], [12.0], [13.0], [14.0], [10.0], [11.0], [12.0], [13.0], [14.0]]
+	result := experiment.ancova(ctrl, trt, x_ctrl, x_trt)
+	assert result.significant == true
+	assert math.abs(result.adjusted_effect - 2.0) < 0.5
+	assert result.ci_lower < result.adjusted_effect
+	assert result.ci_upper > result.adjusted_effect
+}

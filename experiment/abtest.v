@@ -3,6 +3,7 @@ module experiment
 import math
 import stats
 import prob
+import ml
 
 @[params]
 pub struct ABTestConfig {
@@ -158,6 +159,87 @@ pub fn proportion_power_analysis(p_baseline f64, p_treatment f64, alpha f64, pow
 		p_baseline:  p_baseline
 		p_treatment: p_treatment
 		mde:         diff
+	}
+}
+
+pub struct ANCOVAResult {
+pub:
+	adjusted_effect f64
+	se              f64
+	t_statistic     f64
+	p_value         f64
+	ci_lower        f64
+	ci_upper        f64
+	significant     bool
+	n_control       int
+	n_treatment     int
+}
+
+// ancova runs an ANCOVA-adjusted A/B test: fits y ~ treatment + covariates via OLS
+// and returns the treatment coefficient with its standard error and p-value.
+// x_ctrl and x_trt are covariate matrices (one row per unit, one column per covariate).
+// Pass empty slices ([][]f64{}) when there are no covariates.
+pub fn ancova(ctrl []f64, trt []f64, x_ctrl [][]f64, x_trt [][]f64, cfg ABTestConfig) ANCOVAResult {
+	assert ctrl.len >= 2 && trt.len >= 2, 'each group needs at least 2 observations'
+	n_c := ctrl.len
+	n_t := trt.len
+	n := n_c + n_t
+
+	n_cov := if x_ctrl.len > 0 { x_ctrl[0].len } else { 0 }
+	n_params := 1 + n_cov // treatment indicator + covariates
+
+	// Build design matrix (no intercept column — ols_se adds it)
+	mut x_design := [][]f64{len: n}
+	for i in 0 .. n_c {
+		x_design[i] = []f64{len: n_params}
+		x_design[i][0] = 0.0
+		for j in 0 .. n_cov {
+			x_design[i][1 + j] = x_ctrl[i][j]
+		}
+	}
+	for i in 0 .. n_t {
+		x_design[n_c + i] = []f64{len: n_params}
+		x_design[n_c + i][0] = 1.0
+		for j in 0 .. n_cov {
+			x_design[n_c + i][1 + j] = x_trt[i][j]
+		}
+	}
+
+	mut y := []f64{len: n}
+	for i in 0 .. n_c {
+		y[i] = ctrl[i]
+	}
+	for i in 0 .. n_t {
+		y[n_c + i] = trt[i]
+	}
+
+	model := ml.linear_regression(x_design, y)
+
+	// treatment coefficient is model.coefficients[0]
+	adj_effect := model.coefficients[0]
+
+	mut full_coefs := [model.intercept]
+	for c in model.coefficients {
+		full_coefs << c
+	}
+	se_vec := ols_se(x_design, y, full_coefs)
+	// se_vec[0]=intercept, se_vec[1]=treatment
+	se_trt := if se_vec.len > 1 { se_vec[1] } else { 0.0 }
+
+	t_stat := if se_trt > 0 { adj_effect / se_trt } else { 0.0 }
+	p_val := 2.0 * prob.normal_cdf(-math.abs(t_stat), 0.0, 1.0)
+	z_crit := prob.inverse_normal_cdf(1.0 - cfg.alpha / 2.0, 0.0, 1.0)
+
+	return ANCOVAResult{
+		adjusted_effect: adj_effect
+		se:              se_trt
+		t_statistic:     t_stat
+		p_value:         p_val
+		ci_lower:        adj_effect - z_crit * se_trt
+		ci_upper:        adj_effect + z_crit * se_trt
+		significant:     p_val < cfg.alpha
+		n_control:       n_c
+		n_treatment:     n_t
 	}
 }
 
