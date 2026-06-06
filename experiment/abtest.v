@@ -243,6 +243,21 @@ pub fn ancova(ctrl []f64, trt []f64, x_ctrl [][]f64, x_trt [][]f64, cfg ABTestCo
 	}
 }
 
+// null_verdict returns a plain-English readout verdict for an A/B test result.
+// sig_digits controls decimal places in the formatted numbers (default 3).
+pub fn null_verdict(result ABTestResult, alpha f64) string {
+	dir := if result.treatment_mean > result.control_mean { 'higher' } else { 'lower' }
+	lift_pct := result.relative_lift * 100.0
+	lift_str := if lift_pct >= 0 { '+${lift_pct:.1f}%' } else { '${lift_pct:.1f}%' }
+	if result.p_value < alpha {
+		return 'Significant: treatment is ${dir} than control (lift ${lift_str}, ' +
+			'p=${result.p_value:.4f}, 95% CI [${result.ci_lower:.4f}, ${result.ci_upper:.4f}]).'
+	} else {
+		return 'Not significant: insufficient evidence that treatment differs from control ' +
+			'(lift ${lift_str}, p=${result.p_value:.4f}, 95% CI [${result.ci_lower:.4f}, ${result.ci_upper:.4f}]).'
+	}
+}
+
 // cuped_test runs CUPED-adjusted A/B test using pre-experiment covariates
 pub fn cuped_test(y_ctrl []f64, y_treat []f64, pre_ctrl []f64, pre_treat []f64, cfg ABTestConfig) CUPEDResult {
 	assert y_ctrl.len == pre_ctrl.len, 'control pre/post lengths must match'

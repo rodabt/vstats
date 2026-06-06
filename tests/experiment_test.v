@@ -287,6 +287,33 @@ fn test__event_study_shape() {
 // ANCOVA Tests
 // ============================================================================
 
+// ============================================================================
+// null_verdict Tests
+// ============================================================================
+
+fn test__null_verdict_significant() {
+	ctrl := [10.0, 10.1, 9.9, 10.0, 10.1, 9.8, 10.2, 10.0, 9.9, 10.1]
+	trt  := [13.0, 13.1, 12.9, 13.0, 13.1, 12.8, 13.2, 13.0, 12.9, 13.1]
+	result := experiment.abtest(ctrl, trt)
+	verdict := experiment.null_verdict(result, 0.05)
+	assert verdict.contains('Significant:')
+	assert verdict.contains('higher')
+	assert verdict.contains('p=')
+}
+
+fn test__null_verdict_not_significant() {
+	ctrl := [10.0, 10.1, 9.9, 10.0]
+	trt  := [10.05, 10.15, 9.95, 10.05]
+	result := experiment.abtest(ctrl, trt)
+	verdict := experiment.null_verdict(result, 0.05)
+	assert verdict.contains('Not significant:')
+	assert verdict.contains('p=')
+}
+
+// ============================================================================
+// ANCOVA Tests
+// ============================================================================
+
 fn test__ancova_no_covariate() {
 	// Without covariates, ancova should detect a clear +2 effect
 	ctrl := [10.0, 10.1, 9.9, 10.0, 10.1, 9.8, 10.2, 10.0, 9.9, 10.1]
