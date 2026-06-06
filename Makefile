@@ -7,4 +7,4 @@ fulltest:
 	v -stats test tests/
 
 docs:
-	python docs/build.py
+	python3 docs/build.py
