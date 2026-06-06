@@ -56,3 +56,37 @@ fn test__sample_size_means_higher_std() {
 
 	assert high_var.n_per_group > low_var.n_per_group
 }
+
+fn test__icc_identical_groups() {
+	// Within each group all values are identical — maximum between-group variance
+	// Groups: [1,1,1], [2,2,2], [3,3,3] — ICC should be high (near 1)
+	g := [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [3.0, 3.0, 3.0]]
+	val := experiment.icc(g)
+	assert val > 0.8
+}
+
+fn test__icc_moderate() {
+	// Tight within-group spread, meaningful between-group differences → 0 < ICC < 1
+	g := [[10.0, 10.1, 9.9], [20.0, 20.1, 19.9], [30.0, 30.1, 29.9]]
+	val := experiment.icc(g)
+	assert val > 0.5 && val < 1.0
+}
+
+fn test__icc_zero_for_equal_means() {
+	// If all groups have the same mean, SS_between = 0 → ICC ≤ 0 (clamped to 0)
+	g := [[1.0, 3.0], [1.0, 3.0], [1.0, 3.0]]
+	val := experiment.icc(g)
+	assert val <= 0.0
+}
+
+fn test__design_effect_no_clustering() {
+	// ICC = 0 → DEFF = 1 regardless of cluster size
+	deff := experiment.design_effect(10.0, 0.0)
+	assert deff == 1.0
+}
+
+fn test__design_effect_known_value() {
+	// m_bar=10, ICC=0.05 → DEFF = 1 + 9*0.05 = 1.45
+	deff := experiment.design_effect(10.0, 0.05)
+	assert math.abs(deff - 1.45) < 1e-9
+}

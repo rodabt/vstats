@@ -57,6 +57,70 @@ pub fn sample_size_proportions(baseline_rate f64, mde f64, alpha f64, power f64)
 	}
 }
 
+// icc computes the Intraclass Correlation Coefficient for a set of groups.
+// groups: each element is the slice of observations in that cluster.
+// Uses the one-way random effects model: ICC = (MS_B - MS_W) / (MS_B + (m_bar-1)*MS_W)
+pub fn icc(groups [][]f64) f64 {
+	k := groups.len
+	assert k >= 2, 'icc requires at least 2 groups'
+	mut n_total := 0
+	for g in groups {
+		n_total += g.len
+	}
+	// Grand mean
+	mut grand_sum := 0.0
+	for g in groups {
+		for v in g {
+			grand_sum += v
+		}
+	}
+	grand_mean := grand_sum / f64(n_total)
+
+	// MS_between
+	mut ss_b := 0.0
+	for g in groups {
+		m := g.len
+		mut g_sum := 0.0
+		for v in g {
+			g_sum += v
+		}
+		g_mean := g_sum / f64(m)
+		ss_b += f64(m) * (g_mean - grand_mean) * (g_mean - grand_mean)
+	}
+	ms_b := ss_b / f64(k - 1)
+
+	// MS_within
+	mut ss_w := 0.0
+	for g in groups {
+		mut g_sum2 := 0.0
+		for v in g {
+			g_sum2 += v
+		}
+		g_mean2 := g_sum2 / f64(g.len)
+		for v in g {
+			ss_w += (v - g_mean2) * (v - g_mean2)
+		}
+	}
+	ms_w := ss_w / f64(n_total - k)
+
+	// Average cluster size (harmonic-ish correction)
+	mut sum_sq := 0.0
+	for g in groups {
+		sum_sq += f64(g.len) * f64(g.len)
+	}
+	m_bar := (f64(n_total) - sum_sq / f64(n_total)) / f64(k - 1)
+
+	denom := ms_b + (m_bar - 1.0) * ms_w
+	return if denom > 0 { (ms_b - ms_w) / denom } else { 0.0 }
+}
+
+// design_effect computes the DEFF = 1 + (m_bar - 1) * icc_val for cluster-randomized trials.
+// m_bar: average cluster size; icc_val: intraclass correlation coefficient.
+pub fn design_effect(m_bar f64, icc_val f64) f64 {
+	assert m_bar >= 1.0, 'm_bar must be >= 1'
+	return 1.0 + (m_bar - 1.0) * icc_val
+}
+
 // sample_size_means computes the required sample size per group to detect
 // a minimum detectable effect in a continuous metric.
 //
