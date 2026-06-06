@@ -276,3 +276,42 @@ pub fn kurtosis[T](x []T) f64 {
 	
 	return (m4 / n) - 3.0 // Excess kurtosis
 }
+
+pub fn winsorize(x []f64, q_low f64, q_high f64) []f64 {
+	assert x.len > 0, 'x must not be empty'
+	assert q_low >= 0.0 && q_low < q_high, 'q_low must be < q_high'
+	assert q_high <= 1.0, 'q_high must be <= 1.0'
+	lo := quantile(x, q_low)
+	hi_idx := int(q_high * f64(x.len))
+	mut x_sorted := x.clone()
+	x_sorted.sort()
+	hi := x_sorted[if hi_idx >= x_sorted.len { x_sorted.len - 1 } else { hi_idx }]
+	mut result := []f64{len: x.len}
+	for i, v in x {
+		result[i] = if v < lo { lo } else if v > hi { hi } else { v }
+	}
+	return result
+}
+
+pub fn rtm_correction(baseline []f64, followup []f64, selection_threshold f64) f64 {
+	assert baseline.len == followup.len, 'baseline and followup must have same length'
+	assert baseline.len >= 2, 'need at least 2 observations'
+	b_mean := mean(baseline)
+	f_mean := mean(followup)
+	cov_bf := covariance(baseline, followup)
+	var_b := variance(baseline)
+	slope := if var_b > 0 { cov_bf / var_b } else { 0.0 }
+	intercept := f_mean - slope * b_mean
+	mut sel_sum := 0.0
+	mut sel_n := 0
+	for v in baseline {
+		if v > selection_threshold {
+			sel_sum += intercept + slope * v
+			sel_n++
+		}
+	}
+	if sel_n == 0 {
+		return 0.0
+	}
+	return sel_sum / f64(sel_n) - f_mean
+}

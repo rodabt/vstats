@@ -85,3 +85,59 @@ fn test__kurtosis() {
 	k := stats.kurtosis(data)
 	assert k < 0.0 // uniform-like data has negative excess kurtosis
 }
+
+fn test__winsorize_clamps_extremes() {
+	x := [1.0, 2.0, 3.0, 4.0, 100.0]
+	// quantile uses int(p * len): q_low=0.2 → int(0.2*5)=1 → sorted[1]=2.0
+	//                             q_high=0.6 → int(0.6*5)=3 → sorted[3]=4.0
+	result := stats.winsorize(x, 0.2, 0.6)
+	assert result[0] == 2.0   // 1.0 clamped up to lo=2.0
+	assert result[1] == 2.0   // 2.0 == lo, unchanged
+	assert result[2] == 3.0   // 3.0 in range, unchanged
+	assert result[3] == 4.0   // 4.0 == hi, unchanged
+	assert result[4] == 4.0   // 100.0 clamped down to hi=4.0
+}
+
+fn test__winsorize_no_effect_when_in_range() {
+	x := [1.0, 2.0, 3.0, 4.0, 5.0]
+	// q_low=0.0 → sorted[0]=1.0, q_high=0.8 → int(0.8*5)=4 → sorted[4]=5.0
+	result := stats.winsorize(x, 0.0, 0.8)
+	for i in 0..5 {
+		assert result[i] == x[i]
+	}
+}
+
+fn test__winsorize_returns_new_array() {
+	x := [1.0, 2.0, 3.0, 4.0, 100.0]
+	result := stats.winsorize(x, 0.0, 0.6)
+	assert x[4] == 100.0  // original unchanged
+	assert result[4] != 100.0
+}
+
+fn test__rtm_correction_perfect_correlation() {
+	// followup = baseline (perfect correlation, slope=1, intercept=0)
+	// selected units above threshold=7: baseline=[8,9,10], predicted=[8,9,10], mean=9.0
+	// overall followup mean = (1+2+...+10)/10 = 5.5
+	// RTM shift = 9.0 - 5.5 = 3.5
+	baseline := [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+	followup := [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+	result := stats.rtm_correction(baseline, followup, 7.0)
+	assert math.abs(result - 3.5) < 1e-6
+}
+
+fn test__rtm_correction_no_selection() {
+	baseline := [1.0, 2.0, 3.0]
+	followup := [2.0, 4.0, 6.0]
+	// threshold above all values → no selected units → returns 0.0
+	result := stats.rtm_correction(baseline, followup, 100.0)
+	assert result == 0.0
+}
+
+fn test__rtm_correction_positive_shift() {
+	// With positive correlation, selected-above-threshold units should have
+	// predicted followup > overall followup mean → positive RTM shift
+	baseline := [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+	followup := [1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5]
+	result := stats.rtm_correction(baseline, followup, 7.0)
+	assert result > 0.0
+}
