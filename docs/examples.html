@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VStats — VStats</title>
+<title>Examples — VStats</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -39,7 +39,409 @@
     </nav>
   </aside>
   <main class="content">
-    <h1 id="vstats">VStats</h1>
+    <h1 id="examples">Examples</h1>
+<p>Six end-to-end scenarios, each targeting a different module and showcasing
+something you can't do in one call with scipy or sklearn.</p>
+<p>All examples are runnable: <code>v run examples/&lt;scenario&gt;/main.v</code>
+(exception: <code>churn-prediction</code> — verify with <code>v -check</code> only, runtime is slow)</p>
+<hr />
+<h2 id="rigorous-ab-readout">rigorous-ab-readout</h2>
+<p>SRM check + winsorization + CUPED variance reduction + Benjamini-Hochberg
+correction + plain-English verdict — the full rigor checklist in one pipeline.</p>
+<pre><code class="language-v">// Scenario: Rigorous A/B Test Readout
+// Demonstrates: vstats.experiment + vstats.stats
+// Python equivalent: scipy.stats + statsmodels + custom SRM + multipletests = 5 imports, ~80 lines
+module main
+
+import vstats.experiment
+import vstats.stats
+
+fn main() {
+    println('=== Rigorous A/B Test Readout ===\n')
+
+    // --- Setup: checkout-flow experiment, 20 users per arm ---
+    // Revenue per user (0 = non-purchaser). Pre-period used for CUPED.
+    pre_ctrl := [40.0, 0, 0, 50.0, 0, 45.0, 0, 0, 0, 48.0,
+                 42.0, 0, 0, 0, 49.0, 0, 44.0, 0, 0, 47.0]
+    pre_trt  := [43.0, 0, 53.0, 0, 48.0, 0, 0, 45.0, 0, 51.0,
+                 44.0, 0, 0, 54.0, 0, 49.0, 0, 0, 0, 50.0]
+    ctrl     := [42.0, 0, 0, 55.0, 0, 48.0, 0, 0, 0, 51.0,
+                 44.0, 0, 0, 0, 52.0, 0, 47.0, 0, 0, 49.0]
+    trt      := [45.0, 0, 56.0, 0, 50.0, 0, 0, 48.0, 0, 53.0,
+                 46.0, 0, 0, 57.0, 0, 51.0, 0, 0, 0, 52.0]
+
+    // --- Core analysis ---
+
+    // 1. SRM: verify assignment matches expected 50/50 split
+    srm := experiment.srm_test(ctrl.len, trt.len, 0.5, 0.05)
+    println('1. SRM check')
+    println('   chi2=${srm.chi2_statistic:.4f}  p=${srm.p_value:.4f}  detected=${srm.srm_detected}')
+
+    // 2. Winsorize to cap heavy tails before analysis
+    ctrl_w := stats.winsorize(ctrl, 0.05, 0.95)
+    trt_w  := stats.winsorize(trt, 0.05, 0.95)
+
+    // 3. CUPED: use pre-period data to reduce variance
+    cuped := experiment.cuped_test(ctrl_w, trt_w, pre_ctrl, pre_trt)
+    println('\n2. CUPED')
+    println('   theta=${cuped.theta:.4f}  variance_reduction=${cuped.variance_reduction * 100:.1f}%')
+    result := cuped.adjusted_result
+
+    // 4. BH correction across three metrics tested simultaneously
+    p_revenue  := result.p_value
+    p_sessions := 0.031   // second metric tested in same experiment
+    p_bounce   := 0.210   // third metric
+    bh := stats.bh_correction([p_revenue, p_sessions, p_bounce], 0.05)
+    println('\n3. Multiple testing (BH, 3 metrics)')
+    println('   revenue  adj_p=${bh.adjusted[0]:.4f}  reject=${bh.reject[0]}')
+    println('   sessions adj_p=${bh.adjusted[1]:.4f}  reject=${bh.reject[1]}')
+    println('   bounce   adj_p=${bh.adjusted[2]:.4f}  reject=${bh.reject[2]}')
+    println('   total rejected: ${bh.n_rejected}/3')
+
+    // --- Interpret output ---
+    println('\n4. Verdict')
+    println('   ' + experiment.null_verdict(result, 0.05))
+}
+</code></pre>
+<hr />
+<h2 id="causal-did">causal-did</h2>
+<p>Parallel trends assumption check followed by DiD regression with OLS standard
+errors — causal inference from panel data without statsmodels.</p>
+<pre><code class="language-v">// Scenario: Causal Difference-in-Differences
+// Demonstrates: vstats.experiment — DiD regression + parallel trends test
+// Python equivalent: statsmodels OLS with interaction term + manual trend test
+module main
+
+import vstats.experiment
+
+fn main() {
+    println('=== Causal DiD: Policy Impact Analysis ===\n')
+    println('Setting: two regions, 10 units each. Treatment region receives new')
+    println('pricing in period 2. True DiD effect: +3.0 units.\n')
+
+    // --- Setup ---
+    // Pre-period data for parallel trends test
+    y_treat_pre := [10.0, 9.9, 10.2, 10.1, 9.8, 10.3, 9.7, 10.2, 10.0, 9.9]
+    y_ctrl_pre  := [9.8,  10.1, 10.3, 9.9, 10.2, 10.0, 9.7, 10.4, 10.1, 9.9]
+    time_pre    := [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+    // Full panel: pre + post for both groups
+    mut y     := []f64{}
+    mut group := []int{}  // 0=control, 1=treated
+    mut time  := []int{}  // 0=pre, 1=post
+
+    for v in y_ctrl_pre  { y &lt;&lt; v; group &lt;&lt; 0; time &lt;&lt; 0 }
+    // Control post: common trend +2
+    for v in [11.9, 12.1, 12.2, 11.8, 12.3, 12.0, 11.7, 12.4, 12.1, 11.9] {
+        y &lt;&lt; v; group &lt;&lt; 0; time &lt;&lt; 1
+    }
+    for v in y_treat_pre { y &lt;&lt; v; group &lt;&lt; 1; time &lt;&lt; 0 }
+    // Treated post: common trend +2 plus treatment effect +3 = +5 total
+    for v in [14.8, 15.1, 15.3, 14.9, 15.2, 15.0, 14.7, 15.4, 15.1, 14.9] {
+        y &lt;&lt; v; group &lt;&lt; 1; time &lt;&lt; 1
+    }
+
+    // --- Core analysis ---
+    cfg := experiment.DiDConfig{}
+
+    // 1. Parallel trends test (pre-period only — assumption check)
+    trends := experiment.test_parallel_trends(y_treat_pre, y_ctrl_pre, time_pre, cfg)
+    println('1. Parallel trends test (pre-period assumption check)')
+    println('   slope_treated=${trends.slope_treated:.4f}  slope_control=${trends.slope_control:.4f}')
+    println('   difference p=${trends.p_value:.4f}  holds=${trends.parallel_trends_hold}')
+
+    // 2. DiD regression (OLS with treatment × post interaction)
+    did := experiment.did_regression(y, [][]f64{}, group, time, cfg)
+    println('\n2. DiD regression')
+    println('   effect=${did.did_coefficient:.4f}  (true: 3.0)')
+    println('   SE=${did.did_se:.4f}  t=${did.did_t_stat:.4f}  p=${did.did_p_value:.4f}')
+    println('   95% CI: [${did.did_ci_lower:.4f}, ${did.did_ci_upper:.4f}]')
+    println('   R²=${did.r_squared:.4f}')
+
+    // --- Interpret output ---
+    println('\n3. Verdict')
+    if did.did_p_value &lt; 0.05 {
+        println('   Significant causal effect: DiD = ${did.did_coefficient:.3f}')
+    } else {
+        println('   No significant causal effect detected.')
+    }
+}
+</code></pre>
+<hr />
+<h2 id="churn-prediction">churn-prediction</h2>
+<p>Full binary classification pipeline: normalize, train logistic regression and
+random forest, evaluate with F1 and AUC. (Verify with <code>v -check</code> — slow to run.)</p>
+<pre><code class="language-v">// Scenario: Customer Churn Prediction
+// Demonstrates: vstats.ml + vstats.utils — full binary classification pipeline
+// Python equivalent: sklearn.ensemble.RandomForestClassifier + classification_report
+module main
+
+import vstats.utils
+import vstats.ml
+
+fn main() {
+    println('=== Customer Churn Prediction ===\n')
+    println('Using Breast Cancer dataset (malignant=churned, benign=retained).\n')
+
+    // --- Setup ---
+    dataset := utils.load_breast_cancer()!
+    train, test := dataset.train_test_split(0.2)
+    x_train, y_train := train.xy()
+    x_test, y_test   := test.xy()
+
+    // Normalize on train only — no leakage into test
+    x_train_norm, feat_mean, feat_std := utils.normalize_features(x_train)
+    x_test_norm := utils.apply_normalization(x_test, feat_mean, feat_std)
+
+    println('Train: ${x_train.len} samples  Test: ${x_test.len} samples  Features: ${x_train[0].len}\n')
+
+    // --- Core analysis ---
+
+    // Baseline: logistic regression
+    lr := ml.logistic_regression(x_train_norm, y_train.map(f64(it)), 200, 0.1)
+    lr_pred := ml.logistic_predict(lr, x_test_norm, 0.5).map(int(it))
+    lr_m := utils.binary_classification_metrics(y_test, lr_pred)
+    println('Logistic Regression')
+    println('  accuracy=${lr_m[&quot;accuracy&quot;]:.4f}  precision=${lr_m[&quot;precision&quot;]:.4f}  recall=${lr_m[&quot;recall&quot;]:.4f}  f1=${lr_m[&quot;f1_score&quot;]:.4f}')
+
+    // Random Forest
+    rf := ml.random_forest_classifier(x_train_norm, y_train, 20, 5)
+    rf_pred := ml.random_forest_predict(rf, x_test_norm)
+    rf_m := utils.binary_classification_metrics(y_test, rf_pred)
+    println('\nRandom Forest (20 trees, max_depth=5)')
+    println('  accuracy=${rf_m[&quot;accuracy&quot;]:.4f}  precision=${rf_m[&quot;precision&quot;]:.4f}  recall=${rf_m[&quot;recall&quot;]:.4f}  f1=${rf_m[&quot;f1_score&quot;]:.4f}')
+
+    // ROC / AUC
+    rf_proba := ml.random_forest_classifier_predict_proba(rf, x_test_norm)
+    roc := utils.roc_curve(y_test, rf_proba)
+    println('\nRandom Forest AUC: ${roc.auc:.4f}')
+
+    // --- Interpret output ---
+    println('\nConfusion matrix (Random Forest):')
+    cm := utils.build_confusion_matrix(y_test, rf_pred)
+    println(cm.summary())
+}
+</code></pre>
+<hr />
+<h2 id="funnel-attribution">funnel-attribution</h2>
+<p>Funnel drop-off analysis, A/B test of funnel variants, last-touch and linear
+multi-touch attribution, channel ROI — all from one <code>growth</code> import.</p>
+<pre><code class="language-v">// Scenario: Funnel Drop-off + Multi-Touch Attribution
+// Demonstrates: vstats.growth — funnel analysis and marketing attribution
+// Python equivalent: custom pandas aggregation; no standard library covers attribution
+module main
+
+import vstats.growth
+
+fn main() {
+    println('=== E-Commerce Funnel + Marketing Attribution ===\n')
+
+    // --- Setup: 4-stage checkout funnel ---
+    stages := ['Landing Page', 'Product View', 'Add to Cart', 'Purchase']
+    users  := [10000, 4200, 1800, 540]
+
+    // --- Core analysis ---
+
+    // 1. Funnel conversion and drop-off
+    funnel := growth.create_funnel(stages, users)
+    println('1. Funnel Analysis')
+    println('   Overall conversion: ${funnel.conversion_rate * 100:.2f}%')
+    drop := funnel.highest_drop_off()
+    println('   Worst drop-off: ${drop.from_name} → ${drop.to_name}')
+
+    // 2. A/B test two funnel variants
+    funnel_b := growth.create_funnel(stages, [10000, 4800, 2200, 680])
+    winner := growth.ab_test_funnel(funnel, funnel_b)
+    result_str := if winner == 1 { 'B wins' } else if winner == -1 { 'A wins' } else { 'no significant difference' }
+    println('   A vs B: ${result_str}')
+
+    // 3. Last-touch attribution
+    channels    := ['paid_search', 'email', 'organic', 'social', 'paid_search',
+                    'email', 'organic', 'social', 'direct', 'direct']
+    conversions := [true, false, true, false, true, true, false, false, true, true]
+    revenue     := [120.0, 0, 85.0, 0, 200.0, 95.0, 0, 0, 150.0, 75.0]
+
+    println('\n2. Last-touch Attribution')
+    last := growth.last_touch_attributes(channels, conversions, revenue)
+    for r in last {
+        println('   ${r.channel:-15s}  conversions=${r.conversions}  revenue=\$${r.revenue:.0f}')
+    }
+
+    // 4. Multi-touch linear attribution
+    touchpoints := [
+        ['paid_search', 'email'],
+        ['email'],
+        ['organic', 'direct'],
+        ['social'],
+        ['paid_search', 'social', 'email'],
+        ['email', 'direct'],
+        ['organic'],
+        ['social', 'email'],
+        ['direct'],
+        ['direct'],
+    ]
+    println('\n3. Linear (multi-touch) Attribution')
+    linear := growth.linear_attributes(touchpoints, conversions, revenue)
+    for r in linear {
+        println('   ${r.channel:-15s}  conversions=${r.conversions}  revenue=\$${r.revenue:.0f}')
+    }
+
+    // 5. Channel ROI
+    costs := {
+        'paid_search': 500.0
+        'email':        50.0
+        'organic':       0.0
+        'social':       200.0
+        'direct':        0.0
+    }
+    println('\n4. Channel ROI (last-touch)')
+    roi := growth.channel_roi(last, costs)
+    for ch, r in roi {
+        println('   ${ch:-15s}  ROI=${r:.2f}x')
+    }
+}
+</code></pre>
+<hr />
+<h2 id="ratio-metric-inference">ratio-metric-inference</h2>
+<p>Why naive t-tests are wrong for revenue/session metrics, and how the delta method
+and permutation bootstrap give correct inference on ratio metrics.</p>
+<pre><code class="language-v">// Scenario: Ratio Metric Inference (Revenue per Session)
+// Demonstrates: vstats.stats — delta method + permutation bootstrap
+// Python equivalent: manual linearization + scipy.stats.ttest_ind + scipy.stats.bootstrap
+module main
+
+import vstats.experiment
+import vstats.stats
+import rand
+
+fn main() {
+    println('=== Ratio Metric Inference: Revenue per Session ===\n')
+    println('Problem: a naive t-test on revenue/session is biased because the')
+    println('numerator (revenue) and denominator (sessions) are correlated per user.')
+    println('The delta method linearizes the ratio before testing.\n')
+
+    rand.seed([u32(42), u32(0)])
+
+    // --- Setup: 10 users per arm ---
+    // Control: ~$5/session. Treatment: ~$7/session (+$2 lift).
+    revenue_ctrl  := [10.0, 12.0, 8.0, 15.0, 9.0, 11.0, 7.0, 13.0, 10.0, 14.0]
+    sessions_ctrl := [2.0,  2.0,  2.0,  3.0,  2.0,  2.0,  1.0,  3.0,  2.0,  2.0]
+    revenue_trt   := [14.0, 16.0, 12.0, 21.0, 13.0, 15.0, 7.0, 19.0, 14.0, 18.0]
+    sessions_trt  := [2.0,  2.0,  2.0,  3.0,  2.0,  2.0,  1.0,  3.0,  2.0,  2.0]
+
+    mut revenue   := []f64{}
+    mut sessions  := []f64{}
+    mut treatment := []int{}
+
+    for v in revenue_ctrl  { revenue &lt;&lt; v }
+    for v in revenue_trt   { revenue &lt;&lt; v }
+    for v in sessions_ctrl { sessions &lt;&lt; v }
+    for v in sessions_trt  { sessions &lt;&lt; v }
+    for _ in revenue_ctrl  { treatment &lt;&lt; 0 }
+    for _ in revenue_trt   { treatment &lt;&lt; 1 }
+
+    // --- Core analysis ---
+
+    // 1. Naive t-test on raw revenue (biased for ratio metrics)
+    naive := experiment.abtest(revenue_ctrl, revenue_trt)
+    println('1. Naive t-test on raw revenue (ignores session denominator)')
+    println('   ctrl_mean=${naive.control_mean:.2f}  trt_mean=${naive.treatment_mean:.2f}  p=${naive.p_value:.4f}')
+
+    // 2. Delta method (correct approach for ratio metrics)
+    dm := stats.delta_method_ratio(revenue, sessions, treatment)
+    println('\n2. Delta method (correct for revenue/session)')
+    println('   ctrl_ratio=${dm.ratio_ctrl:.4f}  trt_ratio=${dm.ratio_trt:.4f}')
+    println('   effect=${dm.effect:.4f}  SE=${dm.se:.4f}')
+    println('   t=${dm.t_statistic:.4f}  p=${dm.p_value:.4f}')
+    println('   95% CI: [${dm.ci_lower:.4f}, ${dm.ci_upper:.4f}]')
+
+    // 3. Permutation bootstrap on linearized residuals — non-parametric check
+    r_global := stats.mean(revenue) / stats.mean(sessions)
+    mut z_ctrl := []f64{}
+    mut z_trt  := []f64{}
+    for i in 0 .. revenue_ctrl.len {
+        z_ctrl &lt;&lt; revenue_ctrl[i] - r_global * sessions_ctrl[i]
+        z_trt  &lt;&lt; revenue_trt[i]  - r_global * sessions_trt[i]
+    }
+    boot := stats.bootstrap_test(z_ctrl, z_trt, 2000)
+    println('\n3. Permutation bootstrap (non-parametric robustness check)')
+    println('   observed_diff=${boot.observed_diff:.4f}  p=${boot.p_value:.4f}')
+    println('   95% CI: [${boot.ci_lower:.4f}, ${boot.ci_upper:.4f}]')
+
+    // --- Interpret output ---
+    println('\n4. Conclusion')
+    if dm.p_value &lt; 0.05 {
+        println('   Delta method detects significant lift: +${dm.effect:.2f} revenue/session.')
+    } else {
+        println('   No significant lift in revenue/session.')
+    }
+}
+</code></pre>
+<hr />
+<h2 id="hypothesis-battery">hypothesis-battery</h2>
+<p>Normality check (Shapiro-Wilk) → parametric (Welch t-test) or non-parametric
+(Mann-Whitney U) decision, applied to near-normal and bimodal scenarios.</p>
+<pre><code class="language-v">// Scenario: Hypothesis Testing Battery
+// Demonstrates: vstats.hypothesis — normality check → parametric/non-parametric decision
+// Python equivalent: scipy.stats.shapiro + ttest_ind + mannwhitneyu (same functions, same pattern)
+module main
+
+import vstats.hypothesis
+import vstats.stats
+
+fn main() {
+    println('=== Hypothesis Testing Battery ===\n')
+    println('Pattern: check normality first, then choose parametric vs non-parametric.\n')
+
+    tp := hypothesis.TestParams{ alpha: 0.05 }
+
+    // --- Scenario A: near-normal groups, clear effect ---
+    a1 := [10.1, 9.8, 10.2, 10.0, 10.3, 9.9, 10.1, 10.2, 9.7, 10.4]
+    a2 := [12.0, 11.8, 12.3, 12.1, 11.9, 12.2, 12.0, 11.7, 12.4, 12.1]
+
+    println('--- Scenario A: near-normal groups ---')
+    _, p_sw_a1 := hypothesis.shapiro_wilk_test(a1)
+    _, p_sw_a2 := hypothesis.shapiro_wilk_test(a2)
+    println('Shapiro-Wilk: group1 p=${p_sw_a1:.4f}  group2 p=${p_sw_a2:.4f}')
+
+    if p_sw_a1 &gt; 0.05 &amp;&amp; p_sw_a2 &gt; 0.05 {
+        println('Both normal → Welch t-test')
+        t, p_t := hypothesis.t_test_two_sample(a1, a2, tp)
+        d := stats.cohens_d(a2, a1)
+        println('t=${t:.4f}  p=${p_t:.4f}  Cohen\'s d=${d:.4f}')
+    } else {
+        println('Non-normal → Mann-Whitney U')
+        u, p_mw := hypothesis.mann_whitney_u_test(a1, a2)
+        println('U=${u:.4f}  p=${p_mw:.4f}')
+    }
+
+    // --- Scenario B: bimodal — users either churn fast or stay very long (no middle) ---
+    // Shapiro-Wilk detects bimodal distributions as non-normal (p &lt;= 0.05)
+    b1 := [1.0, 1.0, 1.0, 1.0, 1.0, 30.0, 30.0, 30.0, 30.0, 30.0]
+    b2 := [2.0, 2.0, 2.0, 2.0, 2.0, 35.0, 35.0, 35.0, 35.0, 35.0]
+
+    println('\n--- Scenario B: skewed groups (outlier present) ---')
+    _, p_sw_b1 := hypothesis.shapiro_wilk_test(b1)
+    _, p_sw_b2 := hypothesis.shapiro_wilk_test(b2)
+    println('Shapiro-Wilk: group1 p=${p_sw_b1:.4f}  group2 p=${p_sw_b2:.4f}')
+
+    if p_sw_b1 &gt; 0.05 &amp;&amp; p_sw_b2 &gt; 0.05 {
+        println('Both normal → Welch t-test')
+        t, p_t := hypothesis.t_test_two_sample(b1, b2, tp)
+        println('t=${t:.4f}  p=${p_t:.4f}')
+    } else {
+        println('Non-normal → Mann-Whitney U (robust to outliers)')
+        u, p_mw := hypothesis.mann_whitney_u_test(b1, b2)
+        println('U=${u:.4f}  p=${p_mw:.4f}')
+    }
+
+    // --- Summary ---
+    println('\n--- Decision rule ---')
+    println('Shapiro-Wilk p &gt; 0.05 → data is normal → use t-test')
+    println('Shapiro-Wilk p ≤ 0.05 → non-normal → use Mann-Whitney U')
+    println('With n &gt; 100, CLT makes t-test robust regardless of normality.')
+}
+</code></pre>
   </main>
 </div>
 <script src="js/script.js"></script>
