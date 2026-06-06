@@ -62,13 +62,21 @@ Most functions accept generic numeric types (`int` or `f64`). The convention is:
 
 ## Documentation
 
-Full API reference, conceptual guides, worked examples, and module docs are available in the [`docs/`](docs/) directory. Open `docs/index.html` in your browser to get started.
+- **[docs/index.html](docs/index.html)** — full API reference, concepts, examples
+- **[docs/getting-started.html](docs/getting-started.html)** — quick-start for Python/R users
+- **[examples/](examples/)** — six runnable scenario files
+
+To regenerate the HTML docs after editing `docs/src/`:
+```bash
+make docs
+```
 
 ## Build & Test
 
 ```bash
 make test              # run all tests
 make fulltest          # run with verbose stats
+make docs              # regenerate HTML docs from docs/src/
 v test tests/          # same as make test
 v test tests/stats_test.v   # single test file
 ```
