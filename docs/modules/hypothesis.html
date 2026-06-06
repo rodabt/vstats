@@ -40,6 +40,63 @@
   </aside>
   <main class="content">
     <h1 id="hypothesis">hypothesis</h1>
+<p><code>import vstats.hypothesis</code></p>
+<p>Statistical hypothesis tests. All tests return <code>(statistic f64, p_value f64)</code>.</p>
+<blockquote>
+<p><strong>vs Python:</strong> mirrors <code>scipy.stats</code> test functions. The return convention
+<code>(statistic, p_value)</code> is the same as scipy.</p>
+</blockquote>
+<h2 id="usage-pattern">Usage Pattern</h2>
+<pre><code class="language-v">tp := hypothesis.TestParams{ alpha: 0.05 }
+
+t_stat, p := hypothesis.t_test_two_sample(group_a, group_b, tp)
+</code></pre>
+<h2 id="parametric-tests">Parametric Tests</h2>
+<pre><code class="language-v">t_test_one_sample(x []f64, mu f64, tp TestParams) (f64, f64)
+t_test_two_sample(x []f64, y []f64, tp TestParams) (f64, f64)   // Welch t-test
+one_sample_t_test(x []f64, mu f64) (f64, f64)                   // alpha=0.05 shorthand
+two_sample_t_test(x []f64, y []f64) (f64, f64)                  // alpha=0.05 shorthand
+
+anova_one_way[T](groups [][]T) (f64, f64)                       // in stats module
+correlation_test(x []f64, y []f64, tp TestParams) (f64, f64)
+</code></pre>
+<h2 id="non-parametric-tests">Non-Parametric Tests</h2>
+<blockquote>
+<p><strong>vs Python:</strong> <code>mann_whitney_u_test</code> replaces <code>scipy.stats.mannwhitneyu</code>.
+<code>wilcoxon_signed_rank_test</code> replaces <code>scipy.stats.wilcoxon</code>.</p>
+</blockquote>
+<pre><code class="language-v">mann_whitney_u_test(x []f64, y []f64) (f64, f64)        // unpaired, robust to outliers
+wilcoxon_signed_rank_test(x []f64, y []f64) (f64, f64)  // paired non-parametric
+ks_test(sample1 []f64, sample2 []f64) (f64, f64)        // Kolmogorov-Smirnov
+</code></pre>
+<h2 id="normality-goodness-of-fit">Normality &amp; Goodness of Fit</h2>
+<blockquote>
+<p><strong>vs Python:</strong> <code>shapiro_wilk_test</code> replaces <code>scipy.stats.shapiro</code>.
+<code>chi_squared_gof_test</code> replaces <code>scipy.stats.chisquare</code>.</p>
+</blockquote>
+<pre><code class="language-v">shapiro_wilk_test(x []f64) (f64, f64)
+chi_squared_test(contingency [][]int) (f64, f64)                // independence
+chi_squared_gof_test(observed []f64, expected []f64) (f64, f64) // goodness-of-fit
+</code></pre>
+<h2 id="spearman-runs">Spearman &amp; Runs</h2>
+<pre><code class="language-v">// Available in hypothesis module
+// spearman_correlation_test, wald_wolfowitz_runs_test
+// See hypothesis/tests.v for signatures
+</code></pre>
+<h2 id="decision-pattern">Decision Pattern</h2>
+<pre><code class="language-v">_, p_sw := hypothesis.shapiro_wilk_test(x)
+if p_sw &gt; 0.05 {
+    // Normal — use parametric
+    _, p := hypothesis.t_test_two_sample(x, y, tp)
+} else {
+    // Non-normal — use non-parametric
+    _, p := hypothesis.mann_whitney_u_test(x, y)
+}
+</code></pre>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="../examples.html#hypothesis-battery">hypothesis-battery example</a></li>
+</ul>
   </main>
 </div>
 <script src="../js/script.js"></script>

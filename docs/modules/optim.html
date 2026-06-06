@@ -40,6 +40,20 @@
   </aside>
   <main class="content">
     <h1 id="optim">optim</h1>
+<p><code>import vstats.optim</code></p>
+<p>Gradient descent and numerical differentiation. Typically used internally by <code>ml</code> —
+call directly when implementing custom objectives.</p>
+<blockquote>
+<p><strong>vs Python:</strong> replaces manual gradient descent loops or <code>scipy.optimize.minimize</code>.</p>
+</blockquote>
+<h2 id="gradient-estimation">Gradient Estimation</h2>
+<pre><code class="language-v">partial_difference_quotient(f fn([]f64) f64, v []f64, i int, h f64) f64
+estimate_gradient(f fn([]f64) f64, v []f64, h f64) []f64
+</code></pre>
+<h2 id="gradient-descent">Gradient Descent</h2>
+<pre><code class="language-v">gradient_step(v []f64, gradient []f64, step_size f64) []f64
+gradient_descent(f fn([]f64) f64, gradient_f fn([]f64) []f64, start []f64, step_size f64, iterations int) []f64
+</code></pre>
   </main>
 </div>
 <script src="../js/script.js"></script>

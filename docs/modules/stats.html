@@ -40,6 +40,70 @@
   </aside>
   <main class="content">
     <h1 id="stats">stats</h1>
+<p><code>import vstats.stats</code></p>
+<p>Descriptive statistics, outlier handling, multiple testing corrections, and
+ratio-metric inference.</p>
+<blockquote>
+<p><strong>vs Python:</strong> <code>stats.mean</code>, <code>stats.variance</code>, <code>stats.correlation</code> replace
+<code>numpy.mean</code>, <code>numpy.var</code>, <code>scipy.stats.pearsonr</code>. Functions are generic —
+they accept <code>[]int</code> or <code>[]f64</code> and return <code>f64</code>.</p>
+</blockquote>
+<h2 id="descriptive">Descriptive</h2>
+<pre><code class="language-v">sum[T](x []T) T
+mean[T](x []T) f64
+median(x []f64) f64                        // requires []f64
+quantile(x []f64, p f64) f64               // uses int(p*n) truncation, not rounding
+mode(x []f64) []f64
+range[T](x []T) T
+variance[T](x []T) f64                     // sample variance (÷n-1)
+standard_deviation[T](x []T) f64
+interquartile_range(x []f64) f64
+covariance[T](x []T, y []T) f64
+correlation[T](x []T, y []T) f64
+dev_mean[T](x []T) []f64
+</code></pre>
+<h2 id="effect-sizes-tests">Effect Sizes &amp; Tests</h2>
+<pre><code class="language-v">cohens_d[T](group1 []T, group2 []T) f64
+cramers_v(contingency [][]int) f64
+skewness[T](x []T) f64
+kurtosis[T](x []T) f64
+anova_one_way[T](groups [][]T) (f64, f64)               // (F-stat, p-value)
+confidence_interval_mean[T](x []T, level f64) (f64, f64)
+</code></pre>
+<h2 id="outlier-handling">Outlier Handling</h2>
+<blockquote>
+<p><strong>vs Python:</strong> <code>stats.winsorize</code> replaces <code>scipy.stats.mstats.winsorize</code>.
+<code>stats.rtm_correction</code> has no direct scipy equivalent.</p>
+</blockquote>
+<pre><code class="language-v">winsorize(x []f64, q_low f64, q_high f64) []f64
+rtm_correction(baseline []f64, followup []f64, selection_threshold f64) f64
+</code></pre>
+<h2 id="multiple-testing">Multiple Testing</h2>
+<blockquote>
+<p><strong>vs Python:</strong> replaces <code>statsmodels.stats.multitest.multipletests</code>.</p>
+</blockquote>
+<pre><code class="language-v">bh_correction(p_values []f64, alpha f64) BHResult
+// BHResult{ adjusted []f64, reject []bool, n_rejected int }
+
+bonferroni_correction(p_values []f64, alpha f64) BonferroniResult
+</code></pre>
+<h2 id="ratio-metrics-bootstrap">Ratio Metrics &amp; Bootstrap</h2>
+<blockquote>
+<p><strong>vs Python:</strong> <code>delta_method_ratio</code> replaces manual linearization + <code>scipy.stats.ttest_ind</code>.
+<code>bootstrap_test</code> replaces <code>scipy.stats.bootstrap</code>.</p>
+</blockquote>
+<pre><code class="language-v">delta_method_ratio(a []f64, b []f64, treatment []int, cfg DeltaMethodConfig) DeltaMethodResult
+// DeltaMethodConfig{ alpha f64 = 0.05 }
+// DeltaMethodResult{ ratio_ctrl, ratio_trt, effect, se, t_statistic, p_value, ci_lower, ci_upper f64 }
+
+bootstrap_test(ctrl []f64, trt []f64, n_resamples int) BootstrapResult
+// BootstrapResult{ p_value, observed_diff, ci_lower, ci_upper f64; n_resamples int }
+</code></pre>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="../examples.html#ratio-metric-inference">ratio-metric-inference example</a></li>
+<li><a href="../examples.html#rigorous-ab-readout">rigorous-ab-readout example</a></li>
+</ul>
   </main>
 </div>
 <script src="../js/script.js"></script>

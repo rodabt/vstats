@@ -40,6 +40,34 @@
   </aside>
   <main class="content">
     <h1 id="nn">nn</h1>
+<p><code>import vstats.nn</code></p>
+<p>Neural network layers, forward/backward pass, and training loop.</p>
+<blockquote>
+<p><strong>vs Python:</strong> replaces a minimal PyTorch or Keras sequential model.
+No autograd — gradients are computed manually layer by layer.</p>
+</blockquote>
+<h2 id="layers">Layers</h2>
+<pre><code class="language-v">dense_layer(input_size int, output_size int, activation string) DenseLayer
+// activation: &quot;relu&quot;, &quot;sigmoid&quot;, &quot;tanh&quot;, &quot;softmax&quot;, &quot;linear&quot;
+
+layer.forward(input []f64) []f64   // returns reference to output_buffer — copy before reuse!
+layer.backward(grad []f64) []f64
+</code></pre>
+<blockquote>
+<p><strong>Warning:</strong> <code>forward</code> returns a reference to the layer's <code>output_buffer</code>.
+If you call <code>forward</code> again on the same layer before consuming the result,
+the previous output will be overwritten. Copy with <code>result[0]</code> or <code>arrays.clone</code>.</p>
+</blockquote>
+<h2 id="network">Network</h2>
+<pre><code class="language-v">create_network(layers []DenseLayer) Network
+network.forward(input []f64) []f64
+network.train(x [][]f64, y [][]f64, epochs int, lr f64)
+</code></pre>
+<h2 id="loss-functions">Loss Functions</h2>
+<pre><code class="language-v">mse_loss(y_true []f64, y_pred []f64) f64
+cross_entropy_loss(y_true []f64, y_pred []f64) f64
+binary_cross_entropy_loss(y_true []f64, y_pred []f64) f64
+</code></pre>
   </main>
 </div>
 <script src="../js/script.js"></script>
