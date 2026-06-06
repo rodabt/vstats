@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VStats — VStats</title>
+<title>Getting Started (Python / R Users) — VStats</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -39,7 +39,133 @@
     </nav>
   </aside>
   <main class="content">
-    <h1 id="vstats">VStats</h1>
+    <h1 id="getting-started-python-r-users">Getting Started (Python / R Users)</h1>
+<p>If you know what a t-test is, you're ready. No concept introductions here.</p>
+<h2 id="installation">Installation</h2>
+<pre><code class="language-bash">v install https://github.com/rodabt/vstats
+</code></pre>
+<h2 id="translation-table">Translation Table</h2>
+<table>
+<thead>
+<tr>
+<th>Python / scipy / R</th>
+<th>vstats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>scipy.stats.ttest_ind(a, b)</code></td>
+<td><code>experiment.abtest(ctrl, trt)</code></td>
+</tr>
+<tr>
+<td><code>scipy.stats.mannwhitneyu(a, b)</code></td>
+<td><code>hypothesis.mann_whitney_u_test(a, b)</code></td>
+</tr>
+<tr>
+<td><code>scipy.stats.shapiro(x)</code></td>
+<td><code>hypothesis.shapiro_wilk_test(x)</code></td>
+</tr>
+<tr>
+<td><code>scipy.stats.chi2_contingency(table)</code></td>
+<td><code>hypothesis.chi_squared_test(table)</code></td>
+</tr>
+<tr>
+<td><code>statsmodels OLS + covariate</code></td>
+<td><code>experiment.ancova(ctrl, trt, x_ctrl, x_trt)</code></td>
+</tr>
+<tr>
+<td><code>statsmodels DiD interaction</code></td>
+<td><code>experiment.did_regression(y, x, group, time)</code></td>
+</tr>
+<tr>
+<td><code>statsmodels.stats.multitest.multipletests</code></td>
+<td><code>stats.bh_correction(p_values, alpha)</code></td>
+</tr>
+<tr>
+<td><code>scipy.stats.bootstrap</code></td>
+<td><code>stats.bootstrap_test(ctrl, trt, n_resamples)</code></td>
+</tr>
+<tr>
+<td><code>sklearn.linear_model.LogisticRegression</code></td>
+<td><code>ml.logistic_regression(x, y, iters, lr)</code></td>
+</tr>
+<tr>
+<td><code>sklearn.ensemble.RandomForestClassifier</code></td>
+<td><code>ml.random_forest_classifier(x, y, n_trees, depth)</code></td>
+</tr>
+<tr>
+<td><code>sklearn.metrics.roc_auc_score</code></td>
+<td><code>utils.roc_curve(y_true, y_proba).auc</code></td>
+</tr>
+<tr>
+<td><code>pandas</code> funnel groupby</td>
+<td><code>growth.create_funnel(stages, counts)</code></td>
+</tr>
+<tr>
+<td>Custom attribution logic</td>
+<td><code>growth.linear_attributes(touchpoints, conv, rev)</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="quick-examples">Quick Examples</h2>
+<h3 id="statistics">Statistics</h3>
+<pre><code class="language-v">import vstats.stats
+
+x := [2.1, 2.4, 1.9, 2.3, 2.0, 2.2, 2.5, 1.8]
+println(stats.mean(x))                           // 2.15
+println(stats.standard_deviation(x))             // 0.23
+println(stats.quantile(x, 0.75))                 // 2.4
+w := stats.winsorize(x, 0.1, 0.9)               // cap extreme values
+</code></pre>
+<h3 id="experimentation">Experimentation</h3>
+<pre><code class="language-v">import vstats.experiment
+import vstats.stats
+
+ctrl := [10.1, 9.8, 10.2, 10.0, 10.3, 9.9, 10.1, 10.2, 9.7, 10.4]
+trt  := [12.0, 11.8, 12.3, 12.1, 11.9, 12.2, 12.0, 11.7, 12.4, 12.1]
+
+result := experiment.abtest(ctrl, trt)
+println(experiment.null_verdict(result, 0.05))
+
+// Multiple testing correction
+p_vals := [result.p_value, 0.031, 0.21]
+bh := stats.bh_correction(p_vals, 0.05)
+println('Rejected: ${bh.n_rejected}/3')
+</code></pre>
+<h3 id="machine-learning">Machine Learning</h3>
+<pre><code class="language-v">import vstats.utils
+import vstats.ml
+
+dataset := utils.load_breast_cancer()!
+train, test := dataset.train_test_split(0.2)
+x_tr, y_tr := train.xy()
+x_te, y_te := test.xy()
+
+x_tr_norm, mu, sigma := utils.normalize_features(x_tr)
+x_te_norm := utils.apply_normalization(x_te, mu, sigma)
+
+model := ml.random_forest_classifier(x_tr_norm, y_tr, 20, 5)
+preds := ml.random_forest_predict(model, x_te_norm)
+m := utils.binary_classification_metrics(y_te, preds)
+println('F1: ${m[&quot;f1_score&quot;]:.4f}')
+</code></pre>
+<h3 id="growth-analytics">Growth Analytics</h3>
+<pre><code class="language-v">import vstats.growth
+
+funnel := growth.create_funnel(
+    ['Landing', 'Signup', 'Purchase'],
+    [10000, 3500, 420],
+)
+println('Conversion: ${funnel.conversion_rate * 100:.1f}%')
+drop := funnel.highest_drop_off()
+println('Worst step: ${drop.from_stage} → ${drop.to_stage}')
+</code></pre>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><a href="examples.html">Examples</a> — six end-to-end scenarios</li>
+<li><a href="modules/stats.html">Module Reference</a> — full API</li>
+<li><a href="companion/index.html">Companion Docs</a> — statistical concepts</li>
+</ul>
   </main>
 </div>
 <script src="js/script.js"></script>

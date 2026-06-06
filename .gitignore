@@ -8,6 +8,7 @@ kb/
 !README.md
 !tutorials/*
 !docs/superpowers/**/*.md
+!docs/src/**/*.md
 examples/breast_cancer_classification
 examples/generic_types_example
 examples/iris_logistic_classification
