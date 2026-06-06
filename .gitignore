@@ -7,10 +7,11 @@ kb/
 *.md
 !README.md
 !tutorials/*
+!docs/superpowers/**/*.md
 examples/breast_cancer_classification
 examples/generic_types_example
 examples/iris_logistic_classification
 examples/titanic_random_forest_test
 chatbot_rollout_tutorial.md
 sequential_rollout.md.worktrees/
-web/web
+apps/
