@@ -258,6 +258,52 @@ pub fn null_verdict(result ABTestResult, alpha f64) string {
 	}
 }
 
+pub struct ITTPPResult {
+pub:
+	itt ABTestResult
+	pp  ABTestResult
+}
+
+// itt_and_pp runs both Intent-to-Treat and Per-Protocol A/B tests.
+// assigned: 0=control, 1=treatment (by randomization).
+// complied: true if the unit actually received their assigned treatment.
+// y: outcome for each unit.
+// ITT uses all units as assigned. PP excludes non-compliers.
+pub fn itt_and_pp(y []f64, assigned []int, complied []bool, cfg ABTestConfig) ITTPPResult {
+	assert y.len == assigned.len && y.len == complied.len, 'y, assigned, complied must have same length'
+
+	// ITT: split by assignment, regardless of compliance
+	mut y_ctrl_itt := []f64{}
+	mut y_trt_itt  := []f64{}
+	for i in 0 .. y.len {
+		if assigned[i] == 0 {
+			y_ctrl_itt << y[i]
+		} else {
+			y_trt_itt << y[i]
+		}
+	}
+
+	// PP: keep only compliers in each arm
+	mut y_ctrl_pp := []f64{}
+	mut y_trt_pp  := []f64{}
+	for i in 0 .. y.len {
+		if !complied[i] { continue }
+		if assigned[i] == 0 {
+			y_ctrl_pp << y[i]
+		} else {
+			y_trt_pp << y[i]
+		}
+	}
+
+	assert y_ctrl_itt.len >= 2 && y_trt_itt.len >= 2, 'ITT: each arm needs at least 2 units'
+	assert y_ctrl_pp.len >= 2 && y_trt_pp.len >= 2, 'PP: each compliant arm needs at least 2 units'
+
+	return ITTPPResult{
+		itt: abtest(y_ctrl_itt, y_trt_itt, cfg)
+		pp:  abtest(y_ctrl_pp,  y_trt_pp,  cfg)
+	}
+}
+
 // cuped_test runs CUPED-adjusted A/B test using pre-experiment covariates
 pub fn cuped_test(y_ctrl []f64, y_treat []f64, pre_ctrl []f64, pre_treat []f64, cfg ABTestConfig) CUPEDResult {
 	assert y_ctrl.len == pre_ctrl.len, 'control pre/post lengths must match'

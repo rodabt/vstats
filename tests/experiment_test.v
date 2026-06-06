@@ -288,6 +288,33 @@ fn test__event_study_shape() {
 // ============================================================================
 
 // ============================================================================
+// ITT and PP Tests
+// ============================================================================
+
+fn test__itt_and_pp_full_compliance() {
+	// When everyone complies, ITT and PP should give the same result
+	y        := [10.0, 10.1, 9.9, 10.0, 13.0, 13.1, 12.9, 13.0]
+	assigned := [0, 0, 0, 0, 1, 1, 1, 1]
+	complied := [true, true, true, true, true, true, true, true]
+	result := experiment.itt_and_pp(y, assigned, complied)
+	assert math.abs(result.itt.treatment_mean - result.pp.treatment_mean) < 1e-9
+	assert math.abs(result.itt.control_mean - result.pp.control_mean) < 1e-9
+}
+
+fn test__itt_and_pp_partial_compliance_dilutes_pp() {
+	// Two non-compliers in treatment arm (low outcome) → PP excludes them → PP effect > ITT effect
+	// Assigned treatment: [13, 13, 13, 13, 5, 5]  ← last two are non-compliers
+	y        := [10.0, 10.0, 10.0, 10.0, 13.0, 13.0, 13.0, 13.0, 5.0, 5.0]
+	assigned := [0,    0,    0,    0,    1,    1,    1,    1,    1,   1  ]
+	complied := [true, true, true, true, true, true, true, true, false, false]
+	result := experiment.itt_and_pp(y, assigned, complied)
+	// PP removes low-outcome non-compliers → PP treatment mean > ITT treatment mean
+	assert result.pp.treatment_mean > result.itt.treatment_mean
+	// PP removes diluting non-compliers → PP relative lift > ITT relative lift
+	assert result.pp.relative_lift > result.itt.relative_lift
+}
+
+// ============================================================================
 // null_verdict Tests
 // ============================================================================
 
