@@ -69,4 +69,5 @@ dbscan(data [][]f64, eps f64, min_points int) []int      // −1 = noise
 
 ## See Also
 
-- [churn-prediction example](../examples.html#churn-prediction)
+- [classification-pipeline example](../examples.html#classification-pipeline)
+- [titanic-survival example](../examples.html#titanic-survival)

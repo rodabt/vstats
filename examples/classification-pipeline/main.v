@@ -1,14 +1,15 @@
-// Scenario: Customer Churn Prediction
-// Demonstrates: vstats.ml + vstats.utils — full binary classification pipeline
-// Python equivalent: sklearn.ensemble.RandomForestClassifier + classification_report
+// Scenario: Binary Classification Pipeline
+// Demonstrates: vstats.ml + vstats.utils — logistic regression, random forest, AUC
+// Python equivalent: sklearn.ensemble.RandomForestClassifier + classification_report + roc_auc_score
 module main
 
 import vstats.utils
 import vstats.ml
 
 fn main() {
-	println('=== Customer Churn Prediction ===\n')
-	println('Using Breast Cancer dataset (malignant=churned, benign=retained).\n')
+	println('=== Binary Classification Pipeline ===\n')
+	println('Dataset: Breast Cancer Wisconsin (569 samples, 30 features)')
+	println('Target: malignant (1) vs benign (0)\n')
 
 	// --- Setup ---
 	dataset := utils.load_breast_cancer()!

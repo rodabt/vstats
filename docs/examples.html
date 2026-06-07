@@ -40,10 +40,10 @@
   </aside>
   <main class="content">
     <h1 id="examples">Examples</h1>
-<p>Six end-to-end scenarios, each targeting a different module and showcasing
+<p>Seven end-to-end scenarios, each targeting a different module and showcasing
 something you can't do in one call with scipy or sklearn.</p>
 <p>All examples are runnable: <code>v run examples/&lt;scenario&gt;/main.v</code>
-(exception: <code>churn-prediction</code> — verify with <code>v -check</code> only, runtime is slow)</p>
+(exception: <code>classification-pipeline</code> and <code>titanic-survival</code> — verify with <code>v -check</code> only, runtime is slow)</p>
 <hr />
 <h2 id="rigorous-ab-readout">rigorous-ab-readout</h2>
 <p>SRM check + winsorization + CUPED variance reduction + Benjamini-Hochberg
@@ -168,20 +168,22 @@ fn main() {
 }
 </code></pre>
 <hr />
-<h2 id="churn-prediction">churn-prediction</h2>
-<p>Full binary classification pipeline: normalize, train logistic regression and
-random forest, evaluate with F1 and AUC. (Verify with <code>v -check</code> — slow to run.)</p>
-<pre><code class="language-v">// Scenario: Customer Churn Prediction
-// Demonstrates: vstats.ml + vstats.utils — full binary classification pipeline
-// Python equivalent: sklearn.ensemble.RandomForestClassifier + classification_report
+<h2 id="classification-pipeline">classification-pipeline</h2>
+<p>Full binary classification pipeline on the Breast Cancer Wisconsin dataset:
+normalize, train logistic regression and random forest, evaluate with F1 and AUC.
+(Verify with <code>v -check</code> — slow to run.)</p>
+<pre><code class="language-v">// Scenario: Binary Classification Pipeline
+// Demonstrates: vstats.ml + vstats.utils — logistic regression, random forest, AUC
+// Python equivalent: sklearn.ensemble.RandomForestClassifier + classification_report + roc_auc_score
 module main
 
 import vstats.utils
 import vstats.ml
 
 fn main() {
-    println('=== Customer Churn Prediction ===\n')
-    println('Using Breast Cancer dataset (malignant=churned, benign=retained).\n')
+    println('=== Binary Classification Pipeline ===\n')
+    println('Dataset: Breast Cancer Wisconsin (569 samples, 30 features)')
+    println('Target: malignant (1) vs benign (0)\n')
 
     // --- Setup ---
     dataset := utils.load_breast_cancer()!
@@ -220,6 +222,69 @@ fn main() {
     println('\nConfusion matrix (Random Forest):')
     cm := utils.build_confusion_matrix(y_test, rf_pred)
     println(cm.summary())
+}
+</code></pre>
+<hr />
+<h2 id="titanic-survival">titanic-survival</h2>
+<p>Three classifiers (logistic regression, Naive Bayes, random forest) trained on the
+same Titanic split and compared head-to-head by accuracy, precision, recall, and F1.
+(Verify with <code>v -check</code> — slow to run.)</p>
+<pre><code class="language-v">// Scenario: Titanic Survival — Multi-Classifier Comparison
+// Demonstrates: vstats.ml + vstats.utils — compare three classifiers on the same split
+// Python equivalent: sklearn fit/predict loop + classification_report per model
+module main
+
+import vstats.utils
+import vstats.ml
+
+fn main() {
+    println('=== Titanic Survival: Multi-Classifier Comparison ===\n')
+    println('Dataset: Titanic (891 samples, 5 features: Pclass, Age, SibSp, Parch, Fare)')
+    println('Target: Survived (0=No, 1=Yes)\n')
+
+    // --- Setup ---
+    dataset := utils.load_titanic()!
+    train, test := dataset.train_test_split(0.2)
+    x_train, y_train := train.xy()
+    x_test, y_test   := test.xy()
+
+    x_train_norm, feat_mean, feat_std := utils.normalize_features(x_train)
+    x_test_norm := utils.apply_normalization(x_test, feat_mean, feat_std)
+
+    println('Train: ${x_train.len} samples  Test: ${x_test.len} samples\n')
+
+    // --- Core analysis: three classifiers, same train/test split ---
+
+    // 1. Logistic Regression
+    lr := ml.logistic_regression(x_train_norm, y_train.map(f64(it)), 300, 0.1)
+    lr_pred := ml.logistic_predict(lr, x_test_norm, 0.5).map(int(it))
+    lr_m := utils.binary_classification_metrics(y_test, lr_pred)
+
+    // 2. Naive Bayes
+    nb := ml.naive_bayes_classifier(x_train_norm, y_train)
+    nb_pred := ml.naive_bayes_predict(nb, x_test_norm)
+    nb_m := utils.binary_classification_metrics(y_test, nb_pred)
+
+    // 3. Random Forest
+    rf := ml.random_forest_classifier(x_train_norm, y_train, 20, 5)
+    rf_pred := ml.random_forest_predict(rf, x_test_norm)
+    rf_m := utils.binary_classification_metrics(y_test, rf_pred)
+
+    // --- Interpret output ---
+    println('Model                Accuracy  Precision  Recall    F1')
+    println('-----------------------------------------------------------')
+    println('Logistic Regression  ${lr_m[&quot;accuracy&quot;]:.4f}    ${lr_m[&quot;precision&quot;]:.4f}     ${lr_m[&quot;recall&quot;]:.4f}    ${lr_m[&quot;f1_score&quot;]:.4f}')
+    println('Naive Bayes          ${nb_m[&quot;accuracy&quot;]:.4f}    ${nb_m[&quot;precision&quot;]:.4f}     ${nb_m[&quot;recall&quot;]:.4f}    ${nb_m[&quot;f1_score&quot;]:.4f}')
+    println('Random Forest        ${rf_m[&quot;accuracy&quot;]:.4f}    ${rf_m[&quot;precision&quot;]:.4f}     ${rf_m[&quot;recall&quot;]:.4f}    ${rf_m[&quot;f1_score&quot;]:.4f}')
+
+    // Pick winner by F1
+    models := ['Logistic Regression', 'Naive Bayes', 'Random Forest']
+    f1s := [lr_m['f1_score'], nb_m['f1_score'], rf_m['f1_score']]
+    mut best_idx := 0
+    for i in 1 .. f1s.len {
+        if f1s[i] &gt; f1s[best_idx] { best_idx = i }
+    }
+    println('\nBest F1: ${models[best_idx]} (${f1s[best_idx]:.4f})')
 }
 </code></pre>
 <hr />

@@ -1,10 +1,10 @@
 # Examples
 
-Six end-to-end scenarios, each targeting a different module and showcasing
+Seven end-to-end scenarios, each targeting a different module and showcasing
 something you can't do in one call with scipy or sklearn.
 
 All examples are runnable: `v run examples/<scenario>/main.v`
-(exception: `churn-prediction` — verify with `v -check` only, runtime is slow)
+(exception: `classification-pipeline` and `titanic-survival` — verify with `v -check` only, runtime is slow)
 
 ---
 
@@ -26,12 +26,23 @@ errors — causal inference from panel data without statsmodels.
 
 ---
 
-## churn-prediction
+## classification-pipeline
 
-Full binary classification pipeline: normalize, train logistic regression and
-random forest, evaluate with F1 and AUC. (Verify with `v -check` — slow to run.)
+Full binary classification pipeline on the Breast Cancer Wisconsin dataset:
+normalize, train logistic regression and random forest, evaluate with F1 and AUC.
+(Verify with `v -check` — slow to run.)
 
-<!-- include: examples/churn-prediction/main.v -->
+<!-- include: examples/classification-pipeline/main.v -->
+
+---
+
+## titanic-survival
+
+Three classifiers (logistic regression, Naive Bayes, random forest) trained on the
+same Titanic split and compared head-to-head by accuracy, precision, recall, and F1.
+(Verify with `v -check` — slow to run.)
+
+<!-- include: examples/titanic-survival/main.v -->
 
 ---
 
