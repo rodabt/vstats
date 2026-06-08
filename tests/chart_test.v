@@ -99,3 +99,19 @@ fn test__left_title_and_subtitle() {
 	assert svg.contains('>desc here<')
 	assert svg.contains('#666666') // subtitle color
 }
+
+fn test__band_produces_polygon() {
+	svg := chart.new(width: 400, height: 300)
+		.band([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], [2.0, 3.0, 2.5])
+		.line([0.0, 1.0, 2.0], [1.0, 2.0, 1.5])
+		.render()
+	assert svg.contains('<polygon')
+	assert svg.contains('<polyline')
+}
+
+fn test__area_produces_polygon() {
+	svg := chart.new(width: 400, height: 300)
+		.area([0.0, 1.0, 2.0], [1.0, 3.0, 2.0])
+		.render()
+	assert svg.contains('<polygon')
+}

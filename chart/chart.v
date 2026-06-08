@@ -8,6 +8,8 @@ enum SeriesKind {
 	scatter
 	bar
 	histogram
+	band
+	area
 }
 
 struct Series {
@@ -203,6 +205,38 @@ pub fn (c Chart) axvline(x f64) Chart {
 	return nc
 }
 
+pub fn (c Chart) band(x []f64, lower []f64, upper []f64, opts SeriesOpts) Chart {
+	assert x.len == lower.len
+	assert x.len == upper.len
+	mut nc := c
+	mut s := c.series.clone()
+	s << Series{
+		kind:  .band
+		x:     x.clone()
+		lo:    lower.clone()
+		hi:    upper.clone()
+		label: opts.label
+		color: if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+	}
+	nc.series = s
+	return nc
+}
+
+pub fn (c Chart) area(x []f64, y []f64, opts SeriesOpts) Chart {
+	assert x.len == y.len
+	mut nc := c
+	mut s := c.series.clone()
+	s << Series{
+		kind:  .area
+		x:     x.clone()
+		y:     y.clone()
+		label: opts.label
+		color: if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+	}
+	nc.series = s
+	return nc
+}
+
 // ---- geometry & bounds ----
 
 struct Geom {
@@ -254,6 +288,19 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 				}
 			}
 			b.edges[0], b.edges[b.edges.len - 1], 0.0, f64(maxc)
+		}
+		.band {
+			x0, x1 := extent(s.x)
+			lo0, _ := extent(s.lo)
+			_, hi1 := extent(s.hi)
+			x0, x1, lo0, hi1
+		}
+		.area {
+			x0, x1 := extent(s.x)
+			y0, y1 := extent(s.y)
+			ylo := if y0 < 0.0 { y0 } else { 0.0 }
+			yhi := if y1 > 0.0 { y1 } else { 0.0 }
+			x0, x1, ylo, yhi
 		}
 	}
 }
@@ -344,6 +391,60 @@ fn (c Chart) draw_axes(mut scene Scene, g Geom) {
 
 fn (c Chart) draw_series(mut scene Scene, g Geom) {
 	t := c.theme
+	// pass 1: filled regions (bands, areas) render behind everything else
+	for s in c.series {
+		match s.kind {
+			.band {
+				mut pts := []Point{}
+				for i in 0 .. s.x.len {
+					pts << Point{
+						x: g.xscale.map(s.x[i])
+						y: g.yscale.map(s.hi[i])
+					}
+				}
+				for i := s.x.len - 1; i >= 0; i-- {
+					pts << Point{
+						x: g.xscale.map(s.x[i])
+						y: g.yscale.map(s.lo[i])
+					}
+				}
+				scene.primitives << Polygon{
+					points:  pts
+					fill:    s.color
+					opacity: t.fill_opacity
+					stroke:  'none'
+					width:   0.0
+				}
+			}
+			.area {
+				baseline := g.yscale.map(0.0)
+				mut pts := []Point{}
+				pts << Point{
+					x: g.xscale.map(s.x[0])
+					y: baseline
+				}
+				for i in 0 .. s.x.len {
+					pts << Point{
+						x: g.xscale.map(s.x[i])
+						y: g.yscale.map(s.y[i])
+					}
+				}
+				pts << Point{
+					x: g.xscale.map(s.x[s.x.len - 1])
+					y: baseline
+				}
+				scene.primitives << Polygon{
+					points:  pts
+					fill:    s.color
+					opacity: t.fill_opacity
+					stroke:  'none'
+					width:   0.0
+				}
+			}
+			else {}
+		}
+	}
+	// pass 2: data marks
 	for s in c.series {
 		match s.kind {
 			.line {
@@ -408,6 +509,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 					}
 				}
 			}
+			else {}
 		}
 	}
 }
