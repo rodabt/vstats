@@ -1,6 +1,6 @@
 # Examples
 
-Seven end-to-end scenarios, each targeting a different module and showcasing
+Eight end-to-end scenarios, each targeting a different module and showcasing
 something you can't do in one call with scipy or sklearn.
 
 All examples are runnable: `v run examples/<scenario>/main.v`
@@ -70,3 +70,13 @@ Normality check (Shapiro-Wilk) → parametric (Welch t-test) or non-parametric
 (Mann-Whitney U) decision, applied to near-normal and bimodal scenarios.
 
 <!-- include: examples/hypothesis-battery/main.v -->
+
+---
+
+## chart-gallery
+
+Regression diagnostics rendered to SVG: observed-vs-fitted scatter with the fit
+line, residuals-vs-fitted with a zero guide, a residual histogram, and a
+coefficient bar chart with a custom theme — every `chart` type in one example.
+
+<!-- include: examples/chart-gallery/main.v -->
