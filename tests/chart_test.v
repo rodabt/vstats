@@ -1,4 +1,5 @@
 import chart
+import os
 
 fn test__line_chart_builds_axes_and_polyline() {
 	svg := chart.new(title: 'Demo', width: 400, height: 300)
@@ -63,4 +64,21 @@ fn test__axhline_adds_guide_line() {
 	without := base.render().count('<line')
 	with := base.axhline(0.0).render().count('<line')
 	assert with == without + 1
+}
+
+fn test__save_writes_svg_file() {
+	path := os.join_path(os.temp_dir(), 'vstats_chart_test.svg')
+	if os.exists(path) {
+		os.rm(path) or {}
+	}
+	chart.new(title: 'Saved', width: 320, height: 240)
+		.line([0.0, 1.0, 2.0], [0.0, 4.0, 2.0], label: 'fit')
+		.xlabel('x')
+		.ylabel('y')
+		.save(path) or { assert false, 'save failed: ${err}' }
+	assert os.exists(path)
+	content := os.read_file(path) or { '' }
+	assert content.starts_with('<svg')
+	assert content.contains('</svg>')
+	os.rm(path) or {}
 }

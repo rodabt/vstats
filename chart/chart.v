@@ -1,6 +1,7 @@
 module chart
 
 import math
+import os
 
 enum SeriesKind {
 	line
@@ -533,4 +534,8 @@ fn (c Chart) build_scene() Scene {
 pub fn (c Chart) render() string {
 	scene := c.build_scene()
 	return render_svg(scene, c.width, c.height, c.theme)
+}
+
+pub fn (c Chart) save(path string) ! {
+	os.write_file(path, c.render())!
 }
