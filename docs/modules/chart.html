@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>chart — VStats</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <a href="../index.html" class="logo"><span>V</span>Stats</a>
+    </div>
+    <nav class="sidebar-nav">
+      <ul class="nav-list">
+  <li><a href="../index.html">Home</a></li>
+  <li><a href="../getting-started.html">Getting Started</a></li>
+  <li><a href="../concepts.html">Concepts</a></li>
+  <li><a href="../examples.html">Examples</a></li>
+</ul>
+<span class="nav-section-label">Module Reference</span>
+<ul class="nav-list">
+  <li><a href="../modules/stats.html">stats</a></li>
+  <li><a href="../modules/experiment.html">experiment</a></li>
+  <li><a href="../modules/ml.html">ml</a></li>
+  <li><a href="../modules/hypothesis.html">hypothesis</a></li>
+  <li><a href="../modules/growth.html">growth</a></li>
+  <li><a href="../modules/nn.html">nn</a></li>
+  <li><a href="../modules/prob.html">prob</a></li>
+  <li><a href="../modules/optim.html">optim</a></li>
+  <li><a href="../modules/linalg.html">linalg</a></li>
+  <li><a href="../modules/utils.html">utils</a></li>
+  <li><a href="../modules/chart.html">chart</a></li>
+</ul>
+<span class="nav-section-label">Resources</span>
+<ul class="nav-list">
+  <li><a href="../companion/index.html">Companion Docs</a></li>
+</ul>
+    </nav>
+  </aside>
+  <main class="content">
+    <h1 id="chart">chart</h1>
+<p><code>import vstats.chart</code></p>
+<p>Dependency-free SVG charting with sensible Tufte-style defaults. Build a chart with
+a fluent API, render it to an SVG string, and save it to disk. Foundational output
+layer — depends only on the V standard library.</p>
+<blockquote>
+<p><strong>vs Python:</strong> replaces basic <code>matplotlib</code> plotting. A <code>Chart</code> builds a
+backend-agnostic scene of primitives that the SVG backend renders; the same scene
+can later feed a raster (PNG/JPG) backend.</p>
+</blockquote>
+<h2 id="building-a-chart">Building a chart</h2>
+<pre><code class="language-v">new(opts ChartOpts) Chart            // ChartOpts{ title, width, height, theme }
+
+// series — each appends a series and returns the Chart for chaining
+(c Chart) line(x []f64, y []f64, opts SeriesOpts) Chart        // SeriesOpts{ label }
+(c Chart) scatter(x []f64, y []f64, opts SeriesOpts) Chart
+(c Chart) bar(values []f64, opts SeriesOpts) Chart
+(c Chart) histogram(data []f64, opts HistogramOpts) Chart      // HistogramOpts{ label, nbins }
+
+// decoration
+(c Chart) title(s string) Chart
+(c Chart) xlabel(s string) Chart
+(c Chart) ylabel(s string) Chart
+(c Chart) axhline(y f64) Chart       // horizontal reference line
+(c Chart) axvline(x f64) Chart       // vertical reference line
+
+// output
+(c Chart) render() string            // pure: Chart -&gt; SVG text
+(c Chart) save(path string) !        // render() then write to disk
+</code></pre>
+<h2 id="example">Example</h2>
+<pre><code class="language-v">import vstats.chart
+
+chart.new(title: 'Fit', width: 640, height: 420)
+    .scatter(x, y, label: 'observed')
+    .line(xs, ys, label: 'fit')
+    .xlabel('x')
+    .ylabel('y')
+    .save('fit.svg')!
+</code></pre>
+<p>Series data is <code>[]f64</code>. Multiple series share auto-scaled axes; with two or more
+labeled series a legend is drawn automatically, and colors cycle through the theme
+palette. <code>render()</code> is pure (handy for tests); <code>save()</code> is the only function that
+touches the filesystem.</p>
+<h2 id="chart-types">Chart types</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Renders</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>line</code></td>
+<td>connected polyline through the <code>(x, y)</code> points</td>
+</tr>
+<tr>
+<td><code>scatter</code></td>
+<td>point markers at each <code>(x, y)</code></td>
+</tr>
+<tr>
+<td><code>bar</code></td>
+<td>bars from a zero baseline, one per value</td>
+</tr>
+<tr>
+<td><code>histogram</code></td>
+<td>binned distribution (auto bin count via Sturges, or explicit <code>nbins</code>)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="theming">Theming</h2>
+<p>A single opinionated Tufte default (minimal ink, range-frame axes, no chartjunk,
+no gridlines). Override any field via the <code>Theme</code> struct and pass it as
+<code>new(theme: ...)</code>:</p>
+<pre><code class="language-v">Theme{
+    background:    'white'
+    axis_color:    '#333333'
+    palette:       ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+    font_family:   'sans-serif'
+    font_size:     12.0
+    title_size:    16.0
+    series_width:  1.5
+    marker_radius: 3.0
+    // also: margin_left/right/top/bottom, axis_width, grid, grid_color
+}
+
+(t Theme) color(i int) string        // palette color i, cycled
+</code></pre>
+<p>(The <code>grid</code> field is reserved; gridline rendering is not yet implemented.)</p>
+<h2 id="under-the-hood">Under the hood</h2>
+<p>A <code>Chart</code> builds a <code>Scene</code> — a list of <code>Primitive</code>s (<code>Line</code>, <code>Polyline</code>, <code>Rect</code>,
+<code>Circle</code>, <code>Text</code>) in pixel space — which a backend turns into output. This seam is
+what keeps a future raster backend non-invasive.</p>
+<pre><code class="language-v">render_svg(scene Scene, width int, height int, theme Theme) string
+histogram_bins(data []f64, nbins int) HistogramBins   // nbins &lt;= 0 =&gt; Sturges' rule
+nice_ticks(min f64, max f64, target int) []f64        // round 1/2/5×10ⁿ tick steps
+</code></pre>
+<p>See <code>examples/chart-gallery/</code> for a complete regression-diagnostics gallery
+(scatter + fit line, residuals, histogram, coefficient bar).</p>
+  </main>
+</div>
+<script src="../js/script.js"></script>
+</body>
+</html>

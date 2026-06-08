@@ -33,6 +33,7 @@ SIDEBAR_ROOT = """\
   <li><a href="modules/optim.html">optim</a></li>
   <li><a href="modules/linalg.html">linalg</a></li>
   <li><a href="modules/utils.html">utils</a></li>
+  <li><a href="modules/chart.html">chart</a></li>
 </ul>
 <span class="nav-section-label">Resources</span>
 <ul class="nav-list">

@@ -34,6 +34,7 @@ VStats gives you the statistical and ML toolkit you'd normally reach for in Pyth
 | `hypothesis` | Statistical tests |
 | `experiment` | A/B testing, CUPED, DiD, PSM, ANCOVA, ITT/PP |
 | `growth` | Funnels, cohorts, attribution, SaaS metrics |
+| `chart` | SVG charts (line, scatter, bar, histogram) with Tufte defaults |
 
 ## Install
 
