@@ -22,7 +22,7 @@ Each chart renders a real output of the regression analysis.
 
 | File | Type | Analysis | Features demonstrated |
 |------|------|----------|-----------------------|
-| `regression_fit.svg` | scatter + line | Simple linear regression of median home price on the rooms feature (`RM`): raw data points plus the fitted line (over sorted x) | multi-series, legend, title, x/y axis labels |
+| `regression_fit.svg` | scatter + line | Simple linear regression of median home price on the `Crime Rate` feature: raw data points plus the fitted line (over sorted x) | multi-series, legend, title, x/y axis labels |
 | `residuals_vs_fitted.svg` | scatter + guide | Residuals (`y - y_pred`) plotted against fitted values | `axhline(0.0)` zero-reference guide line |
 | `residuals_hist.svg` | histogram | Distribution of the residuals, automatic bin count (Sturges) | histogram, auto-binning |
 | `coefficients.svg` | bar | Coefficients of a full multivariate regression on all features | bar chart plus a custom `Theme` override (grid enabled) |
@@ -31,9 +31,9 @@ Each chart renders a real output of the regression analysis.
 
 ## Data flow
 
-1. `dataset := utils.load_boston_housing()!` — features `[][]f64`, target `[]f64`, feature names `[]string`.
-2. Extract the `RM` (average rooms) column as a single-feature matrix; fit `ml.linear_regression` on it. Produce predictions with `ml.linear_predict`. Compute residuals as `target[i] - pred[i]`.
-   - Chart 1: scatter of `(RM, price)` plus a line of `(RM_sorted, pred_sorted)`.
+1. `dataset := utils.load_boston_housing()!` — features `[][]f64` (3 simplified features: `Crime Rate`, `% Residential Land`, `Distance to Employment`), target `[]f64` (`Median House Price`), feature names `[]string`.
+2. Extract the `Crime Rate` column (index 0) as a single-feature matrix; fit `ml.linear_regression` on it. Produce predictions with `ml.linear_predict`. Compute residuals as `target[i] - pred[i]`.
+   - Chart 1: scatter of `(crime, price)` plus a line of `(crime_sorted, pred_sorted)`.
    - Chart 2: scatter of `(pred, residual)` with `axhline(0.0)`.
    - Chart 3: histogram of residuals.
 3. Fit a second `ml.linear_regression` on the full feature matrix; read `model.coefficients`.
