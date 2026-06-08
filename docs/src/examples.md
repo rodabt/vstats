@@ -1,6 +1,6 @@
 # Examples
 
-Eight end-to-end scenarios, each targeting a different module and showcasing
+Ten end-to-end scenarios, each targeting a different module and showcasing
 something you can't do in one call with scipy or sklearn.
 
 All examples are runnable: `v run examples/<scenario>/main.v`
@@ -80,3 +80,21 @@ line, residuals-vs-fitted with a zero guide, a residual histogram, and a
 coefficient bar chart with a custom theme — every `chart` type in one example.
 
 <!-- include: examples/chart-gallery/main.v -->
+
+---
+
+## ab-test-readout
+
+A two-sample A/B test rendered as a bar chart with 95% CI error bars, percentage
+value labels, gridlines, and a plain-English verdict subtitle.
+
+<!-- include: examples/ab-test-readout/main.v -->
+
+---
+
+## retention-bands
+
+Cohort retention with uncertainty: the average retention line with a cross-cohort
+min/max band and faint per-cohort lines, plus the average curve as an area fill.
+
+<!-- include: examples/retention-bands/main.v -->
