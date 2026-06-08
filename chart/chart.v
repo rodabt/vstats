@@ -1,5 +1,7 @@
 module chart
 
+import math
+
 enum SeriesKind {
 	line
 	scatter
@@ -63,6 +65,58 @@ pub fn (c Chart) line(x []f64, y []f64, opts SeriesOpts) Chart {
 		y:     y.clone()
 		label: opts.label
 		color: c.theme.color(c.series.len)
+	}
+	nc.series = s
+	return nc
+}
+
+pub fn (c Chart) scatter(x []f64, y []f64, opts SeriesOpts) Chart {
+	assert x.len == y.len
+	mut nc := c
+	mut s := c.series.clone()
+	s << Series{
+		kind:  .scatter
+		x:     x.clone()
+		y:     y.clone()
+		label: opts.label
+		color: c.theme.color(c.series.len)
+	}
+	nc.series = s
+	return nc
+}
+
+@[params]
+pub struct HistogramOpts {
+pub:
+	label string
+	nbins int // 0 => auto (Sturges)
+}
+
+pub fn (c Chart) bar(values []f64, opts SeriesOpts) Chart {
+	mut nc := c
+	mut s := c.series.clone()
+	s << Series{
+		kind:  .bar
+		x:     []f64{}
+		y:     values.clone()
+		label: opts.label
+		color: c.theme.color(c.series.len)
+	}
+	nc.series = s
+	return nc
+}
+
+pub fn (c Chart) histogram(data []f64, opts HistogramOpts) Chart {
+	assert data.len > 0
+	mut nc := c
+	mut s := c.series.clone()
+	s << Series{
+		kind:  .histogram
+		x:     data.clone()
+		y:     []f64{}
+		label: opts.label
+		color: c.theme.color(c.series.len)
+		nbins: opts.nbins
 	}
 	nc.series = s
 	return nc
@@ -210,18 +264,68 @@ fn (c Chart) draw_axes(mut scene Scene, g Geom) {
 fn (c Chart) draw_series(mut scene Scene, g Geom) {
 	t := c.theme
 	for s in c.series {
-		if s.kind == .line {
-			mut pts := []Point{}
-			for i in 0 .. s.x.len {
-				pts << Point{
-					x: g.xscale.map(s.x[i])
-					y: g.yscale.map(s.y[i])
+		match s.kind {
+			.line {
+				mut pts := []Point{}
+				for i in 0 .. s.x.len {
+					pts << Point{
+						x: g.xscale.map(s.x[i])
+						y: g.yscale.map(s.y[i])
+					}
+				}
+				scene.primitives << Polyline{
+					points: pts
+					stroke: s.color
+					width:  t.series_width
 				}
 			}
-			scene.primitives << Polyline{
-				points: pts
-				stroke: s.color
-				width:  t.series_width
+			.scatter {
+				for i in 0 .. s.x.len {
+					scene.primitives << Circle{
+						cx:     g.xscale.map(s.x[i])
+						cy:     g.yscale.map(s.y[i])
+						r:      t.marker_radius
+						fill:   s.color
+						stroke: 'none'
+						width:  0.0
+					}
+				}
+			}
+			.bar {
+				band := g.xscale.map(1.0) - g.xscale.map(0.0)
+				bw := band * 0.8
+				baseline := g.yscale.map(0.0)
+				for i in 0 .. s.y.len {
+					cx := g.xscale.map(f64(i))
+					top := g.yscale.map(s.y[i])
+					scene.primitives << Rect{
+						x:      cx - bw / 2.0
+						y:      math.min(top, baseline)
+						w:      bw
+						h:      math.abs(baseline - top)
+						fill:   s.color
+						stroke: 'none'
+						width:  0.0
+					}
+				}
+			}
+			.histogram {
+				b := histogram_bins(s.x, s.nbins)
+				baseline := g.yscale.map(0.0)
+				for i in 0 .. b.counts.len {
+					x0 := g.xscale.map(b.edges[i])
+					x1 := g.xscale.map(b.edges[i + 1])
+					top := g.yscale.map(f64(b.counts[i]))
+					scene.primitives << Rect{
+						x:      x0
+						y:      math.min(top, baseline)
+						w:      x1 - x0
+						h:      math.abs(baseline - top)
+						fill:   s.color
+						stroke: t.background
+						width:  1.0
+					}
+				}
 			}
 		}
 	}
