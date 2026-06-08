@@ -16,8 +16,11 @@ pub:
 	font_size     f64      = 12.0
 	title_size    f64      = 16.0
 	series_width  f64      = 1.5
-	marker_radius f64      = 3.0
-	palette       []string = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+	marker_radius  f64      = 3.0
+	fill_opacity   f64      = 0.2
+	subtitle_size  f64      = 12.0
+	subtitle_color string   = '#666666'
+	palette        []string = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
 }
 
 pub fn (t Theme) color(i int) string {
