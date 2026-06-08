@@ -25,7 +25,7 @@ Each chart renders a real output of the regression analysis.
 | `regression_fit.svg` | scatter + line | Simple linear regression of median home price on the `Crime Rate` feature: raw data points plus the fitted line (over sorted x) | multi-series, legend, title, x/y axis labels |
 | `residuals_vs_fitted.svg` | scatter + guide | Residuals (`y - y_pred`) plotted against fitted values | `axhline(0.0)` zero-reference guide line |
 | `residuals_hist.svg` | histogram | Distribution of the residuals, automatic bin count (Sturges) | histogram, auto-binning |
-| `coefficients.svg` | bar | Coefficients of a full multivariate regression on all features | bar chart plus a custom `Theme` override (grid enabled) |
+| `coefficients.svg` | bar | Coefficients of a full multivariate regression on all features | bar chart plus a custom `Theme` override (custom palette + background) |
 
 **Coverage:** line, scatter, bar, histogram (all four types); legend, `axhline` guide, title and axis labels, custom theme override, multiple series on one chart, and save-to-disk.
 
@@ -37,7 +37,7 @@ Each chart renders a real output of the regression analysis.
    - Chart 2: scatter of `(pred, residual)` with `axhline(0.0)`.
    - Chart 3: histogram of residuals.
 3. Fit a second `ml.linear_regression` on the full feature matrix; read `model.coefficients`.
-   - Chart 4: bar of the coefficients (one bar per feature) with a grid-enabled theme.
+   - Chart 4: bar of the coefficients (one bar per feature) with a custom theme (overridden `palette` and `background`). Note: the `Theme.grid` field exists but grid rendering is not implemented in v1, so the override uses palette/background, which are rendered.
 4. stdout narration: dataset size, simple-model RMSE (`ml.rmse`), intercept, and the strongest (largest absolute) coefficient with its feature name; finally `wrote 4 charts to examples/chart-gallery/`.
 
 ## Error handling
