@@ -82,3 +82,10 @@ fn test__save_writes_svg_file() {
 	assert content.contains('</svg>')
 	os.rm(path) or {}
 }
+
+fn test__series_color_override() {
+	svg := chart.new(width: 300, height: 200)
+		.line([0.0, 1.0], [0.0, 1.0], color: '#123456')
+		.render()
+	assert svg.contains('#123456')
+}

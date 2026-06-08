@@ -11,12 +11,17 @@ enum SeriesKind {
 }
 
 struct Series {
-	kind  SeriesKind
-	x     []f64
-	y     []f64
-	label string
-	color string
-	nbins int
+	kind        SeriesKind
+	x           []f64
+	y           []f64
+	lo          []f64
+	hi          []f64
+	err         []f64
+	label       string
+	color       string
+	nbins       int
+	show_values bool
+	labels      []string
 }
 
 pub struct Chart {
@@ -44,7 +49,11 @@ pub:
 @[params]
 pub struct SeriesOpts {
 pub:
-	label string
+	label       string
+	color       string
+	show_values bool
+	labels      []string
+	err         []f64
 }
 
 pub fn new(opts ChartOpts) Chart {
@@ -58,14 +67,23 @@ pub fn new(opts ChartOpts) Chart {
 
 pub fn (c Chart) line(x []f64, y []f64, opts SeriesOpts) Chart {
 	assert x.len == y.len
+	if opts.labels.len > 0 {
+		assert opts.labels.len == x.len
+	}
+	if opts.err.len > 0 {
+		assert opts.err.len == x.len
+	}
 	mut nc := c
 	mut s := c.series.clone()
 	s << Series{
-		kind:  .line
-		x:     x.clone()
-		y:     y.clone()
-		label: opts.label
-		color: c.theme.color(c.series.len)
+		kind:        .line
+		x:           x.clone()
+		y:           y.clone()
+		err:         opts.err.clone()
+		label:       opts.label
+		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		show_values: opts.show_values
+		labels:      opts.labels.clone()
 	}
 	nc.series = s
 	return nc
@@ -73,14 +91,23 @@ pub fn (c Chart) line(x []f64, y []f64, opts SeriesOpts) Chart {
 
 pub fn (c Chart) scatter(x []f64, y []f64, opts SeriesOpts) Chart {
 	assert x.len == y.len
+	if opts.labels.len > 0 {
+		assert opts.labels.len == x.len
+	}
+	if opts.err.len > 0 {
+		assert opts.err.len == x.len
+	}
 	mut nc := c
 	mut s := c.series.clone()
 	s << Series{
-		kind:  .scatter
-		x:     x.clone()
-		y:     y.clone()
-		label: opts.label
-		color: c.theme.color(c.series.len)
+		kind:        .scatter
+		x:           x.clone()
+		y:           y.clone()
+		err:         opts.err.clone()
+		label:       opts.label
+		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		show_values: opts.show_values
+		labels:      opts.labels.clone()
 	}
 	nc.series = s
 	return nc
@@ -91,17 +118,27 @@ pub struct HistogramOpts {
 pub:
 	label string
 	nbins int // 0 => auto (Sturges)
+	color string
 }
 
 pub fn (c Chart) bar(values []f64, opts SeriesOpts) Chart {
+	if opts.labels.len > 0 {
+		assert opts.labels.len == values.len
+	}
+	if opts.err.len > 0 {
+		assert opts.err.len == values.len
+	}
 	mut nc := c
 	mut s := c.series.clone()
 	s << Series{
-		kind:  .bar
-		x:     []f64{}
-		y:     values.clone()
-		label: opts.label
-		color: c.theme.color(c.series.len)
+		kind:        .bar
+		x:           []f64{}
+		y:           values.clone()
+		err:         opts.err.clone()
+		label:       opts.label
+		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		show_values: opts.show_values
+		labels:      opts.labels.clone()
 	}
 	nc.series = s
 	return nc
@@ -116,7 +153,7 @@ pub fn (c Chart) histogram(data []f64, opts HistogramOpts) Chart {
 		x:     data.clone()
 		y:     []f64{}
 		label: opts.label
-		color: c.theme.color(c.series.len)
+		color: if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
 		nbins: opts.nbins
 	}
 	nc.series = s
