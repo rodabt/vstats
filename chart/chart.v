@@ -390,6 +390,41 @@ fn (c Chart) geometry() Geom {
 
 // ---- scene assembly ----
 
+fn (c Chart) draw_grid(mut scene Scene, g Geom) {
+	t := c.theme
+	if !t.grid {
+		return
+	}
+	for tk in nice_ticks(g.xmin, g.xmax, 5) {
+		if tk < g.xmin - 1.0e-9 || tk > g.xmax + 1.0e-9 {
+			continue
+		}
+		px := g.xscale.map(tk)
+		scene.primitives << Line{
+			x1:     px
+			y1:     g.plot_y
+			x2:     px
+			y2:     g.plot_y + g.plot_h
+			stroke: t.grid_color
+			width:  t.axis_width
+		}
+	}
+	for tk in nice_ticks(g.ymin, g.ymax, 5) {
+		if tk < g.ymin - 1.0e-9 || tk > g.ymax + 1.0e-9 {
+			continue
+		}
+		py := g.yscale.map(tk)
+		scene.primitives << Line{
+			x1:     g.plot_x
+			y1:     py
+			x2:     g.plot_x + g.plot_w
+			y2:     py
+			stroke: t.grid_color
+			width:  t.axis_width
+		}
+	}
+}
+
 fn (c Chart) draw_axes(mut scene Scene, g Geom) {
 	t := c.theme
 	bottom := g.plot_y + g.plot_h
@@ -792,6 +827,7 @@ fn (c Chart) draw_legend(mut scene Scene, g Geom) {
 fn (c Chart) build_scene() Scene {
 	g := c.geometry()
 	mut scene := Scene{}
+	c.draw_grid(mut scene, g)
 	c.draw_axes(mut scene, g)
 	c.draw_ticks(mut scene, g)
 	c.draw_guides(mut scene, g)

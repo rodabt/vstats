@@ -141,3 +141,15 @@ fn test__error_bars_add_lines() {
 	with_err := chart.new(width: 400, height: 300).scatter(xs, ys, err: errs).render().count('<line')
 	assert with_err > no_err // each point adds a stem + 2 caps
 }
+
+fn test__grid_lines_when_enabled() {
+	gridless := chart.new(width: 400, height: 300)
+		.line([0.0, 1.0], [0.0, 1.0])
+		.render()
+		.count('<line')
+	gridded := chart.new(width: 400, height: 300, theme: chart.Theme{ grid: true })
+		.line([0.0, 1.0], [0.0, 1.0])
+		.render()
+		.count('<line')
+	assert gridded > gridless
+}
