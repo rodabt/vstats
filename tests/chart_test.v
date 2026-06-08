@@ -89,3 +89,13 @@ fn test__series_color_override() {
 		.render()
 	assert svg.contains('#123456')
 }
+
+fn test__left_title_and_subtitle() {
+	svg := chart.new(title: 'Main', subtitle: 'desc here', width: 400, height: 300)
+		.line([0.0, 1.0], [0.0, 1.0])
+		.render()
+	assert svg.contains('text-anchor="start"') // title/subtitle are left-aligned
+	assert svg.contains('>Main<')
+	assert svg.contains('>desc here<')
+	assert svg.contains('#666666') // subtitle color
+}

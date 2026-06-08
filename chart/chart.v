@@ -26,24 +26,26 @@ struct Series {
 
 pub struct Chart {
 mut:
-	title   string
-	width   int
-	height  int
-	theme   Theme
-	xlabel_ string
-	ylabel_ string
-	series  []Series
-	hlines  []f64
-	vlines  []f64
+	title    string
+	subtitle string
+	width    int
+	height   int
+	theme    Theme
+	xlabel_  string
+	ylabel_  string
+	series   []Series
+	hlines   []f64
+	vlines   []f64
 }
 
 @[params]
 pub struct ChartOpts {
 pub:
-	title  string
-	width  int   = 640
-	height int   = 480
-	theme  Theme = Theme{}
+	title    string
+	subtitle string
+	width    int   = 640
+	height   int   = 480
+	theme    Theme = Theme{}
 }
 
 @[params]
@@ -58,10 +60,11 @@ pub:
 
 pub fn new(opts ChartOpts) Chart {
 	return Chart{
-		title:  opts.title
-		width:  opts.width
-		height: opts.height
-		theme:  opts.theme
+		title:    opts.title
+		subtitle: opts.subtitle
+		width:    opts.width
+		height:   opts.height
+		theme:    opts.theme
 	}
 }
 
@@ -163,6 +166,12 @@ pub fn (c Chart) histogram(data []f64, opts HistogramOpts) Chart {
 pub fn (c Chart) title(s string) Chart {
 	mut nc := c
 	nc.title = s
+	return nc
+}
+
+pub fn (c Chart) subtitle(s string) Chart {
+	mut nc := c
+	nc.subtitle = s
 	return nc
 }
 
@@ -484,12 +493,23 @@ fn (c Chart) draw_labels(mut scene Scene, g Geom) {
 	t := c.theme
 	if c.title != '' {
 		scene.primitives << Text{
-			x:       f64(c.width) / 2.0
-			y:       f64(t.margin_top) / 2.0 + 5.0
+			x:       g.plot_x
+			y:       t.title_size
 			content: c.title
 			size:    t.title_size
 			fill:    t.axis_color
-			anchor:  .middle
+			anchor:  .start
+			family:  t.font_family
+		}
+	}
+	if c.subtitle != '' {
+		scene.primitives << Text{
+			x:       g.plot_x
+			y:       t.title_size + t.subtitle_size + 4.0
+			content: c.subtitle
+			size:    t.subtitle_size
+			fill:    t.subtitle_color
+			anchor:  .start
 			family:  t.font_family
 		}
 	}
