@@ -8,64 +8,87 @@ enum SeriesKind {
 	scatter
 	bar
 	histogram
+	band
+	area
 }
 
 struct Series {
-	kind  SeriesKind
-	x     []f64
-	y     []f64
-	label string
-	color string
-	nbins int
+	kind        SeriesKind
+	x           []f64
+	y           []f64
+	lo          []f64
+	hi          []f64
+	err         []f64
+	label       string
+	color       string
+	nbins       int
+	show_values bool
+	labels      []string
 }
 
 pub struct Chart {
 mut:
-	title   string
-	width   int
-	height  int
-	theme   Theme
-	xlabel_ string
-	ylabel_ string
-	series  []Series
-	hlines  []f64
-	vlines  []f64
+	title    string
+	subtitle string
+	width    int
+	height   int
+	theme    Theme
+	xlabel_  string
+	ylabel_  string
+	series   []Series
+	hlines   []f64
+	vlines   []f64
 }
 
 @[params]
 pub struct ChartOpts {
 pub:
-	title  string
-	width  int   = 640
-	height int   = 480
-	theme  Theme = Theme{}
+	title    string
+	subtitle string
+	width    int   = 640
+	height   int   = 480
+	theme    Theme = Theme{}
 }
 
 @[params]
 pub struct SeriesOpts {
 pub:
-	label string
+	label       string
+	color       string
+	show_values bool
+	labels      []string
+	err         []f64
 }
 
 pub fn new(opts ChartOpts) Chart {
 	return Chart{
-		title:  opts.title
-		width:  opts.width
-		height: opts.height
-		theme:  opts.theme
+		title:    opts.title
+		subtitle: opts.subtitle
+		width:    opts.width
+		height:   opts.height
+		theme:    opts.theme
 	}
 }
 
 pub fn (c Chart) line(x []f64, y []f64, opts SeriesOpts) Chart {
 	assert x.len == y.len
+	if opts.labels.len > 0 {
+		assert opts.labels.len == x.len
+	}
+	if opts.err.len > 0 {
+		assert opts.err.len == x.len
+	}
 	mut nc := c
 	mut s := c.series.clone()
 	s << Series{
-		kind:  .line
-		x:     x.clone()
-		y:     y.clone()
-		label: opts.label
-		color: c.theme.color(c.series.len)
+		kind:        .line
+		x:           x.clone()
+		y:           y.clone()
+		err:         opts.err.clone()
+		label:       opts.label
+		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		show_values: opts.show_values
+		labels:      opts.labels.clone()
 	}
 	nc.series = s
 	return nc
@@ -73,14 +96,23 @@ pub fn (c Chart) line(x []f64, y []f64, opts SeriesOpts) Chart {
 
 pub fn (c Chart) scatter(x []f64, y []f64, opts SeriesOpts) Chart {
 	assert x.len == y.len
+	if opts.labels.len > 0 {
+		assert opts.labels.len == x.len
+	}
+	if opts.err.len > 0 {
+		assert opts.err.len == x.len
+	}
 	mut nc := c
 	mut s := c.series.clone()
 	s << Series{
-		kind:  .scatter
-		x:     x.clone()
-		y:     y.clone()
-		label: opts.label
-		color: c.theme.color(c.series.len)
+		kind:        .scatter
+		x:           x.clone()
+		y:           y.clone()
+		err:         opts.err.clone()
+		label:       opts.label
+		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		show_values: opts.show_values
+		labels:      opts.labels.clone()
 	}
 	nc.series = s
 	return nc
@@ -91,17 +123,27 @@ pub struct HistogramOpts {
 pub:
 	label string
 	nbins int // 0 => auto (Sturges)
+	color string
 }
 
 pub fn (c Chart) bar(values []f64, opts SeriesOpts) Chart {
+	if opts.labels.len > 0 {
+		assert opts.labels.len == values.len
+	}
+	if opts.err.len > 0 {
+		assert opts.err.len == values.len
+	}
 	mut nc := c
 	mut s := c.series.clone()
 	s << Series{
-		kind:  .bar
-		x:     []f64{}
-		y:     values.clone()
-		label: opts.label
-		color: c.theme.color(c.series.len)
+		kind:        .bar
+		x:           []f64{}
+		y:           values.clone()
+		err:         opts.err.clone()
+		label:       opts.label
+		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		show_values: opts.show_values
+		labels:      opts.labels.clone()
 	}
 	nc.series = s
 	return nc
@@ -116,7 +158,7 @@ pub fn (c Chart) histogram(data []f64, opts HistogramOpts) Chart {
 		x:     data.clone()
 		y:     []f64{}
 		label: opts.label
-		color: c.theme.color(c.series.len)
+		color: if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
 		nbins: opts.nbins
 	}
 	nc.series = s
@@ -126,6 +168,12 @@ pub fn (c Chart) histogram(data []f64, opts HistogramOpts) Chart {
 pub fn (c Chart) title(s string) Chart {
 	mut nc := c
 	nc.title = s
+	return nc
+}
+
+pub fn (c Chart) subtitle(s string) Chart {
+	mut nc := c
+	nc.subtitle = s
 	return nc
 }
 
@@ -154,6 +202,38 @@ pub fn (c Chart) axvline(x f64) Chart {
 	mut v := c.vlines.clone()
 	v << x
 	nc.vlines = v
+	return nc
+}
+
+pub fn (c Chart) band(x []f64, lower []f64, upper []f64, opts SeriesOpts) Chart {
+	assert x.len == lower.len
+	assert x.len == upper.len
+	mut nc := c
+	mut s := c.series.clone()
+	s << Series{
+		kind:  .band
+		x:     x.clone()
+		lo:    lower.clone()
+		hi:    upper.clone()
+		label: opts.label
+		color: if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+	}
+	nc.series = s
+	return nc
+}
+
+pub fn (c Chart) area(x []f64, y []f64, opts SeriesOpts) Chart {
+	assert x.len == y.len
+	mut nc := c
+	mut s := c.series.clone()
+	s << Series{
+		kind:  .area
+		x:     x.clone()
+		y:     y.clone()
+		label: opts.label
+		color: if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+	}
+	nc.series = s
 	return nc
 }
 
@@ -190,14 +270,36 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 	return match s.kind {
 		.line, .scatter {
 			x0, x1 := extent(s.x)
-			y0, y1 := extent(s.y)
+			ext_lo, ext_hi := extent(s.y)
+			mut y0 := ext_lo
+			mut y1 := ext_hi
+			if s.err.len == s.y.len && s.err.len > 0 {
+				for i in 0 .. s.y.len {
+					if s.y[i] - s.err[i] < y0 {
+						y0 = s.y[i] - s.err[i]
+					}
+					if s.y[i] + s.err[i] > y1 {
+						y1 = s.y[i] + s.err[i]
+					}
+				}
+			}
 			x0, x1, y0, y1
 		}
 		.bar {
-			y0, y1 := extent(s.y)
-			ylo := if y0 < 0.0 { y0 } else { 0.0 }
-			yhi := if y1 > 0.0 { y1 } else { 0.0 }
-			-0.5, f64(s.y.len) - 0.5, ylo, yhi
+			ext_lo, ext_hi := extent(s.y)
+			mut y0 := if ext_lo < 0.0 { ext_lo } else { 0.0 }
+			mut y1 := if ext_hi > 0.0 { ext_hi } else { 0.0 }
+			if s.err.len == s.y.len && s.err.len > 0 {
+				for i in 0 .. s.y.len {
+					if s.y[i] - s.err[i] < y0 {
+						y0 = s.y[i] - s.err[i]
+					}
+					if s.y[i] + s.err[i] > y1 {
+						y1 = s.y[i] + s.err[i]
+					}
+				}
+			}
+			-0.5, f64(s.y.len) - 0.5, y0, y1
 		}
 		.histogram {
 			b := histogram_bins(s.x, s.nbins)
@@ -208,6 +310,19 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 				}
 			}
 			b.edges[0], b.edges[b.edges.len - 1], 0.0, f64(maxc)
+		}
+		.band {
+			x0, x1 := extent(s.x)
+			lo0, _ := extent(s.lo)
+			_, hi1 := extent(s.hi)
+			x0, x1, lo0, hi1
+		}
+		.area {
+			x0, x1 := extent(s.x)
+			y0, y1 := extent(s.y)
+			ylo := if y0 < 0.0 { y0 } else { 0.0 }
+			yhi := if y1 > 0.0 { y1 } else { 0.0 }
+			x0, x1, ylo, yhi
 		}
 	}
 }
@@ -275,6 +390,41 @@ fn (c Chart) geometry() Geom {
 
 // ---- scene assembly ----
 
+fn (c Chart) draw_grid(mut scene Scene, g Geom) {
+	t := c.theme
+	if !t.grid {
+		return
+	}
+	for tk in nice_ticks(g.xmin, g.xmax, 5) {
+		if tk < g.xmin - 1.0e-9 || tk > g.xmax + 1.0e-9 {
+			continue
+		}
+		px := g.xscale.map(tk)
+		scene.primitives << Line{
+			x1:     px
+			y1:     g.plot_y
+			x2:     px
+			y2:     g.plot_y + g.plot_h
+			stroke: t.grid_color
+			width:  t.axis_width
+		}
+	}
+	for tk in nice_ticks(g.ymin, g.ymax, 5) {
+		if tk < g.ymin - 1.0e-9 || tk > g.ymax + 1.0e-9 {
+			continue
+		}
+		py := g.yscale.map(tk)
+		scene.primitives << Line{
+			x1:     g.plot_x
+			y1:     py
+			x2:     g.plot_x + g.plot_w
+			y2:     py
+			stroke: t.grid_color
+			width:  t.axis_width
+		}
+	}
+}
+
 fn (c Chart) draw_axes(mut scene Scene, g Geom) {
 	t := c.theme
 	bottom := g.plot_y + g.plot_h
@@ -298,6 +448,60 @@ fn (c Chart) draw_axes(mut scene Scene, g Geom) {
 
 fn (c Chart) draw_series(mut scene Scene, g Geom) {
 	t := c.theme
+	// pass 1: filled regions (bands, areas) render behind everything else
+	for s in c.series {
+		match s.kind {
+			.band {
+				mut pts := []Point{}
+				for i in 0 .. s.x.len {
+					pts << Point{
+						x: g.xscale.map(s.x[i])
+						y: g.yscale.map(s.hi[i])
+					}
+				}
+				for i := s.x.len - 1; i >= 0; i-- {
+					pts << Point{
+						x: g.xscale.map(s.x[i])
+						y: g.yscale.map(s.lo[i])
+					}
+				}
+				scene.primitives << Polygon{
+					points:  pts
+					fill:    s.color
+					opacity: t.fill_opacity
+					stroke:  'none'
+					width:   0.0
+				}
+			}
+			.area {
+				baseline := g.yscale.map(0.0)
+				mut pts := []Point{}
+				pts << Point{
+					x: g.xscale.map(s.x[0])
+					y: baseline
+				}
+				for i in 0 .. s.x.len {
+					pts << Point{
+						x: g.xscale.map(s.x[i])
+						y: g.yscale.map(s.y[i])
+					}
+				}
+				pts << Point{
+					x: g.xscale.map(s.x[s.x.len - 1])
+					y: baseline
+				}
+				scene.primitives << Polygon{
+					points:  pts
+					fill:    s.color
+					opacity: t.fill_opacity
+					stroke:  'none'
+					width:   0.0
+				}
+			}
+			else {}
+		}
+	}
+	// pass 2: data marks
 	for s in c.series {
 		match s.kind {
 			.line {
@@ -362,6 +566,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 					}
 				}
 			}
+			else {}
 		}
 	}
 }
@@ -447,12 +652,23 @@ fn (c Chart) draw_labels(mut scene Scene, g Geom) {
 	t := c.theme
 	if c.title != '' {
 		scene.primitives << Text{
-			x:       f64(c.width) / 2.0
-			y:       f64(t.margin_top) / 2.0 + 5.0
+			x:       g.plot_x
+			y:       t.title_size
 			content: c.title
 			size:    t.title_size
 			fill:    t.axis_color
-			anchor:  .middle
+			anchor:  .start
+			family:  t.font_family
+		}
+	}
+	if c.subtitle != '' {
+		scene.primitives << Text{
+			x:       g.plot_x
+			y:       t.title_size + t.subtitle_size + 4.0
+			content: c.subtitle
+			size:    t.subtitle_size
+			fill:    t.subtitle_color
+			anchor:  .start
 			family:  t.font_family
 		}
 	}
@@ -479,6 +695,95 @@ fn (c Chart) draw_labels(mut scene Scene, g Geom) {
 			anchor:  .middle
 			family:  t.font_family
 			rotate:  -90.0
+		}
+	}
+}
+
+fn (c Chart) value_text(s Series, i int, v f64) string {
+	if s.labels.len > i {
+		return s.labels[i]
+	}
+	return fmt_tick(v)
+}
+
+fn (c Chart) draw_error_bars(mut scene Scene, g Geom) {
+	t := c.theme
+	capw := 4.0
+	for s in c.series {
+		if s.err.len == 0 {
+			continue
+		}
+		for i in 0 .. s.y.len {
+			px := match s.kind {
+				.bar { g.xscale.map(f64(i)) }
+				else { g.xscale.map(s.x[i]) }
+			}
+			y_hi := g.yscale.map(s.y[i] + s.err[i])
+			y_lo := g.yscale.map(s.y[i] - s.err[i])
+			scene.primitives << Line{
+				x1:     px
+				y1:     y_lo
+				x2:     px
+				y2:     y_hi
+				stroke: t.axis_color
+				width:  t.axis_width
+			}
+			scene.primitives << Line{
+				x1:     px - capw
+				y1:     y_hi
+				x2:     px + capw
+				y2:     y_hi
+				stroke: t.axis_color
+				width:  t.axis_width
+			}
+			scene.primitives << Line{
+				x1:     px - capw
+				y1:     y_lo
+				x2:     px + capw
+				y2:     y_lo
+				stroke: t.axis_color
+				width:  t.axis_width
+			}
+		}
+	}
+}
+
+fn (c Chart) draw_value_labels(mut scene Scene, g Geom) {
+	t := c.theme
+	for s in c.series {
+		if !s.show_values {
+			continue
+		}
+		match s.kind {
+			.line, .scatter {
+				for i in 0 .. s.x.len {
+					scene.primitives << Text{
+						x:       g.xscale.map(s.x[i])
+						y:       g.yscale.map(s.y[i]) - t.marker_radius - 4.0
+						content: c.value_text(s, i, s.y[i])
+						size:    t.font_size
+						fill:    t.axis_color
+						anchor:  .middle
+						family:  t.font_family
+					}
+				}
+			}
+			.bar {
+				baseline := g.yscale.map(0.0)
+				for i in 0 .. s.y.len {
+					top := g.yscale.map(s.y[i])
+					scene.primitives << Text{
+						x:       g.xscale.map(f64(i))
+						y:       math.min(top, baseline) - 4.0
+						content: c.value_text(s, i, s.y[i])
+						size:    t.font_size
+						fill:    t.axis_color
+						anchor:  .middle
+						family:  t.font_family
+					}
+				}
+			}
+			else {}
 		}
 	}
 }
@@ -522,10 +827,13 @@ fn (c Chart) draw_legend(mut scene Scene, g Geom) {
 fn (c Chart) build_scene() Scene {
 	g := c.geometry()
 	mut scene := Scene{}
+	c.draw_grid(mut scene, g)
 	c.draw_axes(mut scene, g)
 	c.draw_ticks(mut scene, g)
 	c.draw_guides(mut scene, g)
 	c.draw_series(mut scene, g)
+	c.draw_error_bars(mut scene, g)
+	c.draw_value_labels(mut scene, g)
 	c.draw_labels(mut scene, g)
 	c.draw_legend(mut scene, g)
 	return scene

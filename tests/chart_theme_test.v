@@ -15,3 +15,11 @@ fn test__theme_color_cycles() {
 	assert first.len > 0
 	assert t.color(t.palette.len) == first // wraps around
 }
+
+fn test__theme_expansion_defaults() {
+	t := chart.Theme{}
+	assert t.fill_opacity > 0.0
+	assert t.subtitle_size > 0.0
+	assert t.subtitle_size < t.title_size
+	assert t.subtitle_color.len > 0
+}

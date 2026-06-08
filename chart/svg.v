@@ -36,6 +36,14 @@ fn primitive_to_svg(p Primitive) string {
 			}
 			'<text x="${p.x}" y="${p.y}" font-family="${p.family}" font-size="${p.size}" fill="${p.fill}" text-anchor="${anchor}"${transform}>${xml_escape(p.content)}</text>'
 		}
+		Polygon {
+			mut pts := []string{}
+			for pt in p.points {
+				pts << '${pt.x},${pt.y}'
+			}
+			op := if p.opacity <= 0.0 { 1.0 } else { p.opacity }
+			'<polygon points="${pts.join(' ')}" fill="${p.fill}" fill-opacity="${op}" stroke="${p.stroke}" stroke-width="${p.width}"/>'
+		}
 	}
 }
 

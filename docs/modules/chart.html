@@ -59,8 +59,13 @@ can later feed a raster (PNG/JPG) backend.</p>
 (c Chart) bar(values []f64, opts SeriesOpts) Chart
 (c Chart) histogram(data []f64, opts HistogramOpts) Chart      // HistogramOpts{ label, nbins }
 
+// fills (rendered behind data marks)
+(c Chart) band(x []f64, lower []f64, upper []f64, opts SeriesOpts) Chart   // CI / shaded region
+(c Chart) area(x []f64, y []f64, opts SeriesOpts) Chart                    // fill to zero baseline
+
 // decoration
 (c Chart) title(s string) Chart
+(c Chart) subtitle(s string) Chart   // smaller, muted, left-aligned
 (c Chart) xlabel(s string) Chart
 (c Chart) ylabel(s string) Chart
 (c Chart) axhline(y f64) Chart       // horizontal reference line
@@ -84,6 +89,10 @@ chart.new(title: 'Fit', width: 640, height: 420)
 labeled series a legend is drawn automatically, and colors cycle through the theme
 palette. <code>render()</code> is pure (handy for tests); <code>save()</code> is the only function that
 touches the filesystem.</p>
+<p><code>SeriesOpts</code> also accepts <code>color</code> (override the palette), <code>show_values</code> (draw the
+value above each point/bar — or pass <code>labels []string</code> for custom text), and
+<code>err []f64</code> (draw error-bar whiskers on points/bars). <code>ChartOpts</code> accepts a
+<code>subtitle</code>, and <code>Theme{ grid: true }</code> turns on light gridlines.</p>
 <h2 id="chart-types">Chart types</h2>
 <table>
 <thead>

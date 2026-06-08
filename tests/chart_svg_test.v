@@ -48,3 +48,19 @@ fn test__render_svg_rotated_text_has_transform() {
 	out := chart.render_svg(s, 50, 50, chart.Theme{})
 	assert out.contains('transform="rotate(')
 }
+
+fn test__render_svg_polygon_has_fill_opacity() {
+	mut s := chart.Scene{}
+	s.primitives << chart.Polygon{
+		points:  [chart.Point{x: 0.0, y: 0.0}, chart.Point{x: 10.0, y: 0.0},
+			chart.Point{x: 10.0, y: 10.0}]
+		fill:    '#abcdef'
+		opacity: 0.2
+		stroke:  'none'
+		width:   0.0
+	}
+	out := chart.render_svg(s, 50, 50, chart.Theme{})
+	assert out.contains('<polygon')
+	assert out.contains('fill-opacity="0.2"')
+	assert out.contains('#abcdef')
+}

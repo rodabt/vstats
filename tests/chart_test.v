@@ -82,3 +82,74 @@ fn test__save_writes_svg_file() {
 	assert content.contains('</svg>')
 	os.rm(path) or {}
 }
+
+fn test__series_color_override() {
+	svg := chart.new(width: 300, height: 200)
+		.line([0.0, 1.0], [0.0, 1.0], color: '#123456')
+		.render()
+	assert svg.contains('#123456')
+}
+
+fn test__left_title_and_subtitle() {
+	svg := chart.new(title: 'Main', subtitle: 'desc here', width: 400, height: 300)
+		.line([0.0, 1.0], [0.0, 1.0])
+		.render()
+	assert svg.contains('text-anchor="start"') // title/subtitle are left-aligned
+	assert svg.contains('>Main<')
+	assert svg.contains('>desc here<')
+	assert svg.contains('#666666') // subtitle color
+}
+
+fn test__band_produces_polygon() {
+	svg := chart.new(width: 400, height: 300)
+		.band([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], [2.0, 3.0, 2.5])
+		.line([0.0, 1.0, 2.0], [1.0, 2.0, 1.5])
+		.render()
+	assert svg.contains('<polygon')
+	assert svg.contains('<polyline')
+}
+
+fn test__area_produces_polygon() {
+	svg := chart.new(width: 400, height: 300)
+		.area([0.0, 1.0, 2.0], [1.0, 3.0, 2.0])
+		.render()
+	assert svg.contains('<polygon')
+}
+
+fn test__show_values_adds_labels() {
+	svg := chart.new(width: 500, height: 300)
+		.bar([11.0, 23.0, 37.0], show_values: true)
+		.render()
+	assert svg.contains('>11<')
+	assert svg.contains('>23<')
+	assert svg.contains('>37<')
+}
+
+fn test__custom_point_labels() {
+	svg := chart.new(width: 400, height: 300)
+		.scatter([0.0, 1.0], [1.0, 2.0], show_values: true, labels: ['A', 'B'])
+		.render()
+	assert svg.contains('>A<')
+	assert svg.contains('>B<')
+}
+
+fn test__error_bars_add_lines() {
+	xs := [0.0, 1.0, 2.0, 3.0, 4.0]
+	ys := [1.0, 2.0, 1.5, 2.5, 2.0]
+	errs := [0.2, 0.3, 0.2, 0.25, 0.3]
+	no_err := chart.new(width: 400, height: 300).scatter(xs, ys).render().count('<line')
+	with_err := chart.new(width: 400, height: 300).scatter(xs, ys, err: errs).render().count('<line')
+	assert with_err > no_err // each point adds a stem + 2 caps
+}
+
+fn test__grid_lines_when_enabled() {
+	gridless := chart.new(width: 400, height: 300)
+		.line([0.0, 1.0], [0.0, 1.0])
+		.render()
+		.count('<line')
+	gridded := chart.new(width: 400, height: 300, theme: chart.Theme{ grid: true })
+		.line([0.0, 1.0], [0.0, 1.0])
+		.render()
+		.count('<line')
+	assert gridded > gridless
+}
