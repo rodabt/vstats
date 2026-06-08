@@ -71,7 +71,7 @@ fn main() {
 		.ylabel('Count')
 		.save(os.join_path(out_dir, 'residuals_hist.svg'))!
 
-	// --- Chart 4: coefficient bar from the full multivariate regression ---
+	// --- Chart 4: coefficient-magnitude bar from the full multivariate regression ---
 	full := ml.linear_regression(x, y)
 	coefs := full.coefficients
 	mut top := 0
@@ -82,14 +82,17 @@ fn main() {
 	}
 	println('Full model strongest predictor: ${names[top]} (coef=${coefs[top]:.3f})')
 
+	// Bar the absolute magnitudes so bars grow up from the baseline (sign is
+	// reported in the narration above; the raw coefficients here are all negative).
+	magnitudes := coefs.map(math.abs(it))
 	custom := chart.Theme{
 		background: '#f7f7f7'
 		palette:    ['#756bb1']
 	}
-	chart.new(title: 'Regression Coefficients', width: 640, height: 420, theme: custom)
-		.bar(coefs, label: 'coefficient')
+	chart.new(title: 'Coefficient Magnitude', width: 640, height: 420, theme: custom)
+		.bar(magnitudes, label: 'magnitude')
 		.xlabel('Feature index (0=Crime, 1=ResLand, 2=Distance)')
-		.ylabel('Coefficient')
+		.ylabel('|Coefficient|')
 		.save(os.join_path(out_dir, 'coefficients.svg'))!
 
 	println('\nwrote 4 charts to ${out_dir}')
