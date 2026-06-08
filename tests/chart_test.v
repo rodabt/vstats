@@ -115,3 +115,20 @@ fn test__area_produces_polygon() {
 		.render()
 	assert svg.contains('<polygon')
 }
+
+fn test__show_values_adds_labels() {
+	svg := chart.new(width: 500, height: 300)
+		.bar([11.0, 23.0, 37.0], show_values: true)
+		.render()
+	assert svg.contains('>11<')
+	assert svg.contains('>23<')
+	assert svg.contains('>37<')
+}
+
+fn test__custom_point_labels() {
+	svg := chart.new(width: 400, height: 300)
+		.scatter([0.0, 1.0], [1.0, 2.0], show_values: true, labels: ['A', 'B'])
+		.render()
+	assert svg.contains('>A<')
+	assert svg.contains('>B<')
+}

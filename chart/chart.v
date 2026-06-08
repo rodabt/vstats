@@ -642,6 +642,53 @@ fn (c Chart) draw_labels(mut scene Scene, g Geom) {
 	}
 }
 
+fn (c Chart) value_text(s Series, i int, v f64) string {
+	if s.labels.len > i {
+		return s.labels[i]
+	}
+	return fmt_tick(v)
+}
+
+fn (c Chart) draw_value_labels(mut scene Scene, g Geom) {
+	t := c.theme
+	for s in c.series {
+		if !s.show_values {
+			continue
+		}
+		match s.kind {
+			.line, .scatter {
+				for i in 0 .. s.x.len {
+					scene.primitives << Text{
+						x:       g.xscale.map(s.x[i])
+						y:       g.yscale.map(s.y[i]) - t.marker_radius - 4.0
+						content: c.value_text(s, i, s.y[i])
+						size:    t.font_size
+						fill:    t.axis_color
+						anchor:  .middle
+						family:  t.font_family
+					}
+				}
+			}
+			.bar {
+				baseline := g.yscale.map(0.0)
+				for i in 0 .. s.y.len {
+					top := g.yscale.map(s.y[i])
+					scene.primitives << Text{
+						x:       g.xscale.map(f64(i))
+						y:       math.min(top, baseline) - 4.0
+						content: c.value_text(s, i, s.y[i])
+						size:    t.font_size
+						fill:    t.axis_color
+						anchor:  .middle
+						family:  t.font_family
+					}
+				}
+			}
+			else {}
+		}
+	}
+}
+
 fn (c Chart) draw_legend(mut scene Scene, g Geom) {
 	t := c.theme
 	mut labeled := []Series{}
@@ -685,6 +732,7 @@ fn (c Chart) build_scene() Scene {
 	c.draw_ticks(mut scene, g)
 	c.draw_guides(mut scene, g)
 	c.draw_series(mut scene, g)
+	c.draw_value_labels(mut scene, g)
 	c.draw_labels(mut scene, g)
 	c.draw_legend(mut scene, g)
 	return scene
