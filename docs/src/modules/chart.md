@@ -21,8 +21,13 @@ new(opts ChartOpts) Chart            // ChartOpts{ title, width, height, theme }
 (c Chart) bar(values []f64, opts SeriesOpts) Chart
 (c Chart) histogram(data []f64, opts HistogramOpts) Chart      // HistogramOpts{ label, nbins }
 
+// fills (rendered behind data marks)
+(c Chart) band(x []f64, lower []f64, upper []f64, opts SeriesOpts) Chart   // CI / shaded region
+(c Chart) area(x []f64, y []f64, opts SeriesOpts) Chart                    // fill to zero baseline
+
 // decoration
 (c Chart) title(s string) Chart
+(c Chart) subtitle(s string) Chart   // smaller, muted, left-aligned
 (c Chart) xlabel(s string) Chart
 (c Chart) ylabel(s string) Chart
 (c Chart) axhline(y f64) Chart       // horizontal reference line
@@ -50,6 +55,11 @@ Series data is `[]f64`. Multiple series share auto-scaled axes; with two or more
 labeled series a legend is drawn automatically, and colors cycle through the theme
 palette. `render()` is pure (handy for tests); `save()` is the only function that
 touches the filesystem.
+
+`SeriesOpts` also accepts `color` (override the palette), `show_values` (draw the
+value above each point/bar — or pass `labels []string` for custom text), and
+`err []f64` (draw error-bar whiskers on points/bars). `ChartOpts` accepts a
+`subtitle`, and `Theme{ grid: true }` turns on light gridlines.
 
 ## Chart types
 
