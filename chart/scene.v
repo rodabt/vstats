@@ -62,7 +62,16 @@ pub:
 	rotate  f64 // degrees; 0 = horizontal
 }
 
-pub type Primitive = Line | Polyline | Rect | Circle | Text
+pub struct Polygon {
+pub:
+	points  []Point
+	fill    string
+	opacity f64
+	stroke  string
+	width   f64
+}
+
+pub type Primitive = Line | Polyline | Rect | Circle | Text | Polygon
 
 pub struct Scene {
 pub mut:
