@@ -35,3 +35,32 @@ fn test__histogram_emits_rects() {
 		.render()
 	assert svg.count('<rect') >= 3
 }
+
+fn test__ticks_and_labels_render() {
+	svg := chart.new(title: 'T', width: 400, height: 300)
+		.line([0.0, 1.0, 2.0], [0.0, 50.0, 100.0])
+		.xlabel('time')
+		.ylabel('value')
+		.render()
+	assert svg.contains('>T<') // title text
+	assert svg.contains('>time<') // x label
+	assert svg.contains('>value<') // y label
+	assert svg.contains('transform="rotate(') // y label is rotated
+	assert svg.contains('>100<') // a y tick label
+}
+
+fn test__legend_appears_with_two_labeled_series() {
+	svg := chart.new(width: 400, height: 300)
+		.line([0.0, 1.0], [0.0, 1.0], label: 'a')
+		.line([0.0, 1.0], [1.0, 0.0], label: 'b')
+		.render()
+	assert svg.contains('>a<')
+	assert svg.contains('>b<')
+}
+
+fn test__axhline_adds_guide_line() {
+	base := chart.new(width: 400, height: 300).scatter([0.0, 1.0], [-1.0, 1.0])
+	without := base.render().count('<line')
+	with := base.axhline(0.0).render().count('<line')
+	assert with == without + 1
+}

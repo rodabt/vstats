@@ -122,6 +122,40 @@ pub fn (c Chart) histogram(data []f64, opts HistogramOpts) Chart {
 	return nc
 }
 
+pub fn (c Chart) title(s string) Chart {
+	mut nc := c
+	nc.title = s
+	return nc
+}
+
+pub fn (c Chart) xlabel(s string) Chart {
+	mut nc := c
+	nc.xlabel_ = s
+	return nc
+}
+
+pub fn (c Chart) ylabel(s string) Chart {
+	mut nc := c
+	nc.ylabel_ = s
+	return nc
+}
+
+pub fn (c Chart) axhline(y f64) Chart {
+	mut nc := c
+	mut h := c.hlines.clone()
+	h << y
+	nc.hlines = h
+	return nc
+}
+
+pub fn (c Chart) axvline(x f64) Chart {
+	mut nc := c
+	mut v := c.vlines.clone()
+	v << x
+	nc.vlines = v
+	return nc
+}
+
 // ---- geometry & bounds ----
 
 struct Geom {
@@ -331,11 +365,168 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 	}
 }
 
+fn (c Chart) draw_ticks(mut scene Scene, g Geom) {
+	t := c.theme
+	bottom := g.plot_y + g.plot_h
+	for tk in nice_ticks(g.xmin, g.xmax, 5) {
+		if tk < g.xmin - 1.0e-9 || tk > g.xmax + 1.0e-9 {
+			continue
+		}
+		px := g.xscale.map(tk)
+		scene.primitives << Line{
+			x1:     px
+			y1:     bottom
+			x2:     px
+			y2:     bottom + 5.0
+			stroke: t.axis_color
+			width:  t.axis_width
+		}
+		scene.primitives << Text{
+			x:       px
+			y:       bottom + 18.0
+			content: fmt_tick(tk)
+			size:    t.font_size
+			fill:    t.axis_color
+			anchor:  .middle
+			family:  t.font_family
+		}
+	}
+	for tk in nice_ticks(g.ymin, g.ymax, 5) {
+		if tk < g.ymin - 1.0e-9 || tk > g.ymax + 1.0e-9 {
+			continue
+		}
+		py := g.yscale.map(tk)
+		scene.primitives << Line{
+			x1:     g.plot_x - 5.0
+			y1:     py
+			x2:     g.plot_x
+			y2:     py
+			stroke: t.axis_color
+			width:  t.axis_width
+		}
+		scene.primitives << Text{
+			x:       g.plot_x - 8.0
+			y:       py + 4.0
+			content: fmt_tick(tk)
+			size:    t.font_size
+			fill:    t.axis_color
+			anchor:  .end
+			family:  t.font_family
+		}
+	}
+}
+
+fn (c Chart) draw_guides(mut scene Scene, g Geom) {
+	t := c.theme
+	for hy in c.hlines {
+		py := g.yscale.map(hy)
+		scene.primitives << Line{
+			x1:     g.plot_x
+			y1:     py
+			x2:     g.plot_x + g.plot_w
+			y2:     py
+			stroke: t.axis_color
+			width:  t.axis_width
+		}
+	}
+	for vx in c.vlines {
+		px := g.xscale.map(vx)
+		scene.primitives << Line{
+			x1:     px
+			y1:     g.plot_y
+			x2:     px
+			y2:     g.plot_y + g.plot_h
+			stroke: t.axis_color
+			width:  t.axis_width
+		}
+	}
+}
+
+fn (c Chart) draw_labels(mut scene Scene, g Geom) {
+	t := c.theme
+	if c.title != '' {
+		scene.primitives << Text{
+			x:       f64(c.width) / 2.0
+			y:       f64(t.margin_top) / 2.0 + 5.0
+			content: c.title
+			size:    t.title_size
+			fill:    t.axis_color
+			anchor:  .middle
+			family:  t.font_family
+		}
+	}
+	if c.xlabel_ != '' {
+		scene.primitives << Text{
+			x:       g.plot_x + g.plot_w / 2.0
+			y:       f64(c.height) - 8.0
+			content: c.xlabel_
+			size:    t.font_size
+			fill:    t.axis_color
+			anchor:  .middle
+			family:  t.font_family
+		}
+	}
+	if c.ylabel_ != '' {
+		lx := f64(t.margin_left) / 3.0
+		ly := g.plot_y + g.plot_h / 2.0
+		scene.primitives << Text{
+			x:       lx
+			y:       ly
+			content: c.ylabel_
+			size:    t.font_size
+			fill:    t.axis_color
+			anchor:  .middle
+			family:  t.font_family
+			rotate:  -90.0
+		}
+	}
+}
+
+fn (c Chart) draw_legend(mut scene Scene, g Geom) {
+	t := c.theme
+	mut labeled := []Series{}
+	for s in c.series {
+		if s.label != '' {
+			labeled << s
+		}
+	}
+	if labeled.len < 2 {
+		return
+	}
+	lx := g.plot_x + g.plot_w - 100.0
+	mut ly := g.plot_y + 4.0
+	for s in labeled {
+		scene.primitives << Rect{
+			x:      lx
+			y:      ly
+			w:      12.0
+			h:      12.0
+			fill:   s.color
+			stroke: 'none'
+			width:  0.0
+		}
+		scene.primitives << Text{
+			x:       lx + 18.0
+			y:       ly + 11.0
+			content: s.label
+			size:    t.font_size
+			fill:    t.axis_color
+			anchor:  .start
+			family:  t.font_family
+		}
+		ly += 18.0
+	}
+}
+
 fn (c Chart) build_scene() Scene {
 	g := c.geometry()
 	mut scene := Scene{}
 	c.draw_axes(mut scene, g)
+	c.draw_ticks(mut scene, g)
+	c.draw_guides(mut scene, g)
 	c.draw_series(mut scene, g)
+	c.draw_labels(mut scene, g)
+	c.draw_legend(mut scene, g)
 	return scene
 }
 
