@@ -132,3 +132,12 @@ fn test__custom_point_labels() {
 	assert svg.contains('>A<')
 	assert svg.contains('>B<')
 }
+
+fn test__error_bars_add_lines() {
+	xs := [0.0, 1.0, 2.0, 3.0, 4.0]
+	ys := [1.0, 2.0, 1.5, 2.5, 2.0]
+	errs := [0.2, 0.3, 0.2, 0.25, 0.3]
+	no_err := chart.new(width: 400, height: 300).scatter(xs, ys).render().count('<line')
+	with_err := chart.new(width: 400, height: 300).scatter(xs, ys, err: errs).render().count('<line')
+	assert with_err > no_err // each point adds a stem + 2 caps
+}

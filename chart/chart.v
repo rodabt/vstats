@@ -270,14 +270,36 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 	return match s.kind {
 		.line, .scatter {
 			x0, x1 := extent(s.x)
-			y0, y1 := extent(s.y)
+			ext_lo, ext_hi := extent(s.y)
+			mut y0 := ext_lo
+			mut y1 := ext_hi
+			if s.err.len == s.y.len && s.err.len > 0 {
+				for i in 0 .. s.y.len {
+					if s.y[i] - s.err[i] < y0 {
+						y0 = s.y[i] - s.err[i]
+					}
+					if s.y[i] + s.err[i] > y1 {
+						y1 = s.y[i] + s.err[i]
+					}
+				}
+			}
 			x0, x1, y0, y1
 		}
 		.bar {
-			y0, y1 := extent(s.y)
-			ylo := if y0 < 0.0 { y0 } else { 0.0 }
-			yhi := if y1 > 0.0 { y1 } else { 0.0 }
-			-0.5, f64(s.y.len) - 0.5, ylo, yhi
+			ext_lo, ext_hi := extent(s.y)
+			mut y0 := if ext_lo < 0.0 { ext_lo } else { 0.0 }
+			mut y1 := if ext_hi > 0.0 { ext_hi } else { 0.0 }
+			if s.err.len == s.y.len && s.err.len > 0 {
+				for i in 0 .. s.y.len {
+					if s.y[i] - s.err[i] < y0 {
+						y0 = s.y[i] - s.err[i]
+					}
+					if s.y[i] + s.err[i] > y1 {
+						y1 = s.y[i] + s.err[i]
+					}
+				}
+			}
+			-0.5, f64(s.y.len) - 0.5, y0, y1
 		}
 		.histogram {
 			b := histogram_bins(s.x, s.nbins)
@@ -649,6 +671,48 @@ fn (c Chart) value_text(s Series, i int, v f64) string {
 	return fmt_tick(v)
 }
 
+fn (c Chart) draw_error_bars(mut scene Scene, g Geom) {
+	t := c.theme
+	capw := 4.0
+	for s in c.series {
+		if s.err.len == 0 {
+			continue
+		}
+		for i in 0 .. s.y.len {
+			px := match s.kind {
+				.bar { g.xscale.map(f64(i)) }
+				else { g.xscale.map(s.x[i]) }
+			}
+			y_hi := g.yscale.map(s.y[i] + s.err[i])
+			y_lo := g.yscale.map(s.y[i] - s.err[i])
+			scene.primitives << Line{
+				x1:     px
+				y1:     y_lo
+				x2:     px
+				y2:     y_hi
+				stroke: t.axis_color
+				width:  t.axis_width
+			}
+			scene.primitives << Line{
+				x1:     px - capw
+				y1:     y_hi
+				x2:     px + capw
+				y2:     y_hi
+				stroke: t.axis_color
+				width:  t.axis_width
+			}
+			scene.primitives << Line{
+				x1:     px - capw
+				y1:     y_lo
+				x2:     px + capw
+				y2:     y_lo
+				stroke: t.axis_color
+				width:  t.axis_width
+			}
+		}
+	}
+}
+
 fn (c Chart) draw_value_labels(mut scene Scene, g Geom) {
 	t := c.theme
 	for s in c.series {
@@ -732,6 +796,7 @@ fn (c Chart) build_scene() Scene {
 	c.draw_ticks(mut scene, g)
 	c.draw_guides(mut scene, g)
 	c.draw_series(mut scene, g)
+	c.draw_error_bars(mut scene, g)
 	c.draw_value_labels(mut scene, g)
 	c.draw_labels(mut scene, g)
 	c.draw_legend(mut scene, g)
