@@ -191,5 +191,30 @@ fn main() {
 		.ylabel('Count')
 		.save(os.join_path(out, 'kde_density.svg'))!
 
-	println('done — wrote 12 SVGs to ${out}')
+	// ── box with median labels ───────────────────────────────────────────
+	chart.new(title: 'Distribution Comparison', subtitle: 'Box plots with median labels',
+		width: 640, height: 420, theme: chart.Theme{ grid: true })
+		.box(a_data, label: 'A', show_values: true)
+		.box(b_data, label: 'B', show_values: true)
+		.box(c_data, label: 'C', show_values: true)
+		.box(d_data, label: 'D', show_values: true)
+		.ylabel('Value')
+		.save(os.join_path(out, 'box_comparison_values.svg'))!
+
+	// ── stacked bar with segment value labels ────────────────────────────
+	chart.new(title: 'Revenue by Segment', subtitle: 'Stacked bar with value labels',
+		width: 640, height: 420, theme: chart.Theme{ grid: true })
+		.stacked_bar(stack_groups, labels: quarters, colors: ['#e41a1c', '#377eb8', '#4daf4a'],
+		show_values: true)
+		.ylabel('Revenue (\$k)')
+		.save(os.join_path(out, 'stacked_bar_values.svg'))!
+
+	// ── heatmap with cell value annotations ─────────────────────────────
+	chart.new(title: 'Correlation Matrix', subtitle: 'With value annotations', width: 500,
+		height: 500)
+		.heatmap(corr, row_labels: heat_labels, col_labels: heat_labels,
+		color_lo: '#d73027', color_hi: '#4575b4', show_values: true)
+		.save(os.join_path(out, 'heatmap_values.svg'))!
+
+	println('done — wrote 15 SVGs to ${out}')
 }

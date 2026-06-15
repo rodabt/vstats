@@ -141,10 +141,11 @@ pub:
 @[params]
 pub struct HeatmapOpts {
 pub:
-	row_labels []string
-	col_labels []string
-	color_lo   string = '#f7fbff'
-	color_hi   string = '#08306b'
+	row_labels  []string
+	col_labels  []string
+	color_lo    string = '#f7fbff'
+	color_hi    string = '#08306b'
+	show_values bool
 }
 
 pub fn (c Chart) bar(values []f64, opts SeriesOpts) Chart {
@@ -379,14 +380,15 @@ pub fn (c Chart) heatmap(data [][]f64, opts HeatmapOpts) Chart {
 	mut nc := c
 	mut sv := c.series.clone()
 	sv << Series{
-		kind:     .heatmap
-		x:        flat
-		nbins:    ncols
-		labels:   lbs
-		color_lo: opts.color_lo
-		color_hi: opts.color_hi
-		label:    ''
-		color:    ''
+		kind:        .heatmap
+		x:           flat
+		nbins:       ncols
+		labels:      lbs
+		color_lo:    opts.color_lo
+		color_hi:    opts.color_hi
+		show_values: opts.show_values
+		label:       ''
+		color:       ''
 	}
 	nc.series = sv
 	return nc
