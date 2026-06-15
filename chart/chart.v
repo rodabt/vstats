@@ -12,6 +12,11 @@ enum SeriesKind {
 	area
 	step
 	box_plot
+	dot
+	violin
+	hbar
+	heatmap
+	stacked_bar
 }
 
 struct Series {
@@ -281,6 +286,23 @@ pub fn (c Chart) box(data []f64, opts SeriesOpts) Chart {
 	return nc
 }
 
+pub fn (c Chart) dot(values []f64, opts SeriesOpts) Chart {
+	if opts.labels.len > 0 {
+		assert opts.labels.len == values.len
+	}
+	mut nc := c
+	mut sv := c.series.clone()
+	sv << Series{
+		kind:   .dot
+		y:      values.clone()
+		label:  opts.label
+		color:  if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		labels: opts.labels.clone()
+	}
+	nc.series = sv
+	return nc
+}
+
 // ---- geometry & bounds ----
 
 struct Geom {
@@ -422,6 +444,28 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 		.box_plot {
 			cx := s.x[0]
 			cx - 0.5, cx + 0.5, s.lo[0], s.hi[0]
+		}
+		.dot {
+			_, xmax := extent(s.y)
+			0.0, xmax, -0.5, f64(s.y.len) - 0.5
+		}
+		.violin {
+			cx := s.x[0]
+			cx - 0.5, cx + 0.5, s.lo[0], s.hi[0]
+		}
+		.hbar {
+			_, xmax := extent(s.y)
+			0.0, xmax, -0.5, f64(s.y.len) - 0.5
+		}
+		.heatmap {
+			ncols := s.nbins
+			nrows := if ncols > 0 { s.x.len / ncols } else { 1 }
+			-0.5, f64(ncols) - 0.5, -0.5, f64(nrows) - 0.5
+		}
+		.stacked_bar {
+			nseg := s.nbins
+			nbars := if nseg > 0 { s.x.len / nseg } else { 1 }
+			-0.5, f64(nbars) - 0.5, 0.0, 1.0
 		}
 	}
 }
@@ -734,7 +778,31 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 					}
 				}
 			}
-			else {}
+			.dot {
+				x0 := g.xscale.map(0.0)
+				for i in 0 .. s.y.len {
+					py := g.yscale.map(f64(i))
+					px := g.xscale.map(s.y[i])
+					scene.primitives << Line{
+						x1:     x0
+						y1:     py
+						x2:     px
+						y2:     py
+						stroke: t.grid_color
+						width:  t.axis_width
+					}
+					scene.primitives << Circle{
+						cx:     px
+						cy:     py
+						r:      t.marker_radius + 1.0
+						fill:   s.color
+						stroke: 'none'
+						width:  0.0
+					}
+				}
+			}
+			.band, .area {}
+			.violin, .hbar, .heatmap, .stacked_bar {}
 		}
 	}
 }
@@ -742,50 +810,126 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 fn (c Chart) draw_ticks(mut scene Scene, g Geom) {
 	t := c.theme
 	bottom := g.plot_y + g.plot_h
-	for tk in nice_ticks(g.xmin, g.xmax, 5) {
-		if tk < g.xmin - 1.0e-9 || tk > g.xmax + 1.0e-9 {
-			continue
+
+	// detect categorical axes
+	mut y_cat_labels := []string{}
+	mut x_cat_labels := []string{}
+	mut is_heatmap_y := false
+	for s in c.series {
+		if s.kind in [.dot, .hbar] && s.labels.len > 0 && y_cat_labels.len == 0 {
+			y_cat_labels = s.labels.clone()
 		}
-		px := g.xscale.map(tk)
-		scene.primitives << Line{
-			x1:     px
-			y1:     bottom
-			x2:     px
-			y2:     bottom + 5.0
-			stroke: t.axis_color
-			width:  t.axis_width
+		if s.kind == .stacked_bar && s.labels.len > 0 && x_cat_labels.len == 0 {
+			x_cat_labels = s.labels.clone()
 		}
-		scene.primitives << Text{
-			x:       px
-			y:       bottom + 18.0
-			content: fmt_tick(tk)
-			size:    t.font_size
-			fill:    t.axis_color
-			anchor:  .middle
-			family:  t.font_family
+		if s.kind == .heatmap && s.labels.len > 0 {
+			ncols := s.nbins
+			if ncols > 0 && s.labels.len > ncols {
+				x_cat_labels = s.labels[0..ncols].clone()
+				y_cat_labels = s.labels[ncols..].clone()
+				is_heatmap_y = true
+			}
 		}
 	}
-	for tk in nice_ticks(g.ymin, g.ymax, 5) {
-		if tk < g.ymin - 1.0e-9 || tk > g.ymax + 1.0e-9 {
-			continue
+
+	// x-axis ticks
+	if x_cat_labels.len > 0 {
+		for i, lbl in x_cat_labels {
+			px := g.xscale.map(f64(i))
+			scene.primitives << Line{
+				x1:     px
+				y1:     bottom
+				x2:     px
+				y2:     bottom + 5.0
+				stroke: t.axis_color
+				width:  t.axis_width
+			}
+			scene.primitives << Text{
+				x:       px
+				y:       bottom + 18.0
+				content: lbl
+				size:    t.font_size
+				fill:    t.axis_color
+				anchor:  .middle
+				family:  t.font_family
+			}
 		}
-		py := g.yscale.map(tk)
-		scene.primitives << Line{
-			x1:     g.plot_x - 5.0
-			y1:     py
-			x2:     g.plot_x
-			y2:     py
-			stroke: t.axis_color
-			width:  t.axis_width
+	} else {
+		for tk in nice_ticks(g.xmin, g.xmax, 5) {
+			if tk < g.xmin - 1.0e-9 || tk > g.xmax + 1.0e-9 {
+				continue
+			}
+			px := g.xscale.map(tk)
+			scene.primitives << Line{
+				x1:     px
+				y1:     bottom
+				x2:     px
+				y2:     bottom + 5.0
+				stroke: t.axis_color
+				width:  t.axis_width
+			}
+			scene.primitives << Text{
+				x:       px
+				y:       bottom + 18.0
+				content: fmt_tick(tk)
+				size:    t.font_size
+				fill:    t.axis_color
+				anchor:  .middle
+				family:  t.font_family
+			}
 		}
-		scene.primitives << Text{
-			x:       g.plot_x - 8.0
-			y:       py + 4.0
-			content: fmt_tick(tk)
-			size:    t.font_size
-			fill:    t.axis_color
-			anchor:  .end
-			family:  t.font_family
+	}
+
+	// y-axis ticks
+	if y_cat_labels.len > 0 {
+		for i, lbl in y_cat_labels {
+			y_pos := if is_heatmap_y {
+				f64(y_cat_labels.len - 1 - i)
+			} else {
+				f64(i)
+			}
+			py := g.yscale.map(y_pos)
+			scene.primitives << Line{
+				x1:     g.plot_x - 5.0
+				y1:     py
+				x2:     g.plot_x
+				y2:     py
+				stroke: t.axis_color
+				width:  t.axis_width
+			}
+			scene.primitives << Text{
+				x:       g.plot_x - 8.0
+				y:       py + 4.0
+				content: lbl
+				size:    t.font_size
+				fill:    t.axis_color
+				anchor:  .end
+				family:  t.font_family
+			}
+		}
+	} else {
+		for tk in nice_ticks(g.ymin, g.ymax, 5) {
+			if tk < g.ymin - 1.0e-9 || tk > g.ymax + 1.0e-9 {
+				continue
+			}
+			py := g.yscale.map(tk)
+			scene.primitives << Line{
+				x1:     g.plot_x - 5.0
+				y1:     py
+				x2:     g.plot_x
+				y2:     py
+				stroke: t.axis_color
+				width:  t.axis_width
+			}
+			scene.primitives << Text{
+				x:       g.plot_x - 8.0
+				y:       py + 4.0
+				content: fmt_tick(tk)
+				size:    t.font_size
+				fill:    t.axis_color
+				anchor:  .end
+				family:  t.font_family
+			}
 		}
 	}
 }

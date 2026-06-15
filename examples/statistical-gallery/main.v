@@ -51,6 +51,16 @@ fn main() {
 		.ylabel('Value')
 		.save(os.join_path(out, 'box_comparison.svg'))!
 
+	// ── dot: Cleveland dot plot ──────────────────────────────────────────
+	feat_labels := ['Age', 'Income', 'Education', 'Distance', 'Tenure', 'Score', 'Visits',
+		'Days']
+	feat_vals := [0.82, 0.74, 0.68, 0.61, 0.55, 0.49, 0.37, 0.22]
+	chart.new(title: 'Feature Importance', subtitle: 'Cleveland dot plot', width: 640,
+		height: 420, theme: chart.Theme{ grid: true })
+		.dot(feat_vals, labels: feat_labels)
+		.xlabel('Importance score')
+		.save(os.join_path(out, 'dot_ranking.svg'))!
+
 	_ = math.pi // suppress unused import until later tasks use it
 	println('done — wrote SVGs to ${out}')
 }
