@@ -326,8 +326,9 @@ fn box_stats(data []f64) (f64, f64, f64, f64, f64, []f64) {
 	for v in s {
 		if v < fence_lo {
 			outliers << v
-		} else if wlo == q1 && v >= fence_lo {
+		} else {
 			wlo = v
+			break
 		}
 	}
 	for i := s.len - 1; i >= 0; i-- {
