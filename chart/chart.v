@@ -2,6 +2,7 @@ module chart
 
 import math
 import os
+import strconv
 
 enum SeriesKind {
 	line
@@ -133,6 +134,15 @@ pub:
 	label string
 	nbins int // 0 => auto (Sturges)
 	color string
+}
+
+@[params]
+pub struct HeatmapOpts {
+pub:
+	row_labels []string
+	col_labels []string
+	color_lo   string = '#f7fbff'
+	color_hi   string = '#08306b'
 }
 
 pub fn (c Chart) bar(values []f64, opts SeriesOpts) Chart {
@@ -346,6 +356,35 @@ pub fn (c Chart) hbar(values []f64, opts SeriesOpts) Chart {
 	return nc
 }
 
+pub fn (c Chart) heatmap(data [][]f64, opts HeatmapOpts) Chart {
+	assert data.len > 0
+	assert data[0].len > 0
+	nrows := data.len
+	ncols := data[0].len
+	mut flat := []f64{cap: nrows * ncols}
+	for row in data {
+		for v in row {
+			flat << v
+		}
+	}
+	mut lbs := opts.col_labels.clone()
+	lbs << opts.row_labels
+	mut nc := c
+	mut sv := c.series.clone()
+	sv << Series{
+		kind:     .heatmap
+		x:        flat
+		nbins:    ncols
+		labels:   lbs
+		color_lo: opts.color_lo
+		color_hi: opts.color_hi
+		label:    ''
+		color:    ''
+	}
+	nc.series = sv
+	return nc
+}
+
 // ---- geometry & bounds ----
 
 struct Geom {
@@ -449,6 +488,23 @@ fn silverman_kde(data []f64, n_grid int) ([]f64, []f64) {
 		density[i] = d / (n * h * math.sqrt(2.0 * math.pi))
 	}
 	return grid, density
+}
+
+fn hex_to_rgb(hex string) (f64, f64, f64) {
+	h := if hex.starts_with('#') { hex[1..] } else { hex }
+	r := f64(strconv.parse_uint(h[0..2], 16, 8) or { 0 })
+	gv := f64(strconv.parse_uint(h[2..4], 16, 8) or { 0 })
+	b := f64(strconv.parse_uint(h[4..6], 16, 8) or { 0 })
+	return r, gv, b
+}
+
+fn lerp_color(lo string, hi string, t f64) string {
+	r0, g0, b0 := hex_to_rgb(lo)
+	r1, g1, b1 := hex_to_rgb(hi)
+	r := int(r0 + (r1 - r0) * t)
+	gv := int(g0 + (g1 - g0) * t)
+	b := int(b0 + (b1 - b0) * t)
+	return '#${r:02x}${gv:02x}${b:02x}'
 }
 
 fn series_bounds(s Series) (f64, f64, f64, f64) {
@@ -926,7 +982,39 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 					}
 				}
 			}
-			.heatmap, .stacked_bar {}
+			.heatmap {
+				ncols := s.nbins
+				if ncols == 0 {
+					continue
+				}
+				nrows := s.x.len / ncols
+				lo_val, hi_val := extent(s.x)
+				cell_w := g.plot_w / f64(ncols)
+				cell_h := g.plot_h / f64(nrows)
+				for i in 0 .. nrows {
+					for j in 0 .. ncols {
+						val := s.x[i * ncols + j]
+						t_val := if hi_val > lo_val {
+							(val - lo_val) / (hi_val - lo_val)
+						} else {
+							0.5
+						}
+						col := lerp_color(s.color_lo, s.color_hi, t_val)
+						px := g.xscale.map(f64(j))
+						py := g.yscale.map(f64(nrows - 1 - i))
+						scene.primitives << Rect{
+							x:      px - cell_w / 2.0
+							y:      py - cell_h / 2.0
+							w:      cell_w
+							h:      cell_h
+							fill:   col
+							stroke: 'none'
+							width:  0.0
+						}
+					}
+				}
+			}
+			.stacked_bar {}
 		}
 	}
 }

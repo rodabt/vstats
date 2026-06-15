@@ -80,6 +80,20 @@ fn main() {
 		.xlabel('Conversion rate (%)')
 		.save(os.join_path(out, 'hbar_comparison.svg'))!
 
+	// ── heatmap: correlation matrix ──────────────────────────────────────
+	heat_labels := ['A', 'B', 'C', 'D', 'E']
+	corr := [
+		[1.0, 0.8, 0.3, -0.2, 0.1],
+		[0.8, 1.0, 0.4, -0.1, 0.2],
+		[0.3, 0.4, 1.0, 0.5, -0.3],
+		[-0.2, -0.1, 0.5, 1.0, 0.6],
+		[0.1, 0.2, -0.3, 0.6, 1.0],
+	]
+	chart.new(title: 'Correlation Matrix', width: 500, height: 500)
+		.heatmap(corr, row_labels: heat_labels, col_labels: heat_labels,
+		color_lo: '#d73027', color_hi: '#4575b4')
+		.save(os.join_path(out, 'heatmap_correlation.svg'))!
+
 	_ = math.pi // suppress unused import until later tasks use it
 	println('done — wrote SVGs to ${out}')
 }
