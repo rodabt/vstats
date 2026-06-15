@@ -71,6 +71,15 @@ fn main() {
 		.ylabel('Value')
 		.save(os.join_path(out, 'violin_distribution.svg'))!
 
+	// ── hbar: horizontal bar ─────────────────────────────────────────────
+	hbar_labels := ['Control', 'Variant A', 'Variant B', 'Variant C', 'Variant D', 'Variant E']
+	hbar_vals := [12.4, 14.1, 13.8, 16.2, 11.9, 15.5]
+	chart.new(title: 'Conversion Rate by Variant', subtitle: 'Horizontal bar chart', width: 640,
+		height: 420, theme: chart.Theme{ grid: true })
+		.hbar(hbar_vals, labels: hbar_labels)
+		.xlabel('Conversion rate (%)')
+		.save(os.join_path(out, 'hbar_comparison.svg'))!
+
 	_ = math.pi // suppress unused import until later tasks use it
 	println('done — wrote SVGs to ${out}')
 }

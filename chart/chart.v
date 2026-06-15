@@ -329,6 +329,23 @@ pub fn (c Chart) violin(data []f64, opts SeriesOpts) Chart {
 	return nc
 }
 
+pub fn (c Chart) hbar(values []f64, opts SeriesOpts) Chart {
+	if opts.labels.len > 0 {
+		assert opts.labels.len == values.len
+	}
+	mut nc := c
+	mut sv := c.series.clone()
+	sv << Series{
+		kind:   .hbar
+		y:      values.clone()
+		label:  opts.label
+		color:  if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		labels: opts.labels.clone()
+	}
+	nc.series = sv
+	return nc
+}
+
 // ---- geometry & bounds ----
 
 struct Geom {
@@ -510,8 +527,9 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 			cx - 0.5, cx + 0.5, s.lo[0], s.hi[0]
 		}
 		.hbar {
-			_, xmax := extent(s.y)
-			0.0, xmax, -0.5, f64(s.y.len) - 0.5
+			lo_val, hi_val := extent(s.y)
+			xlo := if lo_val < 0.0 { lo_val } else { 0.0 }
+			xlo, hi_val, -0.5, f64(s.y.len) - 0.5
 		}
 		.heatmap {
 			ncols := s.nbins
@@ -890,7 +908,25 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 				}
 			}
 			.band, .area, .violin {}
-			.hbar, .heatmap, .stacked_bar {}
+			.hbar {
+				band := g.yscale.map(0.0) - g.yscale.map(1.0)
+				bh := math.abs(band) * 0.8
+				baseline := g.xscale.map(0.0)
+				for i in 0 .. s.y.len {
+					cy := g.yscale.map(f64(i))
+					right_edge := g.xscale.map(s.y[i])
+					scene.primitives << Rect{
+						x:      math.min(baseline, right_edge)
+						y:      cy - bh / 2.0
+						w:      math.abs(right_edge - baseline)
+						h:      bh
+						fill:   s.color
+						stroke: 'none'
+						width:  0.0
+					}
+				}
+			}
+			.heatmap, .stacked_bar {}
 		}
 	}
 }
