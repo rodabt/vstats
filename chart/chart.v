@@ -34,6 +34,7 @@ struct Series {
 	nbins       int
 	show_values bool
 	labels      []string
+	colors      []string   // per-segment colors (stacked_bar)
 }
 
 pub struct Chart {
@@ -68,6 +69,7 @@ pub:
 	show_values bool
 	labels      []string
 	err         []f64
+	colors      []string   // per-segment colors (stacked_bar)
 }
 
 pub fn new(opts ChartOpts) Chart {
@@ -405,6 +407,7 @@ pub fn (c Chart) stacked_bar(groups [][]f64, opts SeriesOpts) Chart {
 		label:  opts.label
 		color:  ''
 		labels: opts.labels.clone()
+		colors: opts.colors.clone()
 	}
 	nc.series = sv
 	return nc
@@ -1068,7 +1071,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 						seg_val := s.x[i * nseg + j]
 						bottom_px := g.yscale.map(cum)
 						top_px := g.yscale.map(cum + seg_val)
-						col := c.theme.color(j)
+						col := if s.colors.len > j { s.colors[j] } else { c.theme.color(j) }
 						scene.primitives << Rect{
 							x:      cx - bw / 2.0
 							y:      math.min(top_px, bottom_px)
