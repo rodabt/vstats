@@ -605,7 +605,8 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 		}
 		.violin {
 			cx := s.x[0]
-			cx - 0.5, cx + 0.5, s.lo[0], s.hi[0]
+			ky0, ky1 := extent(s.y)
+			cx - 0.5, cx + 0.5, ky0, ky1
 		}
 		.hbar {
 			lo_val, hi_val := extent(s.y)
