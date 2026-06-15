@@ -1375,6 +1375,109 @@ fn (c Chart) draw_value_labels(mut scene Scene, g Geom) {
 					}
 				}
 			}
+			.step {
+				for i in 0 .. s.x.len {
+					scene.primitives << Text{
+						x:       g.xscale.map(s.x[i])
+						y:       g.yscale.map(s.y[i]) - t.marker_radius - 4.0
+						content: c.value_text(s, i, s.y[i])
+						size:    t.font_size
+						fill:    t.axis_color
+						anchor:  .middle
+						family:  t.font_family
+					}
+				}
+			}
+			.hbar {
+				for i in 0 .. s.y.len {
+					cy := g.yscale.map(f64(i))
+					right_px := g.xscale.map(s.y[i])
+					scene.primitives << Text{
+						x:       right_px + 4.0
+						y:       cy + t.font_size * 0.35
+						content: fmt_tick(s.y[i])
+						size:    t.font_size
+						fill:    t.axis_color
+						anchor:  .start
+						family:  t.font_family
+					}
+				}
+			}
+			.dot {
+				for i in 0 .. s.y.len {
+					py := g.yscale.map(f64(s.y.len - 1 - i))
+					px := g.xscale.map(s.y[i])
+					scene.primitives << Text{
+						x:       px + t.marker_radius + 4.0
+						y:       py + t.font_size * 0.35
+						content: fmt_tick(s.y[i])
+						size:    t.font_size
+						fill:    t.axis_color
+						anchor:  .start
+						family:  t.font_family
+					}
+				}
+			}
+			.stacked_bar {
+				nseg := s.nbins
+				if nseg == 0 {
+					continue
+				}
+				nbars := s.x.len / nseg
+				for i in 0 .. nbars {
+					cx := g.xscale.map(f64(i))
+					mut cum := 0.0
+					for j in 0 .. nseg {
+						seg_val := s.x[i * nseg + j]
+						mid_py := g.yscale.map(cum + seg_val / 2.0)
+						scene.primitives << Text{
+							x:       cx
+							y:       mid_py + t.font_size * 0.35
+							content: fmt_tick(seg_val)
+							size:    t.font_size
+							fill:    t.axis_color
+							anchor:  .middle
+							family:  t.font_family
+						}
+						cum += seg_val
+					}
+				}
+			}
+			.box_plot {
+				cx := g.xscale.map(s.x[0])
+				q3_px := g.yscale.map(s.y[2])
+				scene.primitives << Text{
+					x:       cx
+					y:       q3_px - 4.0
+					content: fmt_tick(s.y[1])
+					size:    t.font_size
+					fill:    t.axis_color
+					anchor:  .middle
+					family:  t.font_family
+				}
+			}
+			.heatmap {
+				ncols := s.nbins
+				if ncols == 0 {
+					continue
+				}
+				nrows := s.x.len / ncols
+				for i in 0 .. nrows {
+					for j in 0 .. ncols {
+						px := g.xscale.map(f64(j))
+						py := g.yscale.map(f64(nrows - 1 - i))
+						scene.primitives << Text{
+							x:       px
+							y:       py + t.font_size * 0.35
+							content: c.value_text(s, i * ncols + j, s.x[i * ncols + j])
+							size:    t.font_size
+							fill:    t.axis_color
+							anchor:  .middle
+							family:  t.font_family
+						}
+					}
+				}
+			}
 			else {}
 		}
 	}
