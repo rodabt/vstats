@@ -263,11 +263,12 @@ pub fn (c Chart) step(x []f64, y []f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut s := c.series.clone()
 	s << Series{
-		kind:  .step
-		x:     x.clone()
-		y:     y.clone()
-		label: opts.label
-		color: if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		kind:        .step
+		x:           x.clone()
+		y:           y.clone()
+		label:       opts.label
+		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		show_values: opts.show_values
 	}
 	nc.series = s
 	return nc
@@ -285,14 +286,15 @@ pub fn (c Chart) box(data []f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut sv := c.series.clone()
 	sv << Series{
-		kind:  .box_plot
-		x:     [f64(box_idx)]
-		y:     [q1, med, q3]
-		lo:    [wlo]
-		hi:    [whi]
-		err:   outliers
-		label: opts.label
-		color: if opts.color != '' { opts.color } else { c.theme.color(box_idx) }
+		kind:        .box_plot
+		x:           [f64(box_idx)]
+		y:           [q1, med, q3]
+		lo:          [wlo]
+		hi:          [whi]
+		err:         outliers
+		label:       opts.label
+		color:       if opts.color != '' { opts.color } else { c.theme.color(box_idx) }
+		show_values: opts.show_values
 	}
 	nc.series = sv
 	return nc
@@ -305,11 +307,12 @@ pub fn (c Chart) dot(values []f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut sv := c.series.clone()
 	sv << Series{
-		kind:   .dot
-		y:      values.clone()
-		label:  opts.label
-		color:  if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
-		labels: opts.labels.clone()
+		kind:        .dot
+		y:           values.clone()
+		label:       opts.label
+		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		labels:      opts.labels.clone()
+		show_values: opts.show_values
 	}
 	nc.series = sv
 	return nc
@@ -328,14 +331,15 @@ pub fn (c Chart) violin(data []f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut sv := c.series.clone()
 	sv << Series{
-		kind:  .violin
-		x:     [f64(violin_idx)]
-		y:     grid
-		err:   density
-		lo:    [lo]
-		hi:    [hi]
-		label: opts.label
-		color: if opts.color != '' { opts.color } else { c.theme.color(violin_idx) }
+		kind:        .violin
+		x:           [f64(violin_idx)]
+		y:           grid
+		err:         density
+		lo:          [lo]
+		hi:          [hi]
+		label:       opts.label
+		color:       if opts.color != '' { opts.color } else { c.theme.color(violin_idx) }
+		show_values: opts.show_values
 	}
 	nc.series = sv
 	return nc
@@ -348,11 +352,12 @@ pub fn (c Chart) hbar(values []f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut sv := c.series.clone()
 	sv << Series{
-		kind:   .hbar
-		y:      values.clone()
-		label:  opts.label
-		color:  if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
-		labels: opts.labels.clone()
+		kind:        .hbar
+		y:           values.clone()
+		label:       opts.label
+		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		labels:      opts.labels.clone()
+		show_values: opts.show_values
 	}
 	nc.series = sv
 	return nc
@@ -401,13 +406,14 @@ pub fn (c Chart) stacked_bar(groups [][]f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut sv := c.series.clone()
 	sv << Series{
-		kind:   .stacked_bar
-		x:      flat
-		nbins:  nseg
-		label:  opts.label
-		color:  ''
-		labels: opts.labels.clone()
-		colors: opts.colors.clone()
+		kind:        .stacked_bar
+		x:           flat
+		nbins:       nseg
+		label:       opts.label
+		color:       ''
+		labels:      opts.labels.clone()
+		colors:      opts.colors.clone()
+		show_values: opts.show_values
 	}
 	nc.series = sv
 	return nc
@@ -1445,10 +1451,10 @@ fn (c Chart) draw_value_labels(mut scene Scene, g Geom) {
 			}
 			.box_plot {
 				cx := g.xscale.map(s.x[0])
-				q3_px := g.yscale.map(s.y[2])
+				med_py := g.yscale.map(s.y[1])
 				scene.primitives << Text{
 					x:       cx
-					y:       q3_px - 4.0
+					y:       med_py - 4.0
 					content: fmt_tick(s.y[1])
 					size:    t.font_size
 					fill:    t.axis_color
