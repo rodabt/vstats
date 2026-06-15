@@ -216,5 +216,13 @@ fn main() {
 		color_lo: '#d73027', color_hi: '#4575b4', show_values: true)
 		.save(os.join_path(out, 'heatmap_values.svg'))!
 
-	println('done — wrote 15 SVGs to ${out}')
+	// ── line with data labels ─────────────────────────────────────────────
+	chart.new(title: 'Monthly Trend', subtitle: 'Line chart with data labels', width: 640,
+		height: 420, theme: chart.Theme{ grid: true })
+		.line(xs_ci, ys_ci, label: 'mean', show_values: true)
+		.xlabel('Month')
+		.ylabel('Value')
+		.save(os.join_path(out, 'line_values.svg'))!
+
+	println('done — wrote 16 SVGs to ${out}')
 }
