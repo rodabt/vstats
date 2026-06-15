@@ -107,3 +107,38 @@ fn test__adf_random_walk() {
 	assert result.is_stationary == false
 	assert result.p_value > 0.05
 }
+
+fn test__kpss_stationary_series() {
+	// Stationary: should NOT reject null (null = stationary)
+	mut x := []f64{len: 200}
+	x[0] = 0.0
+	for i in 1 .. 200 {
+		x[i] = 0.5 * x[i - 1] + (f64(i % 11) - 5.0) * 0.3
+	}
+	result := timeseries.kpss_test(x, 4)
+	assert result.is_stationary == true
+	assert result.p_value > 0.05
+}
+
+fn test__kpss_random_walk() {
+	// Non-stationary random walk: should reject null
+	mut x := []f64{len: 200}
+	x[0] = 10.0
+	for i in 1 .. 200 {
+		x[i] = x[i - 1] + (f64(i % 7) - 3.0) * 0.5
+	}
+	result := timeseries.kpss_test(x, 4)
+	assert result.is_stationary == false
+}
+
+fn test__aic_bic_aicc() {
+	ll := -50.0
+	k := 3
+	n := 100
+	a := timeseries.aic(ll, k)
+	b := timeseries.bic(ll, k, n)
+	c := timeseries.aicc(ll, k, n)
+	assert math.abs(a - (2 * k - 2 * ll)) < 0.001
+	assert b > a  // BIC penalises more than AIC for n=100
+	assert c > a  // AICc correction is positive
+}
