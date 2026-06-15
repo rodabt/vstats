@@ -46,3 +46,34 @@ fn test__classical_decompose_components_add_up() {
 		}
 	}
 }
+
+fn test__stl_recovers_components() {
+	// Clear seasonal signal on top of linear trend
+	mut x := []f64{len: 48}
+	for i in 0 .. 48 {
+		x[i] = f64(i) * 0.5 + [3.0, -3.0, 2.0, -2.0, 1.0, -1.0][i % 6]
+	}
+	cfg := timeseries.STLConfig{ seasonal_window: 7, trend_window: 13, n_iter: 2 }
+	result := timeseries.stl(x, 6, cfg)
+	// Components should roughly add up to the original
+	for i in 0 .. 48 {
+		reconstructed := result.trend[i] + result.seasonal[i] + result.residual[i]
+		assert math.abs(reconstructed - x[i]) < 0.001
+	}
+}
+
+fn test__stl_residuals_small_on_clean_signal() {
+	mut x := []f64{len: 48}
+	for i in 0 .. 48 {
+		x[i] = f64(i) * 0.2 + [4.0, -4.0, 2.0, -2.0][i % 4]
+	}
+	cfg := timeseries.STLConfig{ seasonal_window: 7, trend_window: 11, n_iter: 2 }
+	result := timeseries.stl(x, 4, cfg)
+	mut max_resid := 0.0
+	for v in result.residual {
+		if math.abs(v) > max_resid {
+			max_resid = math.abs(v)
+		}
+	}
+	assert max_resid < 2.0
+}
