@@ -385,6 +385,31 @@ pub fn (c Chart) heatmap(data [][]f64, opts HeatmapOpts) Chart {
 	return nc
 }
 
+pub fn (c Chart) stacked_bar(groups [][]f64, opts SeriesOpts) Chart {
+	assert groups.len > 0
+	nseg := groups[0].len
+	assert nseg > 0
+	mut flat := []f64{cap: groups.len * nseg}
+	for grp in groups {
+		assert grp.len == nseg
+		for v in grp {
+			flat << v
+		}
+	}
+	mut nc := c
+	mut sv := c.series.clone()
+	sv << Series{
+		kind:   .stacked_bar
+		x:      flat
+		nbins:  nseg
+		label:  opts.label
+		color:  ''
+		labels: opts.labels.clone()
+	}
+	nc.series = sv
+	return nc
+}
+
 // ---- geometry & bounds ----
 
 struct Geom {
@@ -594,8 +619,21 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 		}
 		.stacked_bar {
 			nseg := s.nbins
-			nbars := if nseg > 0 { s.x.len / nseg } else { 1 }
-			-0.5, f64(nbars) - 0.5, 0.0, 1.0
+			if nseg == 0 {
+				return -0.5, 0.5, 0.0, 1.0
+			}
+			nbars := s.x.len / nseg
+			mut max_stack := 0.0
+			for i in 0 .. nbars {
+				mut sum := 0.0
+				for j in 0 .. nseg {
+					sum += s.x[i * nseg + j]
+				}
+				if sum > max_stack {
+					max_stack = sum
+				}
+			}
+			-0.5, f64(nbars) - 0.5, 0.0, max_stack
 		}
 	}
 }
@@ -1014,7 +1052,35 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 					}
 				}
 			}
-			.stacked_bar {}
+			.stacked_bar {
+				nseg := s.nbins
+				if nseg == 0 {
+					continue
+				}
+				nbars := s.x.len / nseg
+				band := g.xscale.map(1.0) - g.xscale.map(0.0)
+				bw := band * 0.8
+				for i in 0 .. nbars {
+					cx := g.xscale.map(f64(i))
+					mut cum := 0.0
+					for j in 0 .. nseg {
+						seg_val := s.x[i * nseg + j]
+						bottom_px := g.yscale.map(cum)
+						top_px := g.yscale.map(cum + seg_val)
+						col := c.theme.color(j)
+						scene.primitives << Rect{
+							x:      cx - bw / 2.0
+							y:      math.min(top_px, bottom_px)
+							w:      bw
+							h:      math.abs(bottom_px - top_px)
+							fill:   col
+							stroke: 'none'
+							width:  0.0
+						}
+						cum += seg_val
+					}
+				}
+			}
 		}
 	}
 }

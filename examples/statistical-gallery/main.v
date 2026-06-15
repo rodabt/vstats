@@ -94,6 +94,20 @@ fn main() {
 		color_lo: '#d73027', color_hi: '#4575b4')
 		.save(os.join_path(out, 'heatmap_correlation.svg'))!
 
+	// ── stacked_bar: revenue by segment ──────────────────────────────────
+	quarters := ['Q1', 'Q2', 'Q3', 'Q4']
+	stack_groups := [
+		[120.0, 85.0, 60.0],
+		[145.0, 90.0, 75.0],
+		[110.0, 95.0, 80.0],
+		[160.0, 100.0, 90.0],
+	]
+	chart.new(title: 'Revenue by Segment', subtitle: 'Stacked bar — Products A, B, C',
+		width: 640, height: 420, theme: chart.Theme{ grid: true })
+		.stacked_bar(stack_groups, labels: quarters)
+		.ylabel('Revenue (\$k)')
+		.save(os.join_path(out, 'stacked_bar.svg'))!
+
 	_ = math.pi // suppress unused import until later tasks use it
 	println('done — wrote SVGs to ${out}')
 }
