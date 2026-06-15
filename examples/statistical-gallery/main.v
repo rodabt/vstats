@@ -61,6 +61,16 @@ fn main() {
 		.xlabel('Importance score')
 		.save(os.join_path(out, 'dot_ranking.svg'))!
 
+	// ── violin: distribution shape ───────────────────────────────────────
+	chart.new(title: 'Distribution Shape', subtitle: 'Violin plots — same groups as box',
+		width: 640, height: 420, theme: chart.Theme{ grid: true })
+		.violin(a_data, label: 'A')
+		.violin(b_data, label: 'B')
+		.violin(c_data, label: 'C')
+		.violin(d_data, label: 'D')
+		.ylabel('Value')
+		.save(os.join_path(out, 'violin_distribution.svg'))!
+
 	_ = math.pi // suppress unused import until later tasks use it
 	println('done — wrote SVGs to ${out}')
 }

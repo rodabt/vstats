@@ -303,6 +303,32 @@ pub fn (c Chart) dot(values []f64, opts SeriesOpts) Chart {
 	return nc
 }
 
+pub fn (c Chart) violin(data []f64, opts SeriesOpts) Chart {
+	assert data.len > 1
+	mut violin_idx := 0
+	for s in c.series {
+		if s.kind == .violin {
+			violin_idx++
+		}
+	}
+	grid, density := silverman_kde(data, 50)
+	lo, hi := extent(data)
+	mut nc := c
+	mut sv := c.series.clone()
+	sv << Series{
+		kind:  .violin
+		x:     [f64(violin_idx)]
+		y:     grid
+		err:   density
+		lo:    [lo]
+		hi:    [hi]
+		label: opts.label
+		color: if opts.color != '' { opts.color } else { c.theme.color(violin_idx) }
+	}
+	nc.series = sv
+	return nc
+}
+
 // ---- geometry & bounds ----
 
 struct Geom {
@@ -376,6 +402,36 @@ fn extent(vals []f64) (f64, f64) {
 		}
 	}
 	return lo, hi
+}
+
+fn silverman_kde(data []f64, n_grid int) ([]f64, []f64) {
+	n := f64(data.len)
+	mut sum := 0.0
+	for v in data {
+		sum += v
+	}
+	mean := sum / n
+	mut sq_sum := 0.0
+	for v in data {
+		sq_sum += (v - mean) * (v - mean)
+	}
+	sigma := math.sqrt(sq_sum / (n - 1.0))
+	h := 1.06 * sigma * math.pow(n, -0.2)
+	lo, hi := extent(data)
+	range_ := hi - lo + 4.0 * h
+	mut grid := []f64{len: n_grid}
+	mut density := []f64{len: n_grid}
+	for i in 0 .. n_grid {
+		gv := lo - 2.0 * h + f64(i) * range_ / f64(n_grid - 1)
+		grid[i] = gv
+		mut d := 0.0
+		for x in data {
+			u := (gv - x) / h
+			d += math.exp(-0.5 * u * u)
+		}
+		density[i] = d / (n * h * math.sqrt(2.0 * math.pi))
+	}
+	return grid, density
 }
 
 fn series_bounds(s Series) (f64, f64, f64, f64) {
@@ -641,6 +697,38 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 					width:   0.0
 				}
 			}
+			.violin {
+				cx := g.xscale.map(s.x[0])
+				mut max_d := 0.0
+				for d in s.err {
+					if d > max_d {
+						max_d = d
+					}
+				}
+				if max_d <= 0.0 || s.y.len == 0 {
+					continue
+				}
+				half_w := (g.xscale.map(1.0) - g.xscale.map(0.0)) * 0.4
+				mut left_pts := []Point{}
+				mut right_pts := []Point{}
+				for i in 0 .. s.y.len {
+					py := g.yscale.map(s.y[i])
+					d_px := s.err[i] / max_d * half_w
+					left_pts << Point{ x: cx - d_px, y: py }
+					right_pts << Point{ x: cx + d_px, y: py }
+				}
+				mut pts := left_pts.clone()
+				for i := right_pts.len - 1; i >= 0; i-- {
+					pts << right_pts[i]
+				}
+				scene.primitives << Polygon{
+					points:  pts
+					fill:    s.color
+					opacity: math.min(t.fill_opacity * 2.5, 1.0)
+					stroke:  s.color
+					width:   t.axis_width
+				}
+			}
 			else {}
 		}
 	}
@@ -801,8 +889,8 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 					}
 				}
 			}
-			.band, .area {}
-			.violin, .hbar, .heatmap, .stacked_bar {}
+			.band, .area, .violin {}
+			.hbar, .heatmap, .stacked_bar {}
 		}
 	}
 }
@@ -1020,7 +1108,7 @@ fn (c Chart) draw_error_bars(mut scene Scene, g Geom) {
 		if s.err.len == 0 {
 			continue
 		}
-		if s.kind in [.box_plot, .dot] {
+		if s.kind in [.box_plot, .dot, .violin] {
 			continue
 		}
 		for i in 0 .. s.y.len {
