@@ -57,7 +57,7 @@ fn main() {
 	feat_vals := [0.82, 0.74, 0.68, 0.61, 0.55, 0.49, 0.37, 0.22]
 	chart.new(title: 'Feature Importance', subtitle: 'Cleveland dot plot', width: 640,
 		height: 420, theme: chart.Theme{ grid: true })
-		.dot(feat_vals, labels: feat_labels)
+		.dot(feat_vals, labels: feat_labels, show_values: true)
 		.xlabel('Importance score')
 		.save(os.join_path(out, 'dot_ranking.svg'))!
 
@@ -76,7 +76,7 @@ fn main() {
 	hbar_vals := [12.4, 14.1, 13.8, 16.2, 11.9, 15.5]
 	chart.new(title: 'Conversion Rate by Variant', subtitle: 'Horizontal bar chart', width: 640,
 		height: 420, theme: chart.Theme{ grid: true })
-		.hbar(hbar_vals, labels: hbar_labels)
+		.hbar(hbar_vals, labels: hbar_labels, show_values: true)
 		.xlabel('Conversion rate (%)')
 		.save(os.join_path(out, 'hbar_comparison.svg'))!
 
@@ -104,7 +104,7 @@ fn main() {
 	]
 	chart.new(title: 'Revenue by Segment', subtitle: 'Stacked bar — Products A, B, C',
 		width: 640, height: 420, theme: chart.Theme{ grid: true })
-		.stacked_bar(stack_groups, labels: quarters)
+		.stacked_bar(stack_groups, labels: quarters, colors: ['#e41a1c', '#377eb8', '#4daf4a'])
 		.ylabel('Revenue (\$k)')
 		.save(os.join_path(out, 'stacked_bar.svg'))!
 
