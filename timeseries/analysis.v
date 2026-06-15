@@ -95,3 +95,86 @@ pub fn pacf(x []f64, nlags int) []f64 {
 	}
 	return result
 }
+
+pub struct ADFResult {
+pub:
+	statistic     f64
+	p_value       f64
+	is_stationary bool
+	lags_used     int
+}
+
+// ols_diagonal returns the j-th diagonal element of (X'X)^{-1} via one solve.
+fn ols_diagonal(xtx [][]f64, j int) f64 {
+	k := xtx.len
+	mut ej := []f64{len: k}
+	ej[j] = 1.0
+	col := linalg.gaussian_elimination(xtx, ej)
+	return col[j]
+}
+
+// adf_test runs the Augmented Dickey-Fuller test on x with the given lag count.
+// Null hypothesis: unit root (non-stationary). is_stationary=true means H0 rejected.
+// p-value is approximated from MacKinnon (1994) critical values for model with constant.
+pub fn adf_test(x []f64, lags int) ADFResult {
+	dx := diff(x, 1)
+	n := dx.len
+	start := lags
+	m := n - start
+	assert m > lags + 2, 'too few observations for ADF with ${lags} lags'
+
+	// Design matrix: [1, x[t], dx[t-1], ..., dx[t-lags]]
+	mut design := [][]f64{len: m, init: []f64{len: lags + 2}}
+	mut y := []f64{len: m}
+	for i in 0 .. m {
+		t := start + i
+		design[i][0] = 1.0
+		design[i][1] = x[t]
+		for j in 1 .. lags + 1 {
+			design[i][j + 1] = dx[t - j]
+		}
+		y[i] = dx[t]
+	}
+
+	xt := linalg.transpose(design)
+	xtx := linalg.matmul(xt, design)
+	xty := linalg.matvec_mul(xt, y)
+	beta := linalg.gaussian_elimination(xtx, xty)
+
+	// Residuals and sigma^2
+	mut ss_resid := 0.0
+	for i in 0 .. m {
+		mut yhat := 0.0
+		for j in 0 .. beta.len {
+			yhat += design[i][j] * beta[j]
+		}
+		ss_resid += (y[i] - yhat) * (y[i] - yhat)
+	}
+	df := m - lags - 2
+	sigma2 := ss_resid / f64(df)
+
+	// t-statistic for gamma (coefficient on x[t], index 1)
+	se_gamma := math.sqrt(sigma2 * ols_diagonal(xtx, 1))
+	t_stat := beta[1] / se_gamma
+
+	// MacKinnon (1994) critical values: constant, no trend, large n
+	crit_1pct := -3.43
+	crit_5pct := -2.86
+	crit_10pct := -2.57
+	p_value := if t_stat < crit_1pct {
+		0.01
+	} else if t_stat < crit_5pct {
+		0.05
+	} else if t_stat < crit_10pct {
+		0.10
+	} else {
+		0.50
+	}
+
+	return ADFResult{
+		statistic:     t_stat
+		p_value:       p_value
+		is_stationary: t_stat < crit_5pct
+		lags_used:     lags
+	}
+}

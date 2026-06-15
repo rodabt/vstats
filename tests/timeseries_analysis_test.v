@@ -83,3 +83,27 @@ fn test__acf_confidence_bound() {
 	bound := timeseries.acf_confidence_bound(100)
 	assert math.abs(bound - 0.196) < 0.001  // 1.96 / sqrt(100)
 }
+
+fn test__adf_stationary_series() {
+	// Stationary AR(1): phi=0.5, should reject unit root
+	mut x := []f64{len: 200}
+	x[0] = 0.0
+	for i in 1 .. 200 {
+		x[i] = 0.5 * x[i - 1] + (f64(i % 11) - 5.0) * 0.3
+	}
+	result := timeseries.adf_test(x, 1)
+	assert result.is_stationary == true
+	assert result.p_value <= 0.05
+}
+
+fn test__adf_random_walk() {
+	// Non-stationary random walk: should fail to reject unit root
+	mut x := []f64{len: 200}
+	x[0] = 0.0
+	for i in 1 .. 200 {
+		x[i] = x[i - 1] + 0.001
+	}
+	result := timeseries.adf_test(x, 1)
+	assert result.is_stationary == false
+	assert result.p_value > 0.05
+}
