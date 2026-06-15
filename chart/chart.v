@@ -10,6 +10,7 @@ enum SeriesKind {
 	histogram
 	band
 	area
+	step
 }
 
 struct Series {
@@ -237,6 +238,21 @@ pub fn (c Chart) area(x []f64, y []f64, opts SeriesOpts) Chart {
 	return nc
 }
 
+pub fn (c Chart) step(x []f64, y []f64, opts SeriesOpts) Chart {
+	assert x.len == y.len
+	mut nc := c
+	mut s := c.series.clone()
+	s << Series{
+		kind:  .step
+		x:     x.clone()
+		y:     y.clone()
+		label: opts.label
+		color: if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+	}
+	nc.series = s
+	return nc
+}
+
 // ---- geometry & bounds ----
 
 struct Geom {
@@ -323,6 +339,11 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 			ylo := if y0 < 0.0 { y0 } else { 0.0 }
 			yhi := if y1 > 0.0 { y1 } else { 0.0 }
 			x0, x1, ylo, yhi
+		}
+		.step {
+			x0, x1 := extent(s.x)
+			y0, y1 := extent(s.y)
+			x0, x1, y0, y1
 		}
 	}
 }
@@ -527,6 +548,33 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 						fill:   s.color
 						stroke: 'none'
 						width:  0.0
+					}
+				}
+			}
+			.step {
+				if s.x.len < 2 {
+					continue
+				}
+				for i in 0 .. s.x.len - 1 {
+					px1 := g.xscale.map(s.x[i])
+					px2 := g.xscale.map(s.x[i + 1])
+					py1 := g.yscale.map(s.y[i])
+					py2 := g.yscale.map(s.y[i + 1])
+					scene.primitives << Line{
+						x1:     px1
+						y1:     py1
+						x2:     px2
+						y2:     py1
+						stroke: s.color
+						width:  t.series_width
+					}
+					scene.primitives << Line{
+						x1:     px2
+						y1:     py1
+						x2:     px2
+						y2:     py2
+						stroke: s.color
+						width:  t.series_width
 					}
 				}
 			}
