@@ -11,6 +11,7 @@ enum SeriesKind {
 	band
 	area
 	step
+	box_plot
 }
 
 struct Series {
@@ -22,6 +23,8 @@ struct Series {
 	err         []f64
 	label       string
 	color       string
+	color_lo    string
+	color_hi    string
 	nbins       int
 	show_values bool
 	labels      []string
@@ -253,6 +256,31 @@ pub fn (c Chart) step(x []f64, y []f64, opts SeriesOpts) Chart {
 	return nc
 }
 
+pub fn (c Chart) box(data []f64, opts SeriesOpts) Chart {
+	assert data.len > 0
+	mut box_idx := 0
+	for s in c.series {
+		if s.kind == .box_plot {
+			box_idx++
+		}
+	}
+	q1, med, q3, wlo, whi, outliers := box_stats(data)
+	mut nc := c
+	mut sv := c.series.clone()
+	sv << Series{
+		kind:  .box_plot
+		x:     [f64(box_idx)]
+		y:     [q1, med, q3]
+		lo:    [wlo]
+		hi:    [whi]
+		err:   outliers
+		label: opts.label
+		color: if opts.color != '' { opts.color } else { c.theme.color(box_idx) }
+	}
+	nc.series = sv
+	return nc
+}
+
 // ---- geometry & bounds ----
 
 struct Geom {
@@ -266,6 +294,51 @@ struct Geom {
 	ymax   f64
 	xscale LinearScale
 	yscale LinearScale
+}
+
+fn percentile(sorted []f64, p f64) f64 {
+	n := sorted.len
+	if n == 0 {
+		return 0.0
+	}
+	idx := p * f64(n - 1)
+	lo := int(math.floor(idx))
+	hi := int(math.ceil(idx))
+	if lo == hi {
+		return sorted[lo]
+	}
+	frac := idx - f64(lo)
+	return sorted[lo] * (1.0 - frac) + sorted[hi] * frac
+}
+
+fn box_stats(data []f64) (f64, f64, f64, f64, f64, []f64) {
+	mut s := data.clone()
+	s.sort(a < b)
+	q1 := percentile(s, 0.25)
+	med := percentile(s, 0.50)
+	q3 := percentile(s, 0.75)
+	iqr := q3 - q1
+	fence_lo := q1 - 1.5 * iqr
+	fence_hi := q3 + 1.5 * iqr
+	mut outliers := []f64{}
+	mut wlo := q1
+	mut whi := q3
+	for v in s {
+		if v < fence_lo {
+			outliers << v
+		} else if wlo == q1 && v >= fence_lo {
+			wlo = v
+		}
+	}
+	for i := s.len - 1; i >= 0; i-- {
+		if s[i] > fence_hi {
+			outliers << s[i]
+		} else if whi == q3 && s[i] <= fence_hi {
+			whi = s[i]
+			break
+		}
+	}
+	return q1, med, q3, wlo, whi, outliers
 }
 
 fn extent(vals []f64) (f64, f64) {
@@ -344,6 +417,10 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 			x0, x1 := extent(s.x)
 			y0, y1 := extent(s.y)
 			x0, x1, y0, y1
+		}
+		.box_plot {
+			cx := s.x[0]
+			cx - 0.5, cx + 0.5, s.lo[0], s.hi[0]
 		}
 	}
 }
@@ -614,6 +691,48 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 					}
 				}
 			}
+			.box_plot {
+				band := g.xscale.map(1.0) - g.xscale.map(0.0)
+				bw := band * 0.6
+				cx := g.xscale.map(s.x[0])
+				q1_px := g.yscale.map(s.y[0])
+				med_px := g.yscale.map(s.y[1])
+				q3_px := g.yscale.map(s.y[2])
+				wlo_px := g.yscale.map(s.lo[0])
+				whi_px := g.yscale.map(s.hi[0])
+				capw := bw * 0.3
+				scene.primitives << Rect{
+					x:      cx - bw / 2.0
+					y:      q3_px
+					w:      bw
+					h:      q1_px - q3_px
+					fill:   s.color
+					stroke: t.axis_color
+					width:  t.axis_width
+				}
+				scene.primitives << Line{
+					x1:     cx - bw / 2.0
+					y1:     med_px
+					x2:     cx + bw / 2.0
+					y2:     med_px
+					stroke: t.axis_color
+					width:  t.axis_width * 2.0
+				}
+				scene.primitives << Line{ x1: cx, y1: q3_px, x2: cx, y2: whi_px, stroke: t.axis_color, width: t.axis_width }
+				scene.primitives << Line{ x1: cx, y1: q1_px, x2: cx, y2: wlo_px, stroke: t.axis_color, width: t.axis_width }
+				scene.primitives << Line{ x1: cx - capw, y1: whi_px, x2: cx + capw, y2: whi_px, stroke: t.axis_color, width: t.axis_width }
+				scene.primitives << Line{ x1: cx - capw, y1: wlo_px, x2: cx + capw, y2: wlo_px, stroke: t.axis_color, width: t.axis_width }
+				for ov in s.err {
+					scene.primitives << Circle{
+						cx:     cx
+						cy:     g.yscale.map(ov)
+						r:      t.marker_radius
+						fill:   'none'
+						stroke: s.color
+						width:  t.axis_width
+					}
+				}
+			}
 			else {}
 		}
 	}
@@ -759,6 +878,9 @@ fn (c Chart) draw_error_bars(mut scene Scene, g Geom) {
 	capw := 4.0
 	for s in c.series {
 		if s.err.len == 0 {
+			continue
+		}
+		if s.kind == .box_plot {
 			continue
 		}
 		for i in 0 .. s.y.len {

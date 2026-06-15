@@ -37,6 +37,20 @@ fn main() {
 		.ylabel('Survival probability')
 		.save(os.join_path(out, 'step_survival.svg'))!
 
+	// ── box: distribution comparison ────────────────────────────────────
+	a_data := [45.0, 47, 48, 50, 51, 52, 53, 54, 55, 56, 57, 58, 60]
+	b_data := [20.0, 30, 35, 40, 50, 55, 60, 65, 70, 75, 80]
+	c_data := [30.0, 32, 33, 34, 35, 35, 36, 37, 38, 42, 55, 68, 70]
+	d_data := [40.0, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64]
+	chart.new(title: 'Distribution Comparison', subtitle: 'Box plots — Q1/median/Q3, 1.5×IQR whiskers',
+		width: 640, height: 420, theme: chart.Theme{ grid: true })
+		.box(a_data, label: 'A')
+		.box(b_data, label: 'B')
+		.box(c_data, label: 'C')
+		.box(d_data, label: 'D')
+		.ylabel('Value')
+		.save(os.join_path(out, 'box_comparison.svg'))!
+
 	_ = math.pi // suppress unused import until later tasks use it
 	println('done — wrote SVGs to ${out}')
 }
