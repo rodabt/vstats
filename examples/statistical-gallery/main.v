@@ -108,6 +108,88 @@ fn main() {
 		.ylabel('Revenue (\$k)')
 		.save(os.join_path(out, 'stacked_bar.svg'))!
 
-	_ = math.pi // suppress unused import until later tasks use it
-	println('done — wrote SVGs to ${out}')
+	// ── line + band: CI ribbon ───────────────────────────────────────────
+	xs_ci := [0.0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+	ys_ci := [2.1, 2.8, 3.9, 4.5, 5.2, 5.8, 6.1, 6.8, 7.2, 7.9, 8.3, 8.9]
+	lo_ci := [1.6, 2.1, 3.0, 3.5, 4.0, 4.6, 4.8, 5.4, 5.7, 6.3, 6.6, 7.1]
+	hi_ci := [2.6, 3.5, 4.8, 5.5, 6.4, 7.0, 7.4, 8.2, 8.7, 9.5, 10.0, 10.7]
+	chart.new(title: 'Monthly Trend with 95% CI', width: 640, height: 420,
+		theme: chart.Theme{ grid: true })
+		.band(xs_ci, lo_ci, hi_ci, label: '95% CI')
+		.line(xs_ci, ys_ci, label: 'mean')
+		.xlabel('Month')
+		.ylabel('Value')
+		.save(os.join_path(out, 'line_ci.svg'))!
+
+	// ── forest plot (composed: scatter + err + vline) ────────────────────
+	study_y := [5.0, 4, 3, 2, 1, 0]
+	effects := [0.32, 0.18, 0.45, -0.08, 0.28, 0.27]
+	errs := [0.12, 0.18, 0.22, 0.15, 0.10, 0.06]
+	chart.new(title: 'Forest Plot', subtitle: 'Effect sizes with 95% CI', width: 640,
+		height: 420, theme: chart.Theme{ grid: true })
+		.scatter(effects, study_y, err: errs)
+		.axvline(0.0)
+		.xlabel('Effect size')
+		.save(os.join_path(out, 'forest_plot.svg'))!
+
+	// ── Q-Q plot (composed: scatter + reference line) ────────────────────
+	sample_sorted := [-2.1, -1.7, -1.4, -1.2, -1.0, -0.8, -0.6, -0.4, -0.2, 0.0, 0.1,
+		0.3, 0.5, 0.7, 0.9, 1.1, 1.4, 1.6, 1.9, 2.3]
+	theory := [-1.87, -1.40, -1.13, -0.93, -0.76, -0.60, -0.45, -0.32, -0.18, -0.06,
+		0.06, 0.18, 0.32, 0.45, 0.60, 0.76, 0.93, 1.13, 1.40, 1.87]
+	qq_ref_x := [-2.0, 2.0]
+	qq_ref_y := [-2.0, 2.0]
+	chart.new(title: 'Normal Q-Q Plot', width: 480, height: 480,
+		theme: chart.Theme{ grid: true })
+		.line(qq_ref_x, qq_ref_y, color: '#cccccc', label: 'reference')
+		.scatter(theory, sample_sorted, label: 'sample')
+		.xlabel('Theoretical quantiles')
+		.ylabel('Sample quantiles')
+		.save(os.join_path(out, 'qq_normal.svg'))!
+
+	// ── KDE density overlay on histogram (composed) ──────────────────────
+	kde_data := [1.2, 1.5, 1.8, 2.0, 2.1, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0,
+		3.1, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 4.0, 4.1, 4.3, 4.5, 4.8, 5.0,
+		5.3, 5.8]
+	kde_n := f64(kde_data.len)
+	mut kde_sum := 0.0
+	for v in kde_data {
+		kde_sum += v
+	}
+	kde_mean := kde_sum / kde_n
+	mut kde_sq := 0.0
+	for v in kde_data {
+		kde_sq += (v - kde_mean) * (v - kde_mean)
+	}
+	kde_sigma := math.sqrt(kde_sq / (kde_n - 1.0))
+	kde_h := 1.06 * kde_sigma * math.pow(kde_n, -0.2)
+	kde_lo := kde_data[0] - 2.0 * kde_h
+	kde_hi := kde_data[kde_data.len - 1] + 2.0 * kde_h
+	n_kde := 60
+	mut kde_xs := []f64{len: n_kde}
+	mut kde_ys := []f64{len: n_kde}
+	for i in 0 .. n_kde {
+		gv := kde_lo + f64(i) * (kde_hi - kde_lo) / f64(n_kde - 1)
+		kde_xs[i] = gv
+		mut d := 0.0
+		for x in kde_data {
+			u := (gv - x) / kde_h
+			d += math.exp(-0.5 * u * u)
+		}
+		kde_ys[i] = d / (kde_n * kde_h * math.sqrt(2.0 * math.pi))
+	}
+	bins := chart.histogram_bins(kde_data, 0)
+	bin_w := bins.edges[1] - bins.edges[0]
+	for i in 0 .. n_kde {
+		kde_ys[i] *= kde_n * bin_w
+	}
+	chart.new(title: 'KDE Density Overlay', subtitle: 'Histogram with Gaussian kernel density',
+		width: 640, height: 420, theme: chart.Theme{ grid: true })
+		.histogram(kde_data, label: 'data')
+		.line(kde_xs, kde_ys, label: 'KDE')
+		.xlabel('Value')
+		.ylabel('Count')
+		.save(os.join_path(out, 'kde_density.svg'))!
+
+	println('done — wrote 12 SVGs to ${out}')
 }
