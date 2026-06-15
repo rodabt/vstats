@@ -17,3 +17,5 @@ examples/*/main
 chatbot_rollout_tutorial.md
 sequential_rollout.md.worktrees/
 apps/
+docs/plans/
+docs/superpowers/
