@@ -781,7 +781,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 			.dot {
 				x0 := g.xscale.map(0.0)
 				for i in 0 .. s.y.len {
-					py := g.yscale.map(f64(i))
+					py := g.yscale.map(f64(s.y.len - 1 - i))
 					px := g.xscale.map(s.y[i])
 					scene.primitives << Line{
 						x1:     x0
@@ -814,7 +814,6 @@ fn (c Chart) draw_ticks(mut scene Scene, g Geom) {
 	// detect categorical axes
 	mut y_cat_labels := []string{}
 	mut x_cat_labels := []string{}
-	mut is_heatmap_y := false
 	for s in c.series {
 		if s.kind in [.dot, .hbar] && s.labels.len > 0 && y_cat_labels.len == 0 {
 			y_cat_labels = s.labels.clone()
@@ -827,7 +826,6 @@ fn (c Chart) draw_ticks(mut scene Scene, g Geom) {
 			if ncols > 0 && s.labels.len > ncols {
 				x_cat_labels = s.labels[0..ncols].clone()
 				y_cat_labels = s.labels[ncols..].clone()
-				is_heatmap_y = true
 			}
 		}
 	}
@@ -883,11 +881,8 @@ fn (c Chart) draw_ticks(mut scene Scene, g Geom) {
 	// y-axis ticks
 	if y_cat_labels.len > 0 {
 		for i, lbl in y_cat_labels {
-			y_pos := if is_heatmap_y {
-				f64(y_cat_labels.len - 1 - i)
-			} else {
-				f64(i)
-			}
+			// row 0 = top: reverse so label[0] appears at the top of the plot
+			y_pos := f64(y_cat_labels.len - 1 - i)
 			py := g.yscale.map(y_pos)
 			scene.primitives << Line{
 				x1:     g.plot_x - 5.0
@@ -1025,7 +1020,7 @@ fn (c Chart) draw_error_bars(mut scene Scene, g Geom) {
 		if s.err.len == 0 {
 			continue
 		}
-		if s.kind == .box_plot {
+		if s.kind in [.box_plot, .dot] {
 			continue
 		}
 		for i in 0 .. s.y.len {
