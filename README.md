@@ -1,6 +1,6 @@
-# VStats 0.2.1
+# VStats 0.3.0
 
-A dependency-free statistics, linear algebra, and machine learning library for the [V programming language](https://vlang.io), with a focus on product analytics and experimentation. Includes A/B testing, funnel analysis, cohort retention, causal inference, and growth metrics alongside classical stats and ML — all built from scratch with no external dependencies.
+A dependency-free statistics, linear algebra, and machine learning library for the [V programming language](https://vlang.io), with a focus on product analytics and experimentation. Includes A/B testing, funnel analysis, cohort retention, causal inference, time series analysis, and growth metrics alongside classical stats and ML — all built from scratch with no external dependencies.
 
 ## Installation
 
@@ -50,6 +50,7 @@ println('Overall conversion: ${funnel.conversion_rate:.2f}')
 | **hypothesis** | Statistical hypothesis tests         | Complete   |
 | **experiment** | A/B testing, PSM, DiD, CUPED        | Complete   |
 | **growth**     | Funnels, cohorts, attribution        | Complete   |
+| **timeseries** | ARIMA, VAR, decomposition, smoothing | Complete   |
 | **symbol**     | Symbolic computation                 | WIP        |
 
 ## Generic Type Support
@@ -64,7 +65,7 @@ Most functions accept generic numeric types (`int` or `f64`). The convention is:
 
 - **[docs/index.html](docs/index.html)** — full API reference, concepts, examples
 - **[docs/getting-started.html](docs/getting-started.html)** — quick-start for Python/R users
-- **[examples/](examples/)** — six runnable scenario files
+- **[examples/](examples/)** — runnable scenario files covering ML, experiment analysis, and time series
 
 To regenerate the HTML docs after editing `docs/src/`:
 ```bash
@@ -82,6 +83,19 @@ v test tests/stats_test.v   # single test file
 ```
 
 ## Changelog
+
+### v0.3.0
+
+**New module: timeseries**
+- **analysis**: `diff`, `seasonal_diff`, `undiff` (differencing and inversion); `acf`, `pacf`, `acf_confidence_bound` (Levinson-Durbin); `adf_test` (MacKinnon critical values), `kpss_test` (Bartlett kernel); `aic`, `bic`, `aicc`
+- **decomposition**: Classical additive/multiplicative decomposition (`decompose`); STL decomposition with iterative LOESS and robustness weights (`stl`)
+- **smoothing**: Simple Exponential Smoothing (`ses`), Holt's double smoothing (`holt`), Holt-Winters triple smoothing (`holt_winters`); auto-optimization via Nelder-Mead (`auto_ses`, `auto_holt`, `auto_holt_winters`)
+- **arima**: CSS fitting (`arima_fit`), forecasting with CIs (`arima_forecast`), model summary (`arima_summary`), SARIMA (`sarima_fit`), grid-search order selection (`auto_arima`)
+- **var**: VAR(p) OLS fitting (`var_fit`), recursive forecasting (`var_forecast`), AIC/BIC/HQC lag selection (`var_select_lag`), Granger causality F-test (`granger_causality`), Cholesky-orthogonalized impulse response functions (`irf`)
+
+**New examples**
+- `examples/timeseries-arima-forecast/` — unit root tests, ACF/PACF, decomposition, ARIMA fit and 8-step forecast, auto_arima
+- `examples/timeseries-var-granger/` — VAR lag selection, coefficient recovery, Granger causality, IRF visualization
 
 ### v0.2.0
 
