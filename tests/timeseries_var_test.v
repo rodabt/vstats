@@ -1,3 +1,4 @@
+import math
 import timeseries
 
 fn test__var_fit_bivariate_coefficient_recovery() {
@@ -77,4 +78,34 @@ fn test__granger_causality_detects_true_cause() {
 	// We'll just check that the effect is much weaker
 	result2 := timeseries.granger_causality(data, 1, 0, 1)
 	assert result.f_statistic > result2.f_statistic
+}
+
+fn test__irf_shape() {
+	n := 100
+	mut data := [][]f64{len: 2, init: []f64{len: n}}
+	for t in 1 .. n {
+		data[0][t] = 0.5 * data[0][t - 1] + 0.1 * data[1][t - 1] + (f64(t % 5) - 2.0) * 0.2
+		data[1][t] = 0.0 * data[0][t - 1] + 0.4 * data[1][t - 1] + (f64(t % 7) - 3.0) * 0.2
+	}
+	model := timeseries.var_fit(data, 1)
+	result := timeseries.irf(model, 10)
+	assert result.periods == 10
+	assert result.responses.len == 2     // k shocks
+	assert result.responses[0].len == 2  // k responses
+	assert result.responses[0][0].len == 10  // T periods
+}
+
+fn test__irf_own_shock_decays() {
+	// A stable VAR: own-variable IRF should decay toward zero
+	n := 100
+	mut data := [][]f64{len: 2, init: []f64{len: n}}
+	for t in 1 .. n {
+		data[0][t] = 0.5 * data[0][t - 1] + (f64(t % 7) - 3.0) * 0.1
+		data[1][t] = 0.4 * data[1][t - 1] + (f64(t % 11) - 5.0) * 0.1
+	}
+	model := timeseries.var_fit(data, 1)
+	result := timeseries.irf(model, 15)
+	// Own-shock response for variable 0 should shrink over time
+	resp := result.responses[0][0]
+	assert math.abs(resp[14]) < math.abs(resp[0])
 }

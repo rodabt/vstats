@@ -281,3 +281,93 @@ pub fn var_forecast(model VARModel, data [][]f64, h int) [][]f64 {
 	}
 	return result
 }
+
+pub struct IRFResult {
+pub:
+	responses [][][]f64  // [shock_var][response_var][period]
+	periods   int
+}
+
+// cholesky_lower computes the lower Cholesky factor L such that A = L L'.
+// A must be symmetric positive definite.
+fn cholesky_lower(a [][]f64) [][]f64 {
+	n := a.len
+	mut l := [][]f64{len: n, init: []f64{len: n}}
+	for i in 0 .. n {
+		for j in 0 .. i + 1 {
+			mut s := a[i][j]
+			for kk in 0 .. j {
+				s -= l[i][kk] * l[j][kk]
+			}
+			if i == j {
+				l[i][j] = if s > 0.0 { math.sqrt(s) } else { math.sqrt(math.abs(s)) + 1e-10 }
+			} else {
+				l[i][j] = if l[j][j] > 1e-14 { s / l[j][j] } else { 0.0 }
+			}
+		}
+	}
+	return l
+}
+
+// irf computes orthogonalized Impulse Response Functions for `steps` periods.
+// Uses Cholesky decomposition of sigma_u for orthogonalization.
+pub fn irf(model VARModel, steps int) IRFResult {
+	k := model.k
+	p := model.p
+
+	// Cholesky factor of sigma_u for orthogonalisation
+	chol := cholesky_lower(model.sigma_u)
+
+	// Compute MA(inf) coefficients Φ_s via recursion: Φ_0 = I, Φ_s = Σ_{j=1}^{p} A_j Φ_{s-j}
+	mut phi := [][][]f64{}
+	// Φ_0 = I
+	mut phi0 := [][]f64{len: k, init: []f64{len: k}}
+	for i in 0 .. k {
+		phi0[i][i] = 1.0
+	}
+	phi << phi0
+
+	for s in 1 .. steps {
+		mut phi_s := [][]f64{len: k, init: []f64{len: k}}
+		for j in 0 .. p {
+			if s - j - 1 < 0 {
+				continue
+			}
+			// A_j: k×k matrix of lag-j coefficients from coeff_matrices
+			// coeff_matrices[eq] = [intercept, y1_lag1, y2_lag1, ..., y1_lagp, y2_lagp, ...]
+			// Lag j (1-indexed) coefficients start at column j*k - k + 1
+			mut a_j := [][]f64{len: k, init: []f64{len: k}}
+			for eq in 0 .. k {
+				for v in 0 .. k {
+					col := j * k + v + 1  // +1 for intercept
+					a_j[eq][v] = model.coeff_matrices[eq][col]
+				}
+			}
+			prev := phi[s - j - 1]
+			contrib := linalg.matmul(a_j, prev)
+			for r in 0 .. k {
+				for c in 0 .. k {
+					phi_s[r][c] += contrib[r][c]
+				}
+			}
+		}
+		phi << phi_s
+	}
+
+	// Orthogonalized IRF: Ψ_s = Φ_s · chol
+	// responses[shock][response][period]
+	mut responses := [][][]f64{len: k, init: [][]f64{len: k, init: []f64{len: steps}}}
+	for s in 0 .. steps {
+		psi_s := linalg.matmul(phi[s], chol)
+		for shock in 0 .. k {
+			for resp in 0 .. k {
+				responses[shock][resp][s] = psi_s[resp][shock]
+			}
+		}
+	}
+
+	return IRFResult{
+		responses: responses
+		periods:   steps
+	}
+}
