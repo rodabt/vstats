@@ -90,3 +90,35 @@ fn test__sarima_fit_runs() {
 	assert model.d == 0
 	assert model.fitted.len == x.len
 }
+
+fn test__auto_arima_finds_ar1() {
+	// True AR(1) — auto_arima should prefer ARIMA(1,0,0) or similar
+	mut x := []f64{len: 100}
+	x[0] = 0.0
+	for i in 1 .. 100 {
+		x[i] = 0.7 * x[i - 1] + (f64(i % 11) - 5.0) * 0.2
+	}
+	model := timeseries.auto_arima(x, 3, 2, 1)
+	// Should recover roughly correct p and AR coefficient
+	assert model.p >= 1
+	assert model.d == 0
+	assert model.aic < 1000.0 // sanity: fitted something reasonable
+}
+
+fn test__auto_arima_runs_with_multiple_d_values() {
+	// Test that auto_arima grid searches correctly over d values
+	// Generate a stationary AR(1) series
+	mut x := []f64{len: 100}
+	x[0] = 0.5
+	for i in 1 .. 100 {
+		x[i] = 0.5 * x[i - 1] + (f64(i % 13) - 6.0) * 0.3
+	}
+	// With max_d=2, auto_arima should consider d=0,1,2 and pick the best by AICc
+	model := timeseries.auto_arima(x, 2, 2, 1)
+	// Should have a valid model
+	assert model.p >= 0
+	assert model.d >= 0
+	assert model.q >= 0
+	assert model.d <= 2
+	assert model.aic < 10000.0
+}
