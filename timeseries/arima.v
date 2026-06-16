@@ -19,8 +19,9 @@ pub:
 	aicc      f64
 }
 
-pub struct ForecastResult {
-pub:
+// ForecastResult holds point forecasts and prediction intervals.
+// Populated by arima_forecast (Task 10).
+struct ForecastResult {
 	forecast []f64
 	lower    []f64
 	upper    []f64
@@ -139,15 +140,44 @@ pub fn arima_fit(x []f64, p int, d int, q int) ARIMAModel {
 		fitted_diff[t] = x_diff[t] - resid_diff[t]
 	}
 
-	// Expand fitted and residuals back to x.len by prepending d zeros for
-	// the positions consumed by differencing (no prediction available there).
-	fitted_core := if d == 0 { fitted_diff } else { undiff(fitted_diff, x, d) }
-	resid_core := if d == 0 { resid_diff } else { resid_diff }
-
-	mut fitted := []f64{len: d}
-	fitted << fitted_core
-	mut resid := []f64{len: d}
-	resid << resid_core
+	// Build fitted and residuals in the ORIGINAL scale, both of length x.len.
+	// The first d positions (consumed by differencing) have no prediction: use x[t] so residual = 0.
+	// For d > 0, in-sample fitted values are recovered by integrating fitted_diff forward
+	// from the last pre-differencing seed x[d-1] (i.e. cumsum, not undiff which seeds from end).
+	x_len := x.len
+	mut fitted := []f64{len: x_len}
+	mut resid := []f64{len: x_len}
+	for t in 0 .. d {
+		fitted[t] = x[t]
+		resid[t] = 0.0
+	}
+	if d == 0 {
+		for t in 0 .. n {
+			fitted[t] = fitted_diff[t]
+			resid[t] = resid_diff[t]
+		}
+	} else {
+		// Integrate fitted_diff back to original scale via d nested cumsums.
+		// Each integration step k (from d down to 1) uses the last value of
+		// diff(x, k-1) as its seed, which is diff(x, k-1)[0] = the first
+		// element of the (k-1)-times differenced x.
+		mut cur := fitted_diff.clone()
+		for k in 1 .. d + 1 {
+			seed_series := diff(x, d - k)
+			seed := seed_series[0]
+			mut next := []f64{len: cur.len}
+			next[0] = seed + cur[0]
+			for t in 1 .. cur.len {
+				next[t] = next[t - 1] + cur[t]
+			}
+			cur = next.clone()
+		}
+		// cur is now in original scale, length n = x.len - d
+		for t in 0 .. n {
+			fitted[d + t] = cur[t]
+			resid[d + t] = x[d + t] - cur[t]
+		}
+	}
 
 	start := if p > q { p } else { q }
 	mut ss := 0.0

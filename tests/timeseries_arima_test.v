@@ -36,4 +36,19 @@ fn test__arima_fitted_length_with_differencing() {
 	assert model.fitted.len == x.len
 	assert model.residuals.len == x.len
 	assert model.d == 1
+	// fitted + residuals must recover x in original scale for t >= d
+	for t in model.d .. x.len {
+		assert math.abs((model.fitted[t] + model.residuals[t]) - x[t]) < 1e-9
+	}
+}
+
+fn test__arima_ma_term() {
+	// ARMA(1,0,1): verifies MA feedback path in css_residuals is exercised
+	x := [1.0, 2.0, 3.0, 2.0, 1.0, 2.0, 3.0, 2.0, 1.0, 2.0, 3.0, 2.0, 1.0, 2.0, 3.0]
+	model := timeseries.arima_fit(x, 1, 0, 1)
+	assert model.p == 1
+	assert model.q == 1
+	assert model.fitted.len == x.len
+	assert model.residuals.len == x.len
+	assert model.aic != 0.0
 }
