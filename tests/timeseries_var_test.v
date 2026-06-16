@@ -1,5 +1,4 @@
 import timeseries
-import math
 
 fn test__var_fit_bivariate_coefficient_recovery() {
 	// True VAR(1): y1_t = 0.5*y1_{t-1} + 0.2*y2_{t-1}
