@@ -26,6 +26,15 @@ pub:
 	criteria  [][]f64   // [max_p][3]: AIC, BIC, HQC per lag order
 }
 
+pub struct GrangerResult {
+pub:
+	cause_var   int
+	effect_var  int
+	f_statistic f64
+	p_value     f64
+	significant bool
+}
+
 // var_build_design builds the OLS design matrix for VAR(p).
 // Returns X (T-p × k*p+1) and y_all (k × T-p).
 // Design layout: [1, y1_{t-1}, y2_{t-1}, ..., yk_{t-1}, y1_{t-2}, ..., yk_{t-p}]
@@ -111,6 +120,124 @@ pub fn var_fit(data [][]f64, p int) VARModel {
 		aic:            aic(log_lik, n_params)
 		bic:            bic(log_lik, n_params, t_eff)
 		hqc:            hqc_val
+	}
+}
+
+// chi2_cdf_approx computes chi-squared CDF using Wilson-Hilferty approximation
+fn chi2_cdf_approx(x f64, k int) f64 {
+	if x <= 0.0 {
+		return 0.0
+	}
+	kf := f64(k)
+	z := (math.pow(x / kf, 1.0 / 3.0) - (1.0 - 2.0 / (9.0 * kf))) / math.sqrt(2.0 / (9.0 * kf))
+	// Standard normal CDF via erf
+	return 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
+}
+
+// var_select_lag evaluates VAR(1)..VAR(max_p) and returns AIC/BIC/HQC-optimal orders.
+pub fn var_select_lag(data [][]f64, max_p int) VARLagSelection {
+	mut criteria := [][]f64{len: max_p, init: []f64{len: 3}}
+	mut best_aic := math.inf(1)
+	mut best_bic := math.inf(1)
+	mut best_hqc := math.inf(1)
+	mut aic_order := 1
+	mut bic_order := 1
+	mut hqc_order := 1
+	for p in 1 .. max_p + 1 {
+		m := var_fit(data, p)
+		criteria[p - 1][0] = m.aic
+		criteria[p - 1][1] = m.bic
+		criteria[p - 1][2] = m.hqc
+		if m.aic < best_aic {
+			best_aic = m.aic
+			aic_order = p
+		}
+		if m.bic < best_bic {
+			best_bic = m.bic
+			bic_order = p
+		}
+		if m.hqc < best_hqc {
+			best_hqc = m.hqc
+			hqc_order = p
+		}
+	}
+	return VARLagSelection{
+		aic_order: aic_order
+		bic_order: bic_order
+		hqc_order: hqc_order
+		criteria:  criteria
+	}
+}
+
+// granger_causality tests whether cause_idx Granger-causes effect_idx using VAR(p).
+// Uses an F-test comparing unrestricted vs restricted (cause lags excluded) models.
+pub fn granger_causality(data [][]f64, p int, cause_idx int, effect_idx int) GrangerResult {
+	k := data.len
+	t_total := data[0].len
+	t_eff := t_total - p
+
+	// Unrestricted: full VAR equation for effect_idx
+	design_u, y_all := var_build_design(data, p)
+	xt_u := linalg.transpose(design_u)
+	xtx_u := linalg.matmul(xt_u, design_u)
+	xty_u := linalg.matvec_mul(xt_u, y_all[effect_idx])
+	beta_u := linalg.gaussian_elimination(xtx_u, xty_u)
+	mut rss_u := 0.0
+	for t in 0 .. t_eff {
+		mut yhat := 0.0
+		for j in 0 .. beta_u.len {
+			yhat += design_u[t][j] * beta_u[j]
+		}
+		d := y_all[effect_idx][t] - yhat
+		rss_u += d * d
+	}
+
+	// Restricted: remove p lags of cause_idx from design matrix
+	mut keep_cols := [0]
+	for lag in 1 .. p + 1 {
+		for j in 0 .. k {
+			col := lag * k - k + j + 1
+			if j != cause_idx {
+				keep_cols << col
+			}
+		}
+	}
+	n_cols_r := keep_cols.len
+	mut design_r := [][]f64{len: t_eff, init: []f64{len: n_cols_r}}
+	for t in 0 .. t_eff {
+		for ci, c in keep_cols {
+			design_r[t][ci] = design_u[t][c]
+		}
+	}
+	xt_r := linalg.transpose(design_r)
+	xtx_r := linalg.matmul(xt_r, design_r)
+	xty_r := linalg.matvec_mul(xt_r, y_all[effect_idx])
+	beta_r := linalg.gaussian_elimination(xtx_r, xty_r)
+	mut rss_r := 0.0
+	for t in 0 .. t_eff {
+		mut yhat := 0.0
+		for ci in 0 .. n_cols_r {
+			yhat += design_r[t][ci] * beta_r[ci]
+		}
+		d := y_all[effect_idx][t] - yhat
+		rss_r += d * d
+	}
+
+	// F statistic: ((RSS_R - RSS_U) / p) / (RSS_U / (T - k*p - 1))
+	df1 := f64(p)
+	df2 := f64(t_eff - k * p - 1)
+	f_stat := if rss_u > 1e-14 { ((rss_r - rss_u) / df1) / (rss_u / df2) } else { 0.0 }
+
+	// p-value approximation: large-sample F → chi²(df1) / df1
+	chi2_val := f_stat * df1
+	p_value := 1.0 - chi2_cdf_approx(chi2_val, int(df1))
+
+	return GrangerResult{
+		cause_var:   cause_idx
+		effect_var:  effect_idx
+		f_statistic: f_stat
+		p_value:     p_value
+		significant: p_value < 0.05
 	}
 }
 
