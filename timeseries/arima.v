@@ -336,10 +336,10 @@ pub fn sarima_fit(x []f64, p int, d int, q int, sp int, sd int, sq int, m int) A
 	return model
 }
 
-// auto_arima performs grid search over ARIMA(p,d,q) orders up to max_p, max_d, max_q.
+// auto_arima performs grid search over ARIMA(p,d,q) orders up to max_p, max_q, max_d.
 // Uses ADF test to determine minimum d, capped at max_d.
 // Selects the order with lowest AICc.
-pub fn auto_arima(x []f64, max_p int, max_d int, max_q int) ARIMAModel {
+pub fn auto_arima(x []f64, max_p int, max_q int, max_d int) ARIMAModel {
 	// Determine d via ADF
 	mut best_d := 0
 	mut xs := x.clone()

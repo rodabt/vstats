@@ -105,20 +105,12 @@ fn test__auto_arima_finds_ar1() {
 	assert model.aic < 1000.0 // sanity: fitted something reasonable
 }
 
-fn test__auto_arima_runs_with_multiple_d_values() {
-	// Test that auto_arima grid searches correctly over d values
-	// Generate a stationary AR(1) series
-	mut x := []f64{len: 100}
-	x[0] = 0.5
-	for i in 1 .. 100 {
-		x[i] = 0.5 * x[i - 1] + (f64(i % 13) - 6.0) * 0.3
+fn test__auto_arima_nonstationary_differences() {
+	// Linearly trending series: ADF detects non-stationarity, auto_arima should use d=1
+	mut x := []f64{len: 80}
+	for i in 0 .. 80 {
+		x[i] = f64(i) * 2.0 + f64(i % 5) * 0.1
 	}
-	// With max_d=2, auto_arima should consider d=0,1,2 and pick the best by AICc
-	model := timeseries.auto_arima(x, 2, 2, 1)
-	// Should have a valid model
-	assert model.p >= 0
-	assert model.d >= 0
-	assert model.q >= 0
-	assert model.d <= 2
-	assert model.aic < 10000.0
+	model := timeseries.auto_arima(x, 2, 1, 1)
+	assert model.d >= 1
 }
