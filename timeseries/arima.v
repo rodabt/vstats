@@ -21,7 +21,8 @@ pub:
 
 // ForecastResult holds point forecasts and prediction intervals.
 // Populated by arima_forecast (Task 10).
-struct ForecastResult {
+pub struct ForecastResult {
+pub:
 	forecast []f64
 	lower    []f64
 	upper    []f64
@@ -203,4 +204,134 @@ pub fn arima_fit(x []f64, p int, d int, q int) ARIMAModel {
 		bic:       bic(log_lik, k, n)
 		aicc:      aicc(log_lik, k, n)
 	}
+}
+
+// arima_forecast produces h-step ahead forecasts with (1-alpha) confidence intervals.
+// original_x is the undifferenced series (needed for undiff reconstruction).
+pub fn arima_forecast(model ARIMAModel, h int, alpha f64, original_x []f64) ForecastResult {
+	p := model.p
+	q := model.q
+	n := model.residuals.len
+	x_diff := diff(original_x, model.d)
+	mut hist_x := []f64{}
+	start_x := if x_diff.len - p > 0 { x_diff.len - p } else { 0 }
+	for i in start_x .. x_diff.len {
+		hist_x << x_diff[i]
+	}
+	mut hist_e := []f64{}
+	start_e := if n - q > 0 { n - q } else { 0 }
+	for i in start_e .. n {
+		hist_e << model.residuals[i]
+	}
+
+	mut fc_diff := []f64{len: h}
+	for t in 0 .. h {
+		mut xhat := model.intercept
+		for j in 0 .. p {
+			if t - j - 1 >= 0 {
+				xhat += model.ar_coeffs[j] * fc_diff[t - j - 1]
+			} else {
+				idx := hist_x.len - (j - t + 1)
+				if idx >= 0 {
+					xhat += model.ar_coeffs[j] * hist_x[idx]
+				}
+			}
+		}
+		if t == 0 {
+			for j in 0 .. q {
+				idx := hist_e.len - j - 1
+				if idx >= 0 {
+					xhat -= model.ma_coeffs[j] * hist_e[idx]
+				}
+			}
+		}
+		fc_diff[t] = xhat
+	}
+
+	fc_orig := if model.d == 0 { fc_diff } else { undiff(fc_diff, original_x, model.d) }
+
+	z := 1.96
+	mut lower := []f64{len: h}
+	mut upper := []f64{len: h}
+	for t in 0 .. h {
+		se := math.sqrt(model.sigma2 * f64(t + 1))
+		lower[t] = fc_orig[t] - z * se
+		upper[t] = fc_orig[t] + z * se
+	}
+
+	return ForecastResult{
+		forecast: fc_orig
+		lower:    lower
+		upper:    upper
+		alpha:    alpha
+	}
+}
+
+// arima_summary returns a formatted model summary string.
+pub fn arima_summary(model ARIMAModel) string {
+	mut sb := '================================\n'
+	sb += 'ARIMA(${model.p}, ${model.d}, ${model.q}) Results\n'
+	sb += '================================\n'
+	sb += 'Intercept: ${model.intercept:.4f}\n'
+	if model.p > 0 {
+		sb += 'AR Coefficients:\n'
+		for i, c in model.ar_coeffs {
+			sb += '  phi[${i + 1}] = ${c:.4f}\n'
+		}
+	}
+	if model.q > 0 {
+		sb += 'MA Coefficients:\n'
+		for i, c in model.ma_coeffs {
+			sb += '  theta[${i + 1}] = ${c:.4f}\n'
+		}
+	}
+	sb += 'Sigma^2: ${model.sigma2:.4f}\n'
+	sb += 'AIC:     ${model.aic:.4f}\n'
+	sb += 'BIC:     ${model.bic:.4f}\n'
+	sb += 'AICc:    ${model.aicc:.4f}\n'
+	return sb
+}
+
+// sarima_fit fits SARIMA(p,d,q)(sp,sd,sq,m) by applying seasonal differencing first,
+// then fitting with augmented AR/MA orders to cover seasonal lags.
+pub fn sarima_fit(x []f64, p int, d int, q int, sp int, sd int, sq int, m int) ARIMAModel {
+	mut xs := x.clone()
+	sd_count := sd * m  // Total observations lost to seasonal differencing
+	for _ in 0 .. sd {
+		xs = seasonal_diff(xs, m)
+	}
+	effective_p := if sp > 0 { p + sp * m } else { p }
+	effective_q := if sq > 0 { q + sq * m } else { q }
+	model := arima_fit(xs, effective_p, d, effective_q)
+
+	// Extend fitted and residuals back to original length
+	// First sd*m positions use original series (no prediction error)
+	if sd_count > 0 {
+		mut extended_fitted := []f64{len: x.len}
+		mut extended_residuals := []f64{len: x.len}
+		for i in 0 .. sd_count {
+			extended_fitted[i] = x[i]
+			extended_residuals[i] = 0.0
+		}
+		for i in 0 .. model.fitted.len {
+			extended_fitted[sd_count + i] = model.fitted[i]
+			extended_residuals[sd_count + i] = model.residuals[i]
+		}
+		return ARIMAModel{
+			p:         model.p
+			d:         model.d
+			q:         model.q
+			ar_coeffs: model.ar_coeffs
+			ma_coeffs: model.ma_coeffs
+			intercept: model.intercept
+			sigma2:    model.sigma2
+			fitted:    extended_fitted
+			residuals: extended_residuals
+			aic:       model.aic
+			bic:       model.bic
+			aicc:      model.aicc
+		}
+	}
+
+	return model
 }

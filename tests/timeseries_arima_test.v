@@ -52,3 +52,41 @@ fn test__arima_ma_term() {
 	assert model.residuals.len == x.len
 	assert model.aic != 0.0
 }
+
+fn test__arima_forecast_length() {
+	mut x := []f64{len: 50}
+	x[0] = 0.0
+	for i in 1 .. 50 {
+		x[i] = 0.6 * x[i - 1] + (f64(i % 7) - 3.0) * 0.2
+	}
+	model := timeseries.arima_fit(x, 1, 0, 0)
+	fc := timeseries.arima_forecast(model, 5, 0.05, x)
+	assert fc.forecast.len == 5
+	assert fc.lower.len == 5
+	assert fc.upper.len == 5
+	for i in 0 .. 5 {
+		assert fc.lower[i] < fc.forecast[i]
+		assert fc.forecast[i] < fc.upper[i]
+	}
+}
+
+fn test__arima_summary_not_empty() {
+	x := [1.0, 2.0, 1.5, 2.5, 2.0, 1.5, 2.0, 2.5, 1.5, 2.0, 2.5, 1.5]
+	model := timeseries.arima_fit(x, 1, 0, 0)
+	summary := timeseries.arima_summary(model)
+	assert summary.len > 0
+	assert summary.contains('ARIMA')
+	assert summary.contains('AIC')
+}
+
+fn test__sarima_fit_runs() {
+	// Monthly data with period 4
+	mut x := []f64{len: 48}
+	for i in 0 .. 48 {
+		x[i] = f64(i) * 0.1 + [1.0, -1.0, 2.0, -2.0][i % 4]
+	}
+	model := timeseries.sarima_fit(x, 1, 0, 0, 0, 1, 0, 4)
+	assert model.p == 1
+	assert model.d == 0
+	assert model.fitted.len == x.len
+}
