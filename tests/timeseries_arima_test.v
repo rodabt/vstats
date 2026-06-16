@@ -28,3 +28,12 @@ fn test__arima_aic_bic_set() {
 	assert model.aic != 0.0
 	assert model.bic != 0.0
 }
+
+fn test__arima_fitted_length_with_differencing() {
+	// ARIMA(1,1,0): fitted and residuals must still have same length as x
+	x := [1.0, 2.0, 3.0, 2.0, 1.0, 2.0, 3.0, 2.0, 1.0, 2.0, 3.0, 2.0]
+	model := timeseries.arima_fit(x, 1, 1, 0)
+	assert model.fitted.len == x.len
+	assert model.residuals.len == x.len
+	assert model.d == 1
+}

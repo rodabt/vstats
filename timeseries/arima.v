@@ -133,22 +133,26 @@ pub fn arima_fit(x []f64, p int, d int, q int) ARIMAModel {
 	ma_coeffs := params[p..p + q].clone()
 	intercept := params[n_params - 1]
 
-	resid := css_residuals(x_diff, ar_coeffs, ma_coeffs, intercept)
+	resid_diff := css_residuals(x_diff, ar_coeffs, ma_coeffs, intercept)
 	mut fitted_diff := []f64{len: n}
 	for t in 0 .. n {
-		fitted_diff[t] = x_diff[t] - resid[t]
+		fitted_diff[t] = x_diff[t] - resid_diff[t]
 	}
 
-	fitted := if d == 0 {
-		fitted_diff
-	} else {
-		undiff(fitted_diff, x, d)
-	}
+	// Expand fitted and residuals back to x.len by prepending d zeros for
+	// the positions consumed by differencing (no prediction available there).
+	fitted_core := if d == 0 { fitted_diff } else { undiff(fitted_diff, x, d) }
+	resid_core := if d == 0 { resid_diff } else { resid_diff }
+
+	mut fitted := []f64{len: d}
+	fitted << fitted_core
+	mut resid := []f64{len: d}
+	resid << resid_core
 
 	start := if p > q { p } else { q }
 	mut ss := 0.0
 	for t in start .. n {
-		ss += resid[t] * resid[t]
+		ss += resid_diff[t] * resid_diff[t]
 	}
 	effective_n := n - start
 	sigma2 := ss / f64(effective_n)
