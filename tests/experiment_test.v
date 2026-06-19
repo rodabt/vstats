@@ -476,3 +476,61 @@ fn test__bh_fdr_adjusted_p_values_ordered() {
 		assert adj >= 0.0 && adj <= 1.0
 	}
 }
+
+// ============================================================================
+// Power Diagnostic Tests
+// ============================================================================
+
+fn test__observed_power_well_powered() {
+	// Large n, d=0.5 → should have ~80% power at alpha=0.05
+	pwr := experiment.observed_power(64, 64, 0.5, 0.05)
+	assert pwr > 0.75 && pwr < 0.95
+}
+
+fn test__observed_power_zero_effect() {
+	// d=0 → power equals alpha (false positive rate only)
+	pwr := experiment.observed_power(100, 100, 0.0, 0.05)
+	assert math.abs(pwr - 0.05) < 0.01
+}
+
+fn test__mde_from_n_means_roundtrip() {
+	// sample_size_means gives n for d=0.5, alpha=0.05, power=0.80
+	// mde_from_n_means with that n should recover d≈0.5
+	ss := experiment.sample_size_means(0.0, 1.0, 0.5, 0.05, 0.80)
+	n := ss.n_per_group
+	mde := experiment.mde_from_n_means(n, n, 1.0, 0.05, 0.80)
+	// mde is in absolute units; with baseline_std=1.0 this equals Cohen's d
+	assert math.abs(mde - 0.5) < 0.05
+}
+
+fn test__mde_from_n_proportions_reasonable() {
+	// With n=500 per group, baseline 0.10, alpha=0.05, power=0.80
+	// MDE should be a small but detectable absolute difference
+	mde := experiment.mde_from_n_proportions(500, 500, 0.10, 0.05, 0.80)
+	assert mde > 0.01 && mde < 0.10
+}
+
+fn test__power_diagnostic_underpowered() {
+	// Very small groups → any realistic effect is underpowered
+	ctrl := [10.0, 10.5, 9.8, 10.2]
+	trt  := [10.3, 10.8, 10.1, 10.5]
+	result := experiment.abtest(ctrl, trt)
+	diag := experiment.power_diagnostic(result, 0.05, 0.80)
+	assert diag.n_ctrl == 4
+	assert diag.n_trt == 4
+	assert diag.underpowered == true
+	assert diag.observed_power >= 0.0 && diag.observed_power <= 1.0
+	assert diag.mde_effect_size > 0.0
+}
+
+fn test__power_diagnostic_well_powered() {
+	// Large groups with a clear effect → should be adequately powered
+	ctrl := [10.0, 10.2, 9.8, 10.1, 9.9, 10.0, 10.1, 9.9, 10.0, 10.2,
+	         10.0, 10.2, 9.8, 10.1, 9.9, 10.0, 10.1, 9.9, 10.0, 10.2]
+	trt  := [13.0, 13.2, 12.8, 13.1, 12.9, 13.0, 13.3, 12.7, 13.1, 12.9,
+	         13.0, 13.2, 12.8, 13.1, 12.9, 13.0, 13.3, 12.7, 13.1, 12.9]
+	result := experiment.abtest(ctrl, trt)
+	diag := experiment.power_diagnostic(result, 0.05, 0.80)
+	assert diag.underpowered == false
+	assert diag.observed_power > 0.80
+}
