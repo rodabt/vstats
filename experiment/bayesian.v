@@ -161,3 +161,114 @@ pub fn bayesian_ab_test(successes_a int, n_a int, successes_b int, n_b int, cfg 
 		n_b:              n_b
 	}
 }
+
+@[params]
+pub struct BayesianContinuousConfig {
+pub:
+	prior_mean f64 = 0.0
+	prior_std  f64 = 1000.0 // diffuse non-informative default
+	n_samples  int = 10000
+	rope_lower f64 = 0.0   // region of practical equivalence lower bound
+	rope_upper f64 = 0.0   // upper bound; both 0.0 = no ROPE
+}
+
+pub struct BayesianContinuousResult {
+pub:
+	posterior_mean_ctrl f64
+	posterior_mean_trt  f64
+	posterior_std_ctrl  f64
+	posterior_std_trt   f64
+	prob_trt_beats_ctrl f64
+	expected_loss_ctrl  f64
+	expected_loss_trt   f64
+	ci_lower_ctrl       f64
+	ci_upper_ctrl       f64
+	ci_lower_trt        f64
+	ci_upper_trt        f64
+	prob_rope           f64 // P(effect in ROPE); 0.0 when ROPE not set
+}
+
+// bayesian_continuous_ab_test runs a Bayesian A/B test for continuous outcomes
+// (e.g. revenue, session duration, score) using a Normal-Normal conjugate model.
+// Returns P(treatment > control), expected losses, and 95% credible intervals.
+//
+// Use BayesianContinuousConfig.rope_lower/rope_upper to define a region of practical
+// equivalence — effects smaller than this are considered negligible even if real.
+pub fn bayesian_continuous_ab_test(ctrl []f64, trt []f64, cfg BayesianContinuousConfig) BayesianContinuousResult {
+	assert ctrl.len >= 2 && trt.len >= 2, 'each group needs at least 2 observations'
+	assert cfg.prior_std > 0, 'prior_std must be positive'
+	assert cfg.n_samples > 0, 'n_samples must be positive'
+
+	n_c := ctrl.len
+	n_t := trt.len
+
+	sample_mean_c := stats.mean(ctrl)
+	sample_mean_t := stats.mean(trt)
+
+	// Use per-arm sample variance as the known likelihood variance (σ²)
+	sigma2_c := if stats.variance(ctrl) > 0 { stats.variance(ctrl) } else { 1.0 }
+	sigma2_t := if stats.variance(trt) > 0 { stats.variance(trt) } else { 1.0 }
+
+	// Normal-Normal conjugate update:
+	// Prior: μ ~ N(prior_mean, prior_std²)
+	// Posterior: μ | data ~ N(post_mean, post_var)
+	// post_var  = 1 / (1/prior_var + n/sigma²)
+	// post_mean = post_var * (prior_mean/prior_var + n*sample_mean/sigma²)
+	prior_var := cfg.prior_std * cfg.prior_std
+
+	post_var_c := 1.0 / (1.0 / prior_var + f64(n_c) / sigma2_c)
+	post_mean_c := post_var_c * (cfg.prior_mean / prior_var + f64(n_c) * sample_mean_c / sigma2_c)
+	post_std_c := math.sqrt(post_var_c)
+
+	post_var_t := 1.0 / (1.0 / prior_var + f64(n_t) / sigma2_t)
+	post_mean_t := post_var_t * (cfg.prior_mean / prior_var + f64(n_t) * sample_mean_t / sigma2_t)
+	post_std_t := math.sqrt(post_var_t)
+
+	n := cfg.n_samples
+	mut samples_c := []f64{len: n}
+	mut samples_t := []f64{len: n}
+	mut trt_beats := 0
+	mut loss_c := 0.0
+	mut loss_t := 0.0
+	mut in_rope := 0
+	has_rope := cfg.rope_lower != 0.0 || cfg.rope_upper != 0.0
+
+	for i in 0 .. n {
+		sc := post_mean_c + post_std_c * box_muller()
+		st := post_mean_t + post_std_t * box_muller()
+		samples_c[i] = sc
+		samples_t[i] = st
+		if st > sc {
+			trt_beats++
+		}
+		diff := st - sc
+		if diff > 0 {
+			loss_c += diff
+		} else {
+			loss_t += -diff
+		}
+		if has_rope && diff >= cfg.rope_lower && diff <= cfg.rope_upper {
+			in_rope++
+		}
+	}
+
+	prob_beats := f64(trt_beats) / f64(n)
+	exp_loss_c := loss_c / f64(n)
+	exp_loss_t := loss_t / f64(n)
+	p_rope := if has_rope { f64(in_rope) / f64(n) } else { 0.0 }
+
+	return BayesianContinuousResult{
+		posterior_mean_ctrl: post_mean_c
+		posterior_mean_trt:  post_mean_t
+		posterior_std_ctrl:  post_std_c
+		posterior_std_trt:   post_std_t
+		prob_trt_beats_ctrl: prob_beats
+		expected_loss_ctrl:  exp_loss_c
+		expected_loss_trt:   exp_loss_t
+		ci_lower_ctrl:       stats.quantile(samples_c, 0.025)
+		ci_upper_ctrl:       stats.quantile(samples_c, 0.975)
+		ci_lower_trt:        stats.quantile(samples_t, 0.025)
+		ci_upper_trt:        stats.quantile(samples_t, 0.975)
+		prob_rope:           p_rope
+	}
+}

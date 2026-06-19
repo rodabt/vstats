@@ -534,3 +534,56 @@ fn test__power_diagnostic_well_powered() {
 	assert diag.underpowered == false
 	assert diag.observed_power > 0.80
 }
+
+// ============================================================================
+// Bayesian Continuous Tests
+// ============================================================================
+
+fn test__bayesian_continuous_no_effect() {
+	// Identical distributions → P(trt > ctrl) ≈ 0.5
+	ctrl := [10.0, 10.5, 9.5, 10.2, 9.8, 10.1, 9.9, 10.3, 9.7, 10.0]
+	trt  := [10.0, 10.5, 9.5, 10.2, 9.8, 10.1, 9.9, 10.3, 9.7, 10.0]
+	result := experiment.bayesian_continuous_ab_test(ctrl, trt)
+	assert math.abs(result.prob_trt_beats_ctrl - 0.5) < 0.05
+}
+
+fn test__bayesian_continuous_clear_effect() {
+	// Treatment clearly higher → P(trt > ctrl) > 0.95
+	ctrl := [10.0, 10.2, 9.8, 10.1, 9.9, 10.0, 10.3, 9.7, 10.1, 9.9,
+	         10.0, 10.2, 9.8, 10.1, 9.9, 10.0, 10.3, 9.7, 10.1, 9.9]
+	trt  := [14.0, 14.2, 13.8, 14.1, 13.9, 14.0, 14.3, 13.7, 14.1, 13.9,
+	         14.0, 14.2, 13.8, 14.1, 13.9, 14.0, 14.3, 13.7, 14.1, 13.9]
+	result := experiment.bayesian_continuous_ab_test(ctrl, trt)
+	assert result.prob_trt_beats_ctrl > 0.95
+	assert result.posterior_mean_trt > result.posterior_mean_ctrl
+	assert result.ci_lower_trt > result.ci_upper_ctrl
+}
+
+fn test__bayesian_continuous_credible_intervals() {
+	// CI should contain the posterior mean and be ordered
+	ctrl := [10.0, 10.5, 9.5, 10.2, 9.8, 10.1, 9.9, 10.3, 9.7, 10.0]
+	trt  := [12.0, 12.5, 11.5, 12.2, 11.8, 12.1, 11.9, 12.3, 11.7, 12.0]
+	result := experiment.bayesian_continuous_ab_test(ctrl, trt)
+	assert result.ci_lower_ctrl < result.posterior_mean_ctrl
+	assert result.ci_upper_ctrl > result.posterior_mean_ctrl
+	assert result.ci_lower_trt < result.posterior_mean_trt
+	assert result.ci_upper_trt > result.posterior_mean_trt
+}
+
+fn test__bayesian_continuous_rope_not_set() {
+	// When ROPE is not set (both 0.0), prob_rope must be 0.0
+	ctrl := [10.0, 10.5, 9.5, 10.2, 9.8]
+	trt  := [10.1, 10.6, 9.6, 10.3, 9.9]
+	result := experiment.bayesian_continuous_ab_test(ctrl, trt)
+	assert result.prob_rope == 0.0
+}
+
+fn test__bayesian_continuous_rope_narrow_effect() {
+	// Tiny effect within ROPE → prob_rope should be substantial
+	ctrl := [10.0, 10.1, 9.9, 10.0, 10.1, 9.9, 10.0, 10.1, 9.9, 10.0]
+	trt  := [10.05, 10.15, 9.95, 10.05, 10.15, 9.95, 10.05, 10.15, 9.95, 10.05]
+	result := experiment.bayesian_continuous_ab_test(ctrl, trt,
+		experiment.BayesianContinuousConfig{ rope_lower: -0.5, rope_upper: 0.5 })
+	assert result.prob_rope > 0.30
+	assert result.prob_rope > 0.0
+}
