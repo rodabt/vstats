@@ -9,8 +9,8 @@ fn main() {
 	println('=== Post-hoc Power Diagnostic ===\n')
 
 	// Small groups: typical of a rushed experiment
-	ctrl := [10.0, 10.5, 9.8, 10.2, 10.1, 9.9, 10.3, 10.0]
-	trt  := [10.4, 10.9, 10.2, 10.6, 10.5, 10.3, 10.7, 10.4]
+	ctrl := [10.0, 12.0, 8.0, 11.0, 9.0, 13.0, 7.0, 11.5]
+	trt  := [10.5, 12.5, 8.5, 11.5, 9.5, 13.5, 7.5, 12.0]
 
 	result := experiment.abtest(ctrl, trt)
 	println('A/B Test result:')
