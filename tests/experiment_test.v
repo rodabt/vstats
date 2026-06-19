@@ -363,3 +363,58 @@ fn test__ancova_covariate_recovers_effect() {
 	assert result.ci_lower < result.adjusted_effect
 	assert result.ci_upper > result.adjusted_effect
 }
+
+// ============================================================================
+// Ratio Metric Tests
+// ============================================================================
+
+fn test__ratio_metric_test_no_effect() {
+	// Same ratio in both arms (CTR = 0.15 in both)
+	num_ctrl := [1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0]
+	den_ctrl := [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+	num_trt  := [1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0]
+	den_trt  := [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+	result := experiment.ratio_metric_test(num_ctrl, den_ctrl, num_trt, den_trt)
+	assert math.abs(result.ratio_ctrl - 0.15) < 1e-9
+	assert math.abs(result.ratio_trt - 0.15) < 1e-9
+	assert math.abs(result.diff) < 1e-9
+	assert result.significant == false
+}
+
+fn test__ratio_metric_test_clear_effect() {
+	// Control CTR = 0.15, Treatment CTR = 0.35, n=20 per arm, well-separated
+	num_ctrl := [1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0,
+	             1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0]
+	den_ctrl := [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0,
+	             10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+	num_trt  := [3.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0,
+	             3.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0]
+	den_trt  := [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0,
+	             10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+	result := experiment.ratio_metric_test(num_ctrl, den_ctrl, num_trt, den_trt)
+	// ratio_ctrl = (5*1+5*2+5*1+5*2)/(20*10) = 30/200 = 0.15
+	// ratio_trt  = (5*3+5*4+5*3+5*4)/(20*10) = 70/200 = 0.35
+	assert math.abs(result.ratio_ctrl - 0.15) < 1e-9
+	assert math.abs(result.ratio_trt - 0.35) < 1e-9
+	assert math.abs(result.diff - 0.20) < 1e-9
+	assert result.p_value < 0.05
+	assert result.significant == true
+	assert result.relative_lift > 0.0
+	assert result.ci_lower > 0.0
+	assert result.ci_lower < result.diff
+	assert result.ci_upper > result.diff
+}
+
+fn test__ratio_metric_test_result_fields() {
+	// Smoke test: all fields are populated and SE > 0
+	num_ctrl := [2.0, 3.0, 2.0, 3.0, 2.0]
+	den_ctrl := [10.0, 12.0, 10.0, 12.0, 10.0]
+	num_trt  := [4.0, 5.0, 4.0, 5.0, 4.0]
+	den_trt  := [10.0, 12.0, 10.0, 12.0, 10.0]
+	result := experiment.ratio_metric_test(num_ctrl, den_ctrl, num_trt, den_trt)
+	assert result.n_ctrl == 5
+	assert result.n_trt == 5
+	assert result.se > 0.0
+	assert result.ratio_ctrl > 0.0
+	assert result.ratio_trt > 0.0
+}
