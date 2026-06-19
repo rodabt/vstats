@@ -418,3 +418,61 @@ fn test__ratio_metric_test_result_fields() {
 	assert result.ratio_ctrl > 0.0
 	assert result.ratio_trt > 0.0
 }
+
+// ============================================================================
+// Multiple Testing Correction Tests
+// ============================================================================
+
+fn test__bonferroni_rejects_only_clearly_significant() {
+	// 5 p-values; only the first two are below alpha/5 = 0.01
+	p_values := [0.002, 0.008, 0.12, 0.34, 0.87]
+	result := experiment.bonferroni(p_values, 0.05)
+	assert result.method == 'bonferroni'
+	assert result.n_rejected == 2
+	assert result.rejected[0] == true
+	assert result.rejected[1] == true
+	assert result.rejected[2] == false
+	assert result.rejected[3] == false
+	assert result.rejected[4] == false
+	// Adjusted p-values: min(p * k, 1.0)
+	assert math.abs(result.adjusted_p_values[0] - 0.01) < 1e-9
+	assert math.abs(result.adjusted_p_values[1] - 0.04) < 1e-9
+}
+
+fn test__bh_fdr_more_powerful_than_bonferroni() {
+	// BH controls FDR so it should reject >= as many as Bonferroni
+	p_values := [0.003, 0.021, 0.06, 0.34, 0.87]
+	bonf := experiment.bonferroni(p_values, 0.05)
+	bh   := experiment.bh_fdr(p_values, 0.05)
+	assert bh.n_rejected >= bonf.n_rejected
+}
+
+fn test__holm_between_bonferroni_and_bh() {
+	// Holm is uniformly more powerful than Bonferroni but controls FWER like Bonferroni
+	p_values := [0.002, 0.015, 0.06, 0.20, 0.87]
+	bonf := experiment.bonferroni(p_values, 0.05)
+	holm := experiment.holm(p_values, 0.05)
+	assert holm.n_rejected >= bonf.n_rejected
+	assert holm.method == 'holm'
+}
+
+fn test__correction_all_null() {
+	// All p-values well above 0.05 — nothing should be rejected
+	p_values := [0.40, 0.55, 0.70, 0.80, 0.92]
+	bonf := experiment.bonferroni(p_values, 0.05)
+	bh   := experiment.bh_fdr(p_values, 0.05)
+	holm := experiment.holm(p_values, 0.05)
+	assert bonf.n_rejected == 0
+	assert bh.n_rejected == 0
+	assert holm.n_rejected == 0
+}
+
+fn test__bh_fdr_adjusted_p_values_ordered() {
+	// BH adjusted p-values preserve original index order and are all in [0, 1]
+	p_values := [0.01, 0.05, 0.03, 0.40, 0.001]
+	result := experiment.bh_fdr(p_values, 0.05)
+	assert result.adjusted_p_values.len == p_values.len
+	for adj in result.adjusted_p_values {
+		assert adj >= 0.0 && adj <= 1.0
+	}
+}
