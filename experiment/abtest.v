@@ -68,20 +68,29 @@ fn welch_t(m1 f64, m2 f64, v1 f64, v2 f64, n1 int, n2 int) (f64, f64) {
 	return t, df
 }
 
+// t_pvalue returns the two-tailed p-value for a t-statistic with df degrees of freedom.
+fn t_pvalue(t f64, df int) f64 {
+	return 2.0 * prob.students_t_cdf(-math.abs(t), df)
+}
+
+// t_critical returns the t critical value for a two-tailed CI at the given alpha level.
+fn t_critical(alpha f64, df int) f64 {
+	return prob.inverse_students_t_cdf(1.0 - alpha / 2.0, df)
+}
+
 // t_pvalue_approx computes two-tailed p-value via normal CDF approximation
 fn t_pvalue_approx(t f64, df f64) f64 {
-	_ = df
-	return 2.0 * prob.normal_cdf(-math.abs(t), 0.0, 1.0)
+	return t_pvalue(t, int(df))
 }
 
 // welch_ci computes the confidence interval for the difference in means
-fn welch_ci(m1 f64, m2 f64, v1 f64, v2 f64, n1 int, n2 int, alpha f64) (f64, f64) {
+fn welch_ci(m1 f64, m2 f64, v1 f64, v2 f64, n1 int, n2 int, alpha f64, df f64) (f64, f64) {
 	a := v1 / f64(n1)
 	b := v2 / f64(n2)
 	se := math.sqrt(a + b)
-	z := prob.inverse_normal_cdf(1.0 - alpha / 2.0, 0.0, 1.0)
+	crit := t_critical(alpha, int(df))
 	diff := m1 - m2
-	return diff - z * se, diff + z * se
+	return diff - crit * se, diff + crit * se
 }
 
 // abtest runs a two-sample A/B test (Welch's t-test by default)
@@ -100,7 +109,7 @@ pub fn abtest(control []f64, treatment []f64, cfg ABTestConfig) ABTestResult {
 	d := stats.cohens_d(treatment, control)
 	t, df := welch_t(m_t, m_c, v_t, v_c, n_t, n_c)
 	p := t_pvalue_approx(t, df)
-	ci_lo, ci_hi := welch_ci(m_t, m_c, v_t, v_c, n_t, n_c, cfg.alpha)
+	ci_lo, ci_hi := welch_ci(m_t, m_c, v_t, v_c, n_t, n_c, cfg.alpha, df)
 	lift := if m_c != 0 { (m_t - m_c) / math.abs(m_c) } else { 0.0 }
 
 	return ABTestResult{

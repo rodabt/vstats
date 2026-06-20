@@ -587,3 +587,13 @@ fn test__bayesian_continuous_rope_narrow_effect() {
 	assert result.prob_rope > 0.30
 	assert result.prob_rope > 0.0
 }
+
+fn test__abtest_ci_uses_t_distribution() {
+	// With n=4 per group, Welch df≈6, t(6,0.975)≈2.447 vs z(0.975)≈1.960.
+	// CI width under t: ≈1.413. CI width under z (current bug): ≈1.133.
+	// This test catches the regression where df is discarded and z is used instead.
+	ctrl := [9.5, 10.0, 10.5, 10.0]
+	trt  := [11.5, 12.0, 12.5, 12.0]
+	result := experiment.abtest(ctrl, trt)
+	assert result.ci_upper - result.ci_lower > 1.2
+}
