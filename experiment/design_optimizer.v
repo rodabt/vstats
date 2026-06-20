@@ -128,3 +128,28 @@ pub fn score_design_point(config OptimizerConfig, dp DesignPoint) DesignScore {
 		correct_rate:   f64(correct_count) / f64(config.n_sims)
 	}
 }
+
+// optimize sweeps all (alpha, beta, mde) combinations and returns the DesignScore
+// with the highest expected_value alongside the full scored grid.
+pub fn optimize(config OptimizerConfig, alpha_values []f64, beta_values []f64, mde_values []f64) OptimizationResult {
+	mut grid := []DesignScore{}
+	for alpha in alpha_values {
+		for beta in beta_values {
+			for mde in mde_values {
+				dp := compute_design_point(alpha, beta, mde, config.baseline, config.daily_traffic)
+				score := score_design_point(config, dp)
+				grid << score
+			}
+		}
+	}
+	mut best_idx := 0
+	for i, s in grid {
+		if s.expected_value > grid[best_idx].expected_value {
+			best_idx = i
+		}
+	}
+	return OptimizationResult{
+		best: grid[best_idx]
+		grid: grid
+	}
+}

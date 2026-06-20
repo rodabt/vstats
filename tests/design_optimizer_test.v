@@ -56,3 +56,25 @@ fn test__score_design_point_large_negative_effect() {
 	// expected_value must be better than if we had shipped: shipping would add true_effect * post_test_n ≈ -1000
 	assert score.expected_value > -1200.0
 }
+
+fn test__optimize_best_is_grid_maximum() {
+	config := experiment.OptimizerConfig{
+		baseline:      0.50
+		daily_traffic: 2000
+		post_test_n:   10000
+		effect_dist:   experiment.EffectDist{ mean: 0.02, std: 0.03 }
+		n_sims:        200
+		seed:          7
+	}
+	// Small grid: 2×2×2 = 8 design points
+	result := experiment.optimize(
+		config,
+		[0.05, 0.10],   // alpha_values
+		[0.10, 0.20],   // beta_values
+		[0.05, 0.10],   // mde_values
+	)
+	assert result.grid.len == 8
+	for s in result.grid {
+		assert result.best.expected_value >= s.expected_value
+	}
+}
