@@ -236,8 +236,9 @@ pub fn ancova(ctrl []f64, trt []f64, x_ctrl [][]f64, x_trt [][]f64, cfg ABTestCo
 	se_trt := if se_vec.len > 1 { se_vec[1] } else { 0.0 }
 
 	t_stat := if se_trt > 0 { adj_effect / se_trt } else { 0.0 }
-	p_val := 2.0 * prob.normal_cdf(-math.abs(t_stat), 0.0, 1.0)
-	z_crit := prob.inverse_normal_cdf(1.0 - cfg.alpha / 2.0, 0.0, 1.0)
+	ancova_df := n - (n_cov + 2)
+	p_val := t_pvalue(t_stat, ancova_df)
+	z_crit := t_critical(cfg.alpha, ancova_df)
 
 	return ANCOVAResult{
 		adjusted_effect: adj_effect
