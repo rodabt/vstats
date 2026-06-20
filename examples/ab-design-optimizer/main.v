@@ -8,8 +8,8 @@ fn main() {
 	// SaaS trial-to-paid conversion at 5 %. 500 users/day per variant.
 	// $5 M ARR, trying to detect a 1 pp absolute lift (20 % relative).
 	// day_cost=$500 ≈ 0.01 % of ARR — a standard calibration.
-	// Classical formula requires ~30 days for 80 % power; seasonality floor is 14.
-	// Power floor is the binding constraint → effective_min ≈ 30 days.
+	// Classical formula requires ~17 days for 80 % power; seasonality floor is 14.
+	// Power floor is the binding constraint → effective_min = 17 days.
 	config := experiment.OptimizerConfig{
 		baseline:                  0.05
 		daily_traffic_per_variant: 500
