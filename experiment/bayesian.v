@@ -168,8 +168,8 @@ pub:
 	prior_mean f64 = 0.0
 	prior_std  f64 = 1000.0 // diffuse non-informative default
 	n_samples  int = 10000
-	rope_lower f64 = 0.0   // region of practical equivalence lower bound
-	rope_upper f64 = 0.0   // upper bound; both 0.0 = no ROPE
+	rope_lower f64 = 0.0   // ROPE lower bound (no ROPE when both bounds are 0.0)
+	rope_upper f64 = 0.0   // ROPE upper bound; [0.0, 0.0] is reserved for "no ROPE"
 }
 
 pub struct BayesianContinuousResult {
@@ -194,6 +194,9 @@ pub:
 //
 // Use BayesianContinuousConfig.rope_lower/rope_upper to define a region of practical
 // equivalence — effects smaller than this are considered negligible even if real.
+//
+// Note: uses sample variance as a proxy for the known likelihood variance σ². For n < 30
+// this understates posterior uncertainty; use results from small groups with caution.
 pub fn bayesian_continuous_ab_test(ctrl []f64, trt []f64, cfg BayesianContinuousConfig) BayesianContinuousResult {
 	assert ctrl.len >= 2 && trt.len >= 2, 'each group needs at least 2 observations'
 	assert cfg.prior_std > 0, 'prior_std must be positive'

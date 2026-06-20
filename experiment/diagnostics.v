@@ -69,7 +69,8 @@ pub fn mde_from_n_proportions(n_ctrl int, n_trt int, baseline_rate f64, alpha f6
 	// Bisect for delta such that the two-proportion test achieves target power.
 	// Power derived from: n = (z_α*se_null + z_β*se_alt)² / delta²
 	// → z_β = (delta*√n_h - z_α*se_null) / se_alt → power = Φ(z_β)
-	// where n_h is the harmonic mean of group sizes.
+	// where n_h = sqrt(harmonic_mean(n_ctrl, n_trt)) = sqrt(2*n1*n2/(n1+n2)).
+	// Harmonic mean acts as effective per-group n; equal groups → n_h = sqrt(n).
 	n_h := math.sqrt(2.0 * f64(n_ctrl) * f64(n_trt) / f64(n_ctrl + n_trt))
 	mut lo := 0.0
 	mut hi := max_delta
