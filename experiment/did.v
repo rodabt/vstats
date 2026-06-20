@@ -2,7 +2,6 @@ module experiment
 
 import math
 import stats
-import prob
 import ml
 
 @[params]
@@ -60,10 +59,10 @@ pub:
 	ci_uppers      []f64
 }
 
-// did_ci computes a confidence interval via normal approximation
-fn did_ci(effect f64, se f64, alpha f64) (f64, f64) {
-	z := prob.inverse_normal_cdf(1.0 - alpha / 2.0, 0.0, 1.0)
-	return effect - z * se, effect + z * se
+// did_ci computes a confidence interval via t-distribution
+fn did_ci(effect f64, se f64, alpha f64, df int) (f64, f64) {
+	crit := t_critical(alpha, df)
+	return effect - crit * se, effect + crit * se
 }
 
 // did_2x2 computes the simple 2x2 Difference-in-Differences estimator
@@ -88,8 +87,9 @@ pub fn did_2x2(y_treat_pre []f64, y_treat_post []f64, y_ctrl_pre []f64, y_ctrl_p
 	se := math.sqrt(v_tp + v_t0 + v_cp + v_c0)
 
 	t_stat := if se > 0 { did / se } else { 0.0 }
-	p_val := 2.0 * prob.normal_cdf(-math.abs(t_stat), 0.0, 1.0)
-	ci_lo, ci_hi := did_ci(did, se, cfg.alpha)
+	did2x2_df := y_treat_pre.len + y_treat_post.len + y_ctrl_pre.len + y_ctrl_post.len - 4
+	p_val := t_pvalue(t_stat, did2x2_df)
+	ci_lo, ci_hi := did_ci(did, se, cfg.alpha, did2x2_df)
 
 	return DiDResult{
 		did_effect:     did
@@ -142,8 +142,10 @@ pub fn did_regression(y []f64, x [][]f64, group []int, time []int, cfg DiDConfig
 	did_se_val := if se.len > 3 { se[3] } else { 0.0 }
 
 	t_stat := if did_se_val > 0 { did_coef / did_se_val } else { 0.0 }
-	p_val := 2.0 * prob.normal_cdf(-math.abs(t_stat), 0.0, 1.0)
-	ci_lo, ci_hi := did_ci(did_coef, did_se_val, cfg.alpha)
+	// n_features = 3 (treat, post, treat*post) + n_extra covariates; +1 for intercept
+	did_reg_df := n - (4 + n_extra)
+	p_val := t_pvalue(t_stat, did_reg_df)
+	ci_lo, ci_hi := did_ci(did_coef, did_se_val, cfg.alpha, did_reg_df)
 
 	// R-squared
 	preds := ml.linear_predict(model, x_design)
@@ -207,7 +209,8 @@ pub fn test_parallel_trends(y_treated_pre []f64, y_control_pre []f64, time_pre [
 	interaction_se := if se.len > 3 { se[3] } else { 0.0 }
 
 	t_stat := if interaction_se > 0 { slope_diff / interaction_se } else { 0.0 }
-	p_val := 2.0 * prob.normal_cdf(-math.abs(t_stat), 0.0, 1.0)
+	pt_df := n - 4
+	p_val := t_pvalue(t_stat, pt_df)
 
 	return ParallelTrendsResult{
 		slope_treated:        slope_t

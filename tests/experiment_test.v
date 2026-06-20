@@ -597,3 +597,15 @@ fn test__abtest_ci_uses_t_distribution() {
 	result := experiment.abtest(ctrl, trt)
 	assert result.ci_upper - result.ci_lower > 1.2
 }
+
+fn test__did_2x2_ci_uses_t_distribution() {
+	// With n=3 per group (df=8), t(8,0.975)≈2.306 vs z(0.975)≈1.960.
+	// CI width under t: ≈2.661. CI width under z (current bug): ≈2.262.
+	y_treat_pre  := [9.5, 10.0, 10.5]
+	y_treat_post := [14.5, 15.0, 15.5]
+	y_ctrl_pre   := [9.5, 10.0, 10.5]
+	y_ctrl_post  := [9.5, 10.0, 10.5]
+	result := experiment.did_2x2(y_treat_pre, y_treat_post, y_ctrl_pre, y_ctrl_post)
+	assert math.abs(result.did_effect - 5.0) < 0.01
+	assert result.ci_upper - result.ci_lower > 2.4
+}
