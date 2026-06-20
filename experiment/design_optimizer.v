@@ -43,15 +43,20 @@ pub:
 }
 
 // compute_design_point derives sample size and runtime from (alpha, beta, mde) via
-// the one-sided two-proportion z-test power formula.
+// the one-sided two-proportion z-test power formula. alpha is the one-sided type-I
+// error rate: z_alpha = Φ⁻¹(1 − alpha), not Φ⁻¹(1 − alpha/2).
 pub fn compute_design_point(alpha f64, beta f64, mde f64, baseline f64, daily_traffic int) DesignPoint {
+	assert alpha > 0.0 && alpha < 1.0, 'alpha must be in (0, 1)'
+	assert beta > 0.0 && beta < 1.0, 'beta must be in (0, 1)'
+	assert mde > 0.0, 'mde must be positive'
+	assert baseline > 0.0 && baseline < 1.0, 'baseline must be in (0, 1)'
+	assert daily_traffic > 0, 'daily_traffic must be positive'
 	z_alpha := prob.inverse_normal_cdf(1.0 - alpha, 0.0, 1.0)
 	z_beta := prob.inverse_normal_cdf(1.0 - beta, 0.0, 1.0)
 	p := baseline
 	n_raw := (z_alpha + z_beta) * (z_alpha + z_beta) * 2.0 * p * (1.0 - p) / (mde * mde)
-	n := if n_raw > f64(int(n_raw)) { int(n_raw) + 1 } else { int(n_raw) }
-	rt_raw := f64(n) / f64(daily_traffic)
-	runtime := if rt_raw > f64(int(rt_raw)) { int(rt_raw) + 1 } else { int(rt_raw) }
+	n := int(math.ceil(n_raw))
+	runtime := int(math.ceil(f64(n) / f64(daily_traffic)))
 	return DesignPoint{
 		alpha:        alpha
 		beta:         beta
@@ -110,6 +115,7 @@ fn simulate_one(config OptimizerConfig, dp DesignPoint, z_alpha f64) (f64, bool)
 // score_design_point evaluates a DesignPoint across n_sims simulations and returns
 // average marginal conversions and correct decision rate.
 pub fn score_design_point(config OptimizerConfig, dp DesignPoint) DesignScore {
+	assert config.n_sims > 0, 'n_sims must be positive'
 	rand.seed([config.seed, u32(0)])
 	z_alpha := prob.inverse_normal_cdf(1.0 - dp.alpha, 0.0, 1.0)
 
@@ -132,6 +138,7 @@ pub fn score_design_point(config OptimizerConfig, dp DesignPoint) DesignScore {
 // optimize sweeps all (alpha, beta, mde) combinations and returns the DesignScore
 // with the highest expected_value alongside the full scored grid.
 pub fn optimize(config OptimizerConfig, alpha_values []f64, beta_values []f64, mde_values []f64) OptimizationResult {
+	assert alpha_values.len > 0 && beta_values.len > 0 && mde_values.len > 0, 'alpha_values, beta_values, and mde_values must be non-empty'
 	mut grid := []DesignScore{}
 	for alpha in alpha_values {
 		for beta in beta_values {
