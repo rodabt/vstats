@@ -1,6 +1,5 @@
 module experiment
 
-import math
 import vstats.prob
 
 pub struct EffectDist {
