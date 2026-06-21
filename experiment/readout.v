@@ -1,6 +1,8 @@
 module experiment
 
 import math
+import prob
+import stats
 
 pub struct SRMResult {
 pub:
@@ -115,5 +117,85 @@ pub fn hte_subgroup(y []f64, treatment []int, subgroup []int, labels []string, c
 		subgroup_effects:  effects
 		subgroup_p_values: p_values
 		subgroup_ns:       ns
+	}
+}
+
+@[params]
+pub struct NoveltyCheckConfig {
+pub:
+	alpha               f64 = 0.05
+	min_periods_for_slope int = 3
+}
+
+pub struct NoveltyCheckResult {
+pub:
+	early_effect       f64
+	late_effect        f64
+	trend              f64
+	slope              f64
+	slope_p_value      f64
+	slope_significant  bool
+	novelty_suspected  bool
+	primacy_suspected  bool
+	n_periods          int
+	sufficient_periods bool
+}
+
+// novelty_primacy_check analyses a time series of per-period treatment effects
+// to detect novelty (fading effect) or primacy (growing effect) patterns.
+//
+// effects: ordered []f64 of treatment effects, one per time period (e.g. weekly abtest results).
+// Returns early/late split means, OLS slope with t-test, and novelty/primacy flags.
+pub fn novelty_primacy_check(effects []f64, cfg NoveltyCheckConfig) NoveltyCheckResult {
+	assert effects.len >= 2, 'need at least 2 periods'
+
+	n := effects.len
+	mid := n / 2
+
+	early_effect := stats.mean(effects[..mid])
+	late_effect := stats.mean(effects[mid..])
+	trend := late_effect - early_effect
+
+	x_mean := f64(n - 1) / 2.0
+	y_mean := stats.mean(effects)
+	mut cov_xy := 0.0
+	mut ss_x := 0.0
+	for i in 0 .. n {
+		xi := f64(i)
+		cov_xy += (xi - x_mean) * (effects[i] - y_mean)
+		ss_x += (xi - x_mean) * (xi - x_mean)
+	}
+	slope := if ss_x > 0.0 { cov_xy / ss_x } else { 0.0 }
+	intercept := y_mean - slope * x_mean
+
+	sufficient := n >= cfg.min_periods_for_slope
+	mut slope_p := 1.0
+	mut slope_sig := false
+	if sufficient && ss_x > 0.0 {
+		mut sse := 0.0
+		for i in 0 .. n {
+			resid := effects[i] - (intercept + slope * f64(i))
+			sse += resid * resid
+		}
+		s2 := sse / f64(n - 2)
+		se_slope := if s2 > 0.0 { math.sqrt(s2 / ss_x) } else { 0.0 }
+		if se_slope > 0.0 {
+			t := slope / se_slope
+			slope_p = 2.0 * prob.students_t_cdf(-math.abs(t), n - 2)
+			slope_sig = slope_p < cfg.alpha
+		}
+	}
+
+	return NoveltyCheckResult{
+		early_effect:       early_effect
+		late_effect:        late_effect
+		trend:              trend
+		slope:              slope
+		slope_p_value:      slope_p
+		slope_significant:  slope_sig
+		novelty_suspected:  slope < 0 && slope_sig
+		primacy_suspected:  slope > 0 && slope_sig
+		n_periods:          n
+		sufficient_periods: sufficient
 	}
 }
