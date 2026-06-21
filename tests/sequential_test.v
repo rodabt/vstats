@@ -51,3 +51,50 @@ fn test__sprt_boundaries_correct() {
 	assert math.abs(result.upper_boundary - math.log(16.0)) < 0.01
 	assert math.abs(result.lower_boundary - math.log(0.2 / 0.95)) < 0.01
 }
+
+fn test__msprt_reject_null() {
+	// Treatment ~3 SDs above control — should reject immediately
+	ctrl := [9.8, 10.2, 9.9, 10.1, 10.0, 9.7, 10.3, 9.8, 10.2, 10.0]
+	trt  := [12.8, 13.2, 12.9, 13.1, 13.0, 12.7, 13.3, 12.8, 13.2, 13.0]
+	result := experiment.msprt_test(ctrl, trt)
+
+	assert result.decision == .reject_null
+	assert result.log_mixture_ratio > result.upper_boundary
+	assert math.abs(result.effect - 3.0) < 0.001
+}
+
+fn test__msprt_accept_null() {
+	// Identical groups, large n — MLR falls below lower boundary (futility)
+	mut ctrl := []f64{len: 100}
+	mut trt  := []f64{len: 100}
+	for i in 0 .. 100 {
+		ctrl[i] = if i % 2 == 0 { 10.0 } else { 10.2 }
+		trt[i]  = if i % 2 == 0 { 10.0 } else { 10.2 }
+	}
+	result := experiment.msprt_test(ctrl, trt)
+
+	assert result.decision == .accept_null
+	assert result.log_mixture_ratio < result.lower_boundary
+	assert math.abs(result.effect) < 1e-10
+}
+
+fn test__msprt_continue_testing() {
+	// Small effect, small n — not enough evidence yet
+	ctrl := [9.8, 10.2, 9.9, 10.1, 10.0]
+	trt  := [10.1, 10.3, 10.0, 10.2, 10.1]
+	result := experiment.msprt_test(ctrl, trt)
+
+	assert result.decision == .continue_testing
+	assert result.log_mixture_ratio > result.lower_boundary
+	assert result.log_mixture_ratio < result.upper_boundary
+}
+
+fn test__msprt_provided_sigma() {
+	// Same data as test__msprt_reject_null, but sigma provided explicitly
+	ctrl := [9.8, 10.2, 9.9, 10.1, 10.0, 9.7, 10.3, 9.8, 10.2, 10.0]
+	trt  := [12.8, 13.2, 12.9, 13.1, 13.0, 12.7, 13.3, 12.8, 13.2, 13.0]
+	result := experiment.msprt_test(ctrl, trt, experiment.MSPRTConfig{ sigma: 0.2 })
+
+	assert result.decision == .reject_null
+	assert math.abs(result.sigma_hat - 0.2) < 1e-10
+}

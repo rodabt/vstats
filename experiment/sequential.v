@@ -1,6 +1,7 @@
 module experiment
 
 import math
+import stats
 
 pub enum SPRTDecision {
 	continue_testing
@@ -81,5 +82,96 @@ pub fn sprt_test(successes_a int, n_a int, successes_b int, n_b int, cfg SPRTCon
 		rate_b:               f64(successes_b) / f64(n_b)
 		n_a:                  n_a
 		n_b:                  n_b
+	}
+}
+
+@[params]
+pub struct MSPRTConfig {
+pub:
+	alpha           f64 = 0.05
+	beta            f64 = 0.20
+	tau_sigma_ratio f64 = 1.0
+	sigma           f64 = 0.0
+}
+
+pub struct MSPRTResult {
+pub:
+	log_mixture_ratio f64
+	decision          SPRTDecision
+	upper_boundary    f64
+	lower_boundary    f64
+	control_mean      f64
+	treatment_mean    f64
+	effect            f64
+	sigma_hat         f64
+	n_control         int
+	n_treatment       int
+}
+
+// msprt_test applies the mixture Sequential Probability Ratio Test (mSPRT) to
+// continuous outcome data. Like sprt_test, it is stateless — call it repeatedly
+// as cumulative data accumulates; it never inflates the false positive rate.
+//
+// The mixture likelihood ratio (MLR) is the Bayes factor between a normal-mixture
+// H₁ (effect ~ N(0, τ²)) and the point null H₀: no effect. τ = tau_sigma_ratio × σ̂.
+//
+// If cfg.sigma > 0, it is used as σ directly. Otherwise σ is estimated from the
+// pooled within-group sample variance of ctrl and trt.
+pub fn msprt_test(ctrl []f64, trt []f64, cfg MSPRTConfig) MSPRTResult {
+	assert ctrl.len >= 2 && trt.len >= 2, 'each group needs at least 2 observations'
+
+	n_c := ctrl.len
+	n_t := trt.len
+	m_c := stats.mean(ctrl)
+	m_t := stats.mean(trt)
+
+	sigma_hat := if cfg.sigma > 0.0 {
+		cfg.sigma
+	} else {
+		mut ss_c := 0.0
+		mut ss_t := 0.0
+		for x in ctrl {
+			ss_c += (x - m_c) * (x - m_c)
+		}
+		for y in trt {
+			ss_t += (y - m_t) * (y - m_t)
+		}
+		pooled_var := (ss_c + ss_t) / f64(n_c + n_t - 2)
+		math.sqrt(pooled_var)
+	}
+
+	sigma2 := sigma_hat * sigma_hat
+	tau2 := cfg.tau_sigma_ratio * sigma_hat * cfg.tau_sigma_ratio * sigma_hat
+	d := m_t - m_c
+	s2 := sigma2 * (1.0 / f64(n_c) + 1.0 / f64(n_t))
+
+	upper := math.log((1.0 - cfg.beta) / cfg.alpha)
+	lower := math.log(cfg.beta / (1.0 - cfg.alpha))
+
+	log_mlr := if s2 == 0.0 {
+		0.0
+	} else {
+		0.5 * math.log(s2 / (s2 + tau2)) + d * d * tau2 / (2.0 * s2 * (s2 + tau2))
+	}
+
+	decision := if log_mlr >= upper {
+		SPRTDecision.reject_null
+	} else if log_mlr <= lower {
+		SPRTDecision.accept_null
+	} else {
+		SPRTDecision.continue_testing
+	}
+
+	return MSPRTResult{
+		log_mixture_ratio: log_mlr
+		decision:          decision
+		upper_boundary:    upper
+		lower_boundary:    lower
+		control_mean:      m_c
+		treatment_mean:    m_t
+		effect:            d
+		sigma_hat:         sigma_hat
+		n_control:         n_c
+		n_treatment:       n_t
 	}
 }
