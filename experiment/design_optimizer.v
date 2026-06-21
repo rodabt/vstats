@@ -19,9 +19,8 @@ pub struct OptimizerConfig {
 pub:
 	baseline                  f64
 	daily_traffic_per_variant int
-	annual_revenue            f64 = 1_000_000.0
+	mde_tolerance             f64
 	alpha                     f64 = 0.05
-	day_cost                  f64 = 500.0
 	prior                     MixturePrior
 	seasonality_min_days      int = 14
 	min_power                 f64 = 0.80
@@ -31,20 +30,20 @@ pub:
 
 pub struct RuntimeResult {
 pub:
-	runtime_days   int
-	annual_utility f64
+	runtime_days           int
+	monthly_detection_rate f64
 }
 
 pub struct OptimizationResult {
 pub:
-	optimal_days       int
-	annual_utility     f64
-	all_results        []RuntimeResult
-	worth_running      bool
-	power_min_days     int
-	effective_min_days int
-	power_at_optimal   f64
-	no_go_reason       string
+	optimal_days           int
+	monthly_detection_rate f64
+	all_results            []RuntimeResult
+	worth_running          bool
+	power_min_days         int
+	effective_min_days     int
+	power_at_optimal       f64
+	no_go_reason           string
 }
 
 fn sample_effects(prior MixturePrior) []f64 {
@@ -76,33 +75,19 @@ fn power_for_effect(effect f64, baseline f64, sample_per_variant int, alpha f64)
 	return 1.0 - prob.normal_cdf(z_alpha - noncentrality, 0.0, 1.0)
 }
 
-fn expected_utility(runtime_days int, config OptimizerConfig, effects []f64) f64 {
+fn detection_rate(runtime_days int, config OptimizerConfig, effects []f64) f64 {
 	n := runtime_days * config.daily_traffic_per_variant
-	mut total_gain := 0.0
-	mut total_fp_cost := 0.0
+	mut total := 0.0
 	for effect in effects {
-		pwr := power_for_effect(effect, config.baseline, n, config.alpha)
-		value := config.annual_revenue * effect
-		if value > 0.0 {
-			total_gain += pwr * value
-		}
-		if effect == 0.0 {
-			total_fp_cost += config.alpha * 10_000.0
+		if effect >= config.mde_tolerance {
+			total += power_for_effect(effect, config.baseline, n, config.alpha)
 		}
 	}
-	n_samples := f64(effects.len)
-	return total_gain / n_samples - total_fp_cost / n_samples - f64(runtime_days) * config.day_cost
+	return (total / f64(effects.len)) * (30.0 / f64(runtime_days))
 }
 
-fn annual_utility(runtime_days int, config OptimizerConfig, effects []f64) f64 {
-	eu := expected_utility(runtime_days, config, effects)
-	return eu * (365.0 / f64(runtime_days))
-}
-
-// power_floor returns the minimum days required to achieve config.min_power
-// for the prior's pos_mean effect, using the classical two-proportion formula.
 fn power_floor(config OptimizerConfig) int {
-	effect := math.abs(config.prior.pos_mean)
+	effect := config.mde_tolerance
 	if effect <= 0.0 {
 		return config.max_days
 	}
@@ -121,6 +106,7 @@ fn power_floor(config OptimizerConfig) int {
 pub fn find_optimal_runtime(config OptimizerConfig) OptimizationResult {
 	assert config.baseline > 0.0 && config.baseline < 1.0, 'baseline must be in (0, 1)'
 	assert config.daily_traffic_per_variant > 0, 'daily_traffic_per_variant must be positive'
+	assert config.mde_tolerance > 0.0, 'mde_tolerance must be positive'
 	assert config.seasonality_min_days > 0, 'seasonality_min_days must be positive'
 	assert config.min_power > 0.0 && config.min_power < 1.0, 'min_power must be in (0, 1)'
 	assert config.max_days > 0, 'max_days must be positive'
@@ -128,68 +114,51 @@ pub fn find_optimal_runtime(config OptimizerConfig) OptimizationResult {
 	pmdays := power_floor(config)
 	eff_min := if pmdays > config.seasonality_min_days { pmdays } else { config.seasonality_min_days }
 
-	// Layer 1 early exit: insufficient traffic to reach target power within max_days
 	if pmdays > config.max_days {
 		return OptimizationResult{
 			worth_running:      false
 			power_min_days:     pmdays
 			effective_min_days: eff_min
-			no_go_reason:       'need ${pmdays} days for ${config.min_power * 100:.0f}% power but max_days is ${config.max_days} — increase traffic or max_days'
+			no_go_reason:       'need ${pmdays} days for ${config.min_power * 100:.0f}% sensitivity to ${config.mde_tolerance * 100:.1f}pp MDE but max_days is ${config.max_days} — increase traffic or max_days'
 		}
 	}
 
 	rand.seed([config.seed, u32(0)])
 	effects := sample_effects(config.prior)
 
-	// Layer 2: sweep EU×365/T over the valid window
 	mut all_results := []RuntimeResult{}
 	for days in eff_min .. config.max_days + 1 {
-		au := annual_utility(days, config, effects)
-		all_results << RuntimeResult{ runtime_days: days, annual_utility: au }
+		dr := detection_rate(days, config, effects)
+		all_results << RuntimeResult{ runtime_days: days, monthly_detection_rate: dr }
 	}
+
 	mut best_idx := 0
 	for i, r in all_results {
-		if r.annual_utility > all_results[best_idx].annual_utility {
+		if r.monthly_detection_rate > all_results[best_idx].monthly_detection_rate {
 			best_idx = i
 		}
 	}
+
 	opt_days := all_results[best_idx].runtime_days
-	opt_au := all_results[best_idx].annual_utility
-	opt_power := power_for_effect(config.prior.pos_mean, config.baseline,
+	opt_dr := all_results[best_idx].monthly_detection_rate
+	opt_power := power_for_effect(config.mde_tolerance, config.baseline,
 		opt_days * config.daily_traffic_per_variant, config.alpha)
 
-	// Layer 3: go/no-go — compute components at opt_days for the reason string
-	n_samples := f64(effects.len)
-	n_at_opt := opt_days * config.daily_traffic_per_variant
-	mut total_gain := 0.0
-	mut total_fp := 0.0
-	for effect in effects {
-		pwr := power_for_effect(effect, config.baseline, n_at_opt, config.alpha)
-		value := config.annual_revenue * effect
-		if value > 0.0 {
-			total_gain += pwr * value
-		}
-		if effect == 0.0 {
-			total_fp += config.alpha * 10_000.0
-		}
-	}
-	exp_gain := total_gain / n_samples
-	exp_cost := total_fp / n_samples + f64(opt_days) * config.day_cost
-	worth := opt_au > 0.0
+	worth := opt_dr > 0.0
 	reason := if !worth {
-		'expected gains (\$${exp_gain:.0f}) don\'t cover costs (\$${exp_cost:.0f} at ${opt_days} days) — reduce day_cost or increase annual_revenue'
+		'no effects >= ${config.mde_tolerance * 100:.1f}pp in prior, or power too low — check prior.pos_mean vs mde_tolerance'
 	} else {
 		''
 	}
 
 	return OptimizationResult{
-		optimal_days:       opt_days
-		annual_utility:     opt_au
-		all_results:        all_results
-		worth_running:      worth
-		power_min_days:     pmdays
-		effective_min_days: eff_min
-		power_at_optimal:   opt_power
-		no_go_reason:       reason
+		optimal_days:           opt_days
+		monthly_detection_rate: opt_dr
+		all_results:            all_results
+		worth_running:          worth
+		power_min_days:         pmdays
+		effective_min_days:     eff_min
+		power_at_optimal:       opt_power
+		no_go_reason:           reason
 	}
 }
