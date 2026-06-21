@@ -172,3 +172,33 @@ pub fn bootstrap_test(ctrl []f64, trt []f64, n_resamples int) BootstrapResult {
 		n_resamples:   n_resamples
 	}
 }
+
+pub struct BootstrapCIResult {
+pub:
+	estimate f64
+	ci_lower f64
+	ci_upper f64
+}
+
+pub fn bootstrap_ci(x []f64, stat fn ([]f64) f64, n_boot int, alpha f64) BootstrapCIResult {
+	assert x.len >= 2, 'bootstrap_ci requires at least 2 elements'
+	assert n_boot >= 1, 'n_boot must be at least 1'
+	assert alpha > 0.0 && alpha < 1.0, 'alpha must be in (0, 1)'
+	estimate := stat(x)
+	mut boot_stats := []f64{len: n_boot}
+	for i in 0 .. n_boot {
+		mut boot_sample := []f64{len: x.len}
+		for j in 0 .. x.len {
+			boot_sample[j] = x[rand.intn(x.len) or { 0 }]
+		}
+		boot_stats[i] = stat(boot_sample)
+	}
+	boot_stats.sort()
+	lo := int(alpha / 2.0 * f64(n_boot))
+	hi := int((1.0 - alpha / 2.0) * f64(n_boot))
+	return BootstrapCIResult{
+		estimate: estimate
+		ci_lower: boot_stats[lo]
+		ci_upper: boot_stats[hi]
+	}
+}
