@@ -609,3 +609,85 @@ fn test__did_2x2_ci_uses_t_distribution() {
 	assert math.abs(result.did_effect - 5.0) < 0.01
 	assert result.ci_upper - result.ci_lower > 2.4
 }
+
+fn test__abtest_one_sided_greater_significant() {
+	// Clear positive lift — .greater should be significant
+	control   := [10.0, 10.1, 9.9, 10.0, 10.0]
+	treatment := [12.0, 12.1, 11.9, 12.0, 12.0]
+	result := experiment.abtest(control, treatment, experiment.ABTestConfig{ alternative: .greater })
+
+	assert result.p_value < 0.05
+	assert result.significant == true
+}
+
+fn test__abtest_one_sided_less_not_significant_when_positive_lift() {
+	// Clear positive lift — .less should NOT be significant (wrong direction)
+	control   := [10.0, 10.1, 9.9, 10.0, 10.0]
+	treatment := [12.0, 12.1, 11.9, 12.0, 12.0]
+	result := experiment.abtest(control, treatment, experiment.ABTestConfig{ alternative: .less })
+
+	assert result.p_value > 0.95
+	assert result.significant == false
+}
+
+fn test__abtest_one_sided_sum_to_one() {
+	// For any dataset: p_greater + p_less ≈ 1.0
+	control   := [10.0, 10.1, 9.9, 10.0, 10.0]
+	treatment := [12.0, 12.1, 11.9, 12.0, 12.0]
+	r_greater := experiment.abtest(control, treatment, experiment.ABTestConfig{ alternative: .greater })
+	r_less    := experiment.abtest(control, treatment, experiment.ABTestConfig{ alternative: .less })
+
+	assert math.abs(r_greater.p_value + r_less.p_value - 1.0) < 1e-8
+}
+
+fn test__abtest_one_sided_half_two_sided() {
+	// p_greater ≈ p_two_sided / 2 when treatment > control
+	control   := [10.0, 10.1, 9.9, 10.0, 10.0]
+	treatment := [12.0, 12.1, 11.9, 12.0, 12.0]
+	r_two     := experiment.abtest(control, treatment)
+	r_greater := experiment.abtest(control, treatment, experiment.ABTestConfig{ alternative: .greater })
+
+	assert math.abs(r_greater.p_value - r_two.p_value / 2.0) < 1e-10
+}
+
+fn test__abtest_ci_always_two_sided() {
+	// CIs must be the same regardless of alternative
+	control   := [10.0, 10.1, 9.9, 10.0, 10.0]
+	treatment := [12.0, 12.1, 11.9, 12.0, 12.0]
+	r_two     := experiment.abtest(control, treatment)
+	r_greater := experiment.abtest(control, treatment, experiment.ABTestConfig{ alternative: .greater })
+	r_less    := experiment.abtest(control, treatment, experiment.ABTestConfig{ alternative: .less })
+
+	assert math.abs(r_two.ci_lower - r_greater.ci_lower) < 1e-10
+	assert math.abs(r_two.ci_upper - r_greater.ci_upper) < 1e-10
+	assert math.abs(r_two.ci_lower - r_less.ci_lower) < 1e-10
+	assert math.abs(r_two.ci_upper - r_less.ci_upper) < 1e-10
+}
+
+fn test__ancova_one_sided_greater_significant() {
+	// ANCOVA with clear positive lift — .greater should be significant
+	ctrl_out := [10.0, 10.1, 9.9, 10.2, 9.8]
+	trt_out  := [12.0, 12.1, 11.9, 12.2, 11.8]
+	// covariates: single pre-period covariate
+	x_ctrl := [[9.9], [10.0], [10.1], [10.0], [9.8]]
+	x_trt  := [[10.0], [9.9], [10.2], [10.1], [9.7]]
+
+	result := experiment.ancova(ctrl_out, trt_out, x_ctrl, x_trt,
+		experiment.ABTestConfig{ alternative: .greater })
+
+	assert result.p_value < 0.05
+	assert result.significant == true
+}
+
+fn test__ancova_one_sided_less_not_significant_when_positive_lift() {
+	ctrl_out := [10.0, 10.1, 9.9, 10.2, 9.8]
+	trt_out  := [12.0, 12.1, 11.9, 12.2, 11.8]
+	x_ctrl := [[9.9], [10.0], [10.1], [10.0], [9.8]]
+	x_trt  := [[10.0], [9.9], [10.2], [10.1], [9.7]]
+
+	result := experiment.ancova(ctrl_out, trt_out, x_ctrl, x_trt,
+		experiment.ABTestConfig{ alternative: .less })
+
+	assert result.p_value > 0.95
+	assert result.significant == false
+}

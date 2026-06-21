@@ -5,11 +5,18 @@ import stats
 import prob
 import ml
 
+pub enum TestAlternative {
+	two_sided
+	greater
+	less
+}
+
 @[params]
 pub struct ABTestConfig {
 pub:
 	alpha          f64 = 0.05
 	equal_variance bool
+	alternative    TestAlternative = .two_sided
 }
 
 pub struct ABTestResult {
@@ -108,7 +115,11 @@ pub fn abtest(control []f64, treatment []f64, cfg ABTestConfig) ABTestResult {
 
 	d := stats.cohens_d(treatment, control)
 	t, df := welch_t(m_t, m_c, v_t, v_c, n_t, n_c)
-	p := t_pvalue_approx(t, df)
+	p := match cfg.alternative {
+		.two_sided { t_pvalue_approx(t, df) }
+		.greater   { prob.students_t_cdf(-t, int(df)) }
+		.less      { prob.students_t_cdf(t, int(df)) }
+	}
 	ci_lo, ci_hi := welch_ci(m_t, m_c, v_t, v_c, n_t, n_c, cfg.alpha, df)
 	lift := if m_c != 0 { (m_t - m_c) / math.abs(m_c) } else { 0.0 }
 
@@ -237,7 +248,11 @@ pub fn ancova(ctrl []f64, trt []f64, x_ctrl [][]f64, x_trt [][]f64, cfg ABTestCo
 
 	t_stat := if se_trt > 0 { adj_effect / se_trt } else { 0.0 }
 	ancova_df := n - (n_cov + 2)
-	p_val := t_pvalue(t_stat, ancova_df)
+	p_val := match cfg.alternative {
+		.two_sided { t_pvalue(t_stat, ancova_df) }
+		.greater   { prob.students_t_cdf(-t_stat, ancova_df) }
+		.less      { prob.students_t_cdf(t_stat, ancova_df) }
+	}
 	z_crit := t_critical(cfg.alpha, ancova_df)
 
 	return ANCOVAResult{
