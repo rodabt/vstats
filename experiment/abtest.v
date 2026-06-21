@@ -329,7 +329,24 @@ pub fn itt_and_pp(y []f64, assigned []int, complied []bool, cfg ABTestConfig) IT
 	}
 }
 
-// cuped_test runs CUPED-adjusted A/B test using pre-experiment covariates
+// cuped_test runs CUPED-adjusted A/B test using pre-experiment covariates.
+// It works for both continuous and proportion (binary 0/1) outcome metrics.
+//
+// For proportion metrics, pass conversion outcomes as 0.0 (no event) or 1.0 (event).
+// The pre-experiment covariate can be a prior binary outcome (0/1) or any continuous
+// metric correlated with conversion (sessions, pageviews, spend). The adjusted values
+// are real-valued after the CUPED transformation; Welch's t-test on adjusted binary
+// outcomes is valid for large n by the Central Limit Theorem.
+//
+// Example — proportion metric with a continuous pre-covariate:
+//
+//   y_ctrl    := [0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0]
+//   y_treat   := [1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0]
+//   pre_ctrl  := [3.0, 8.0, 2.0, 1.0, 7.0, 2.0, 6.0, 1.0]
+//   pre_treat := [4.0, 9.0, 1.0, 5.0, 8.0, 3.0, 7.0, 5.0]
+//   result := experiment.cuped_test(y_ctrl, y_treat, pre_ctrl, pre_treat)
+//   // result.adjusted_result.treatment_mean ≈ adjusted conversion rate for treatment
+//   // result.variance_reduction: fraction of variance removed by the covariate
 pub fn cuped_test(y_ctrl []f64, y_treat []f64, pre_ctrl []f64, pre_treat []f64, cfg ABTestConfig) CUPEDResult {
 	assert y_ctrl.len == pre_ctrl.len, 'control pre/post lengths must match'
 	assert y_treat.len == pre_treat.len, 'treatment pre/post lengths must match'
