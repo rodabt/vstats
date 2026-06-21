@@ -62,3 +62,54 @@ fn test__proportion_test_zero_baseline_lift() {
 	assert result.relative_lift == 0.0
 	assert result.diff > 0.0
 }
+
+fn test__proportion_test_one_sided_greater_significant() {
+	// 50/1000 (5%) vs 80/1000 (8%) — clear positive lift
+	result := experiment.proportion_test(50, 1000, 80, 1000,
+		experiment.ProportionTestConfig{ alternative: .greater })
+
+	assert result.p_value < 0.05
+	assert result.significant == true
+}
+
+fn test__proportion_test_one_sided_less_not_significant_when_positive_lift() {
+	// Same data — .less should NOT be significant
+	result := experiment.proportion_test(50, 1000, 80, 1000,
+		experiment.ProportionTestConfig{ alternative: .less })
+
+	assert result.p_value > 0.95
+	assert result.significant == false
+}
+
+fn test__proportion_test_one_sided_sum_to_one() {
+	// p_greater + p_less = 1.0
+	r_greater := experiment.proportion_test(50, 1000, 80, 1000,
+		experiment.ProportionTestConfig{ alternative: .greater })
+	r_less    := experiment.proportion_test(50, 1000, 80, 1000,
+		experiment.ProportionTestConfig{ alternative: .less })
+
+	assert math.abs(r_greater.p_value + r_less.p_value - 1.0) < 1e-10
+}
+
+fn test__proportion_test_one_sided_half_two_sided() {
+	// p_greater ≈ p_two_sided / 2 when rate_b > rate_a
+	r_two     := experiment.proportion_test(50, 1000, 80, 1000)
+	r_greater := experiment.proportion_test(50, 1000, 80, 1000,
+		experiment.ProportionTestConfig{ alternative: .greater })
+
+	assert math.abs(r_greater.p_value - r_two.p_value / 2.0) < 1e-10
+}
+
+fn test__proportion_test_ci_always_two_sided() {
+	// CIs must be identical regardless of alternative
+	r_two     := experiment.proportion_test(50, 1000, 80, 1000)
+	r_greater := experiment.proportion_test(50, 1000, 80, 1000,
+		experiment.ProportionTestConfig{ alternative: .greater })
+	r_less    := experiment.proportion_test(50, 1000, 80, 1000,
+		experiment.ProportionTestConfig{ alternative: .less })
+
+	assert math.abs(r_two.ci_lower - r_greater.ci_lower) < 1e-10
+	assert math.abs(r_two.ci_upper - r_greater.ci_upper) < 1e-10
+	assert math.abs(r_two.ci_lower - r_less.ci_lower) < 1e-10
+	assert math.abs(r_two.ci_upper - r_less.ci_upper) < 1e-10
+}

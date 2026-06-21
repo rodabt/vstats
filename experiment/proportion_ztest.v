@@ -6,7 +6,8 @@ import prob
 @[params]
 pub struct ProportionTestConfig {
 pub:
-	alpha f64 = 0.05
+	alpha       f64 = 0.05
+	alternative TestAlternative = .two_sided
 }
 
 pub struct ProportionTestResult {
@@ -44,7 +45,11 @@ pub fn proportion_test(successes_a int, n_a int, successes_b int, n_b int, cfg P
 	p_pool := f64(successes_a + successes_b) / f64(n_a + n_b)
 	pse := math.sqrt(p_pool * (1.0 - p_pool) * (1.0 / f64(n_a) + 1.0 / f64(n_b)))
 	z := if pse > 0 { diff / pse } else { 0.0 }
-	p_val := 2.0 * prob.normal_cdf(-math.abs(z), 0.0, 1.0)
+	p_val := match cfg.alternative {
+		.two_sided { 2.0 * prob.normal_cdf(-math.abs(z), 0.0, 1.0) }
+		.greater   { prob.normal_cdf(-z, 0.0, 1.0) }
+		.less      { prob.normal_cdf(z, 0.0, 1.0) }
+	}
 
 	// Unpooled SE for CI (uses alpha from config, never hard-coded)
 	se_diff := math.sqrt(rate_a * (1.0 - rate_a) / f64(n_a) + rate_b * (1.0 - rate_b) / f64(n_b))
