@@ -84,6 +84,20 @@ v test tests/stats_test.v   # single test file
 
 ## Changelog
 
+### v0.3.2
+
+**experiment module improvements**
+- **One-sided hypothesis tests**: `abtest`, `ancova`, and `proportion_test` now accept `alternative: .greater` or `alternative: .less` (via `TestAlternative` enum) for directional p-values; CIs remain two-sided; default `.two_sided` is fully backward-compatible
+- **mSPRT for continuous metrics** (`sequential.v`): `msprt_test` applies the mixture Sequential Probability Ratio Test to continuous outcome data — stateless, always-valid inference, normal-mixture prior with tunable `tau_sigma_ratio`; σ estimated from data or provided by caller
+- **Novelty/primacy detection** (`readout.v`): `novelty_primacy_check` takes a per-period effect time series and returns early/late split means, OLS slope with t-test significance, and `novelty_suspected` / `primacy_suspected` flags
+- **CUPED for proportions**: documented in `cuped_test` that binary 0/1 outcomes work directly — pass conversion events as 0.0/1.0 `[]f64` with any continuous pre-covariate
+
+### v0.3.1
+
+**experiment module improvements**
+- **A/B design optimizer** (`design_optimizer.v`): `find_optimal_runtime` replaces the EU-based objective with a detection-rate objective — `E[I(effect ≥ mde_tolerance) × power(effect, T)] × 30/T` — eliminating the need for unknown `annual_revenue` / `day_cost`. Given a `MixturePrior` over possible true effects, the optimizer finds the runtime that maximises expected meaningful detections per month. Answers: "can we catch a ≥ N pp effect within a month, given our traffic?"
+- **t-distribution corrections**: all p-values and CIs in `abtest.v` (Welch's t-test, ANCOVA) and `did.v` (DiD regression) now use the exact t-distribution instead of the normal approximation
+
 ### v0.3.0
 
 **New module: timeseries**
