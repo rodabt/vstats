@@ -84,6 +84,13 @@ v test tests/stats_test.v   # single test file
 
 ## Changelog
 
+### v0.3.3
+
+**experiment module improvements**
+- **Non-parametric tests** (`nonparametric.v`): `mann_whitney_ab_test` (two-sample) and `wilcoxon_paired_test` (paired) return rank-biserial correlation effect size and percentile bootstrap CI; both support `alternative: .greater / .less`
+- **Winsorized/trimmed means**: `utils.winsorize` and `utils.trim` clip/remove outliers by percentile; `experiment.winsorized_abtest` and `experiment.trimmed_abtest` apply them before Welch's t-test for outlier-robust comparisons
+- **Bootstrap CI** (`stats/inference.v`): `stats.bootstrap_ci(x, stat_fn, n_boot, alpha)` returns a percentile CI for any scalar statistic — mean, median, 90th percentile, or custom lambda; `BootstrapCIResult` carries the point estimate alongside bounds
+
 ### v0.3.2
 
 **experiment module improvements**
