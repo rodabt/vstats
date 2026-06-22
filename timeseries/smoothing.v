@@ -120,6 +120,12 @@ pub fn holt_winters(x []f64, alpha f64, beta f64, gamma f64, period int, seasona
 			if season_mean != 0.0 { x[i] / season_mean } else { 1.0 }
 		}
 	}
+	// Pre-populate the second period so that seas[t] is valid when the loop
+	// first reads t = period..2*period-1 (those slots are never written by the
+	// loop because the write is seas[t + period], starting at t=1).
+	for i in 0 .. period {
+		seas[i + period] = seas[i]
+	}
 	fitted[0] = x[0]
 
 	for t in 1 .. n {
