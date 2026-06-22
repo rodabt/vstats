@@ -100,10 +100,11 @@ pub fn var_fit(data [][]f64, p int) VARModel {
 
 	// Approximate log-likelihood
 	n_params := k * (k * p + 1)
+	chol_sigma := cholesky_lower(sigma_u)
 	mut log_det := 0.0
 	for i in 0 .. k {
-		if sigma_u[i][i] > 0.0 {
-			log_det += math.log(sigma_u[i][i])
+		if chol_sigma[i][i] > 0.0 {
+			log_det += 2.0 * math.log(chol_sigma[i][i])
 		}
 	}
 	log_lik := -0.5 * f64(t_eff) * (f64(k) * (1.0 + math.log(2.0 * math.pi)) + log_det)
