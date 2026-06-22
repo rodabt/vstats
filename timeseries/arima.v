@@ -2,6 +2,7 @@ module timeseries
 
 import math
 import stats
+import prob
 
 pub struct ARIMAModel {
 pub:
@@ -250,7 +251,7 @@ pub fn arima_forecast(model ARIMAModel, h int, alpha f64, original_x []f64) Fore
 
 	fc_orig := if model.d == 0 { fc_diff } else { undiff(fc_diff, original_x, model.d) }
 
-	z := 1.96
+	z := prob.inverse_normal_cdf(1.0 - alpha / 2.0, 0.0, 1.0)
 	mut lower := []f64{len: h}
 	mut upper := []f64{len: h}
 	for t in 0 .. h {
