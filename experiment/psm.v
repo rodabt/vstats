@@ -3,7 +3,6 @@ module experiment
 import math
 import stats
 import ml
-import hypothesis
 
 pub struct PropensityModel {
 pub:
@@ -267,7 +266,10 @@ pub fn ate_matched(y []f64, treatment []f64, result MatchingResult) ATEResult {
 	n_c := f64(y_control.len)
 	se := math.sqrt(v_t / n_t + v_c / n_c)
 
-	t_stat, p_val := hypothesis.t_test_two_sample(y_treated, y_control)
+	// t_stat derived from Welch SE to be consistent with the SE and CI below
+	t_stat := if se > 0 { ate / se } else { 0.0 }
+	// two-tailed p-value using normal approximation (consistent with hardcoded z=1.96 CI)
+	p_val := 2.0 * (1.0 - (1.0 + math.erf(math.abs(t_stat) / math.sqrt(2.0))) / 2.0)
 
 	z := 1.96
 	ci_lo := ate - z * se
