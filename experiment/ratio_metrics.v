@@ -71,7 +71,11 @@ pub fn ratio_metric_test(num_ctrl []f64, den_ctrl []f64, num_trt []f64, den_trt 
 	se := math.sqrt(math.max(var_rc + var_rt, 0.0))
 	diff := ratio_t - ratio_c
 	z := if se > 0 { diff / se } else { 0.0 }
-	p_val := 2.0 * prob.normal_cdf(-math.abs(z), 0.0, 1.0)
+	p_val := match cfg.alternative {
+		.two_sided { 2.0 * prob.normal_cdf(-math.abs(z), 0.0, 1.0) }
+		.greater   { prob.normal_cdf(-z, 0.0, 1.0) }
+		.less      { prob.normal_cdf(z, 0.0, 1.0) }
+	}
 	z_ci := prob.inverse_normal_cdf(1.0 - cfg.alpha / 2.0, 0.0, 1.0)
 	lift := if ratio_c != 0 { diff / math.abs(ratio_c) } else { 0.0 }
 
