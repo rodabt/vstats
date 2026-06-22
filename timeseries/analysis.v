@@ -229,22 +229,19 @@ pub fn kpss_test(x []f64, lags int) KPSSResult {
 	}
 	stat := ss / (f64(n) * f64(n) * lrv)
 
-	// Approximate p-value from KPSS statistic using quantile thresholds
-	// Critical values adjusted for common sample sizes and lag settings
-	p_value := if stat < 0.0126 {
+	// Approximate p-value from KPSS statistic.
+	// Critical values: Kwiatkowski et al. (1992), Table 1, level stationarity.
+	// Larger stat → more evidence against stationarity → smaller p-value.
+	p_value := if stat > 0.739 {
 		0.01
-	} else if stat < 0.0155 {
-		0.05
-	} else if stat < 0.020 {
-		0.10
-	} else if stat < 0.030 {
-		0.25
-	} else if stat < 0.045 {
+	} else if stat > 0.574 {
 		0.025
-	} else if stat < 0.065 {
-		0.001
+	} else if stat > 0.463 {
+		0.05
+	} else if stat > 0.347 {
+		0.10
 	} else {
-		0.0001
+		0.20
 	}
 
 	return KPSSResult{

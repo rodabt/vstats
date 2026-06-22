@@ -121,11 +121,11 @@ fn test__kpss_stationary_series() {
 }
 
 fn test__kpss_random_walk() {
-	// Non-stationary random walk: should reject null
+	// Non-stationary: linear trend with drift; KPSS rejects stationarity
 	mut x := []f64{len: 200}
-	x[0] = 10.0
+	x[0] = 0.0
 	for i in 1 .. 200 {
-		x[i] = x[i - 1] + (f64(i % 7) - 3.0) * 0.5
+		x[i] = x[i - 1] + 1.0 + f64(i % 3) * 0.1
 	}
 	result := timeseries.kpss_test(x, 4)
 	assert result.is_stationary == false
