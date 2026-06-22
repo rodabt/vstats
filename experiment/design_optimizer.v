@@ -96,8 +96,10 @@ fn power_floor(config OptimizerConfig) int {
 	p2 := if p2_raw < 0.0001 { 0.0001 } else if p2_raw > 0.9999 { 0.9999 } else { p2_raw }
 	z_alpha := prob.inverse_normal_cdf(1.0 - config.alpha / 2.0, 0.0, 1.0)
 	z_beta := prob.inverse_normal_cdf(config.min_power, 0.0, 1.0)
-	variance := p1 * (1.0 - p1) + p2 * (1.0 - p2)
-	n_raw := (z_alpha + z_beta) * (z_alpha + z_beta) * variance / (effect * effect)
+	p_bar := (p1 + p2) / 2.0
+	var_null := 2.0 * p_bar * (1.0 - p_bar)
+	var_alt := p1 * (1.0 - p1) + p2 * (1.0 - p2)
+	n_raw := math.pow(z_alpha * math.sqrt(var_null) + z_beta * math.sqrt(var_alt), 2) / (effect * effect)
 	n := int(math.ceil(n_raw))
 	days_raw := f64(n) / f64(config.daily_traffic_per_variant)
 	return int(math.ceil(days_raw))
