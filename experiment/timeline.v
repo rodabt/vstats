@@ -23,3 +23,17 @@ fn sample_size_for(effect f64, baseline f64, std_dev f64, alpha f64, power f64) 
 	var_alt := p1 * (1.0 - p1) + p2 * (1.0 - p2)
 	return math.pow(z_alpha * math.sqrt(var_null) + z_beta * math.sqrt(var_alt), 2.0) / (effect * effect)
 }
+
+// power_min_days is the pure power-based runtime (in days) to detect `effect_abs`,
+// before any seasonality floor is applied.
+fn power_min_days(effect_abs f64, baseline f64, std_dev f64, daily_traffic int, alpha f64, power f64) int {
+	n := int(math.ceil(sample_size_for(effect_abs, baseline, std_dev, alpha, power)))
+	return int(math.ceil(f64(n) / f64(daily_traffic)))
+}
+
+// required_runtime returns the runtime in days needed to detect `target_lift`
+// (relative to baseline) at the given alpha and power, raised to the seasonality floor.
+pub fn required_runtime(target_lift f64, baseline f64, std_dev f64, daily_traffic int, alpha f64, power f64, seasonality_min_days int) int {
+	pd := power_min_days(target_lift * baseline, baseline, std_dev, daily_traffic, alpha, power)
+	return if pd > seasonality_min_days { pd } else { seasonality_min_days }
+}
