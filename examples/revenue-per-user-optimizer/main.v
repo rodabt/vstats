@@ -3,7 +3,7 @@ module main
 import vstats.experiment
 
 // ─────────────────────────────────────────────────────────────────────────────
-// A/B test design optimizer — proportion metric (conversion rate)
+// A/B test design optimizer — continuous metric (revenue per user)
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // NOTE: this demonstrates the optional prior-based runtime *recommender*
@@ -14,113 +14,115 @@ import vstats.experiment
 //
 // Scenario
 // --------
-// A B2C marketplace wants to test a redesigned "express checkout" button on the
-// cart page. The success metric is the cart → purchase conversion rate, currently
-// running at ~41%. The growth team can split eligible cart sessions 50/50 between
-// the old and new button.
+// An e-commerce team is testing a post-purchase upsell widget on the order
+// confirmation page. The success metric is REVENUE PER USER over the 7 days after
+// checkout — a continuous, right-skewed quantity, not a rate. Continuous metrics
+// behave very differently from conversion rates in power analysis: the binomial
+// p(1−p)/n variance no longer applies, so you MUST supply the historical standard
+// deviation of the per-user value. High variance (σ ≫ mean, typical for revenue)
+// is what makes these experiments expensive.
 //
-// The classic mistake is to ask only "how long until I hit 80% power?" and stop
-// there. That ignores opportunity cost: the testing slot is shared, and a shorter
-// experiment lets you run MORE experiments per month. find_optimal_runtime answers
-// the sharper question:
+// The optimizer finds the runtime that maximizes the expected number of true
+// positive effects detected per month, subject to a power floor and a seasonality
+// floor, and tells you up front whether the design is viable at all within max_days.
 //
-//   Given finite daily traffic and a prior belief about how likely this change is
-//   to actually help, what runtime MAXIMIZES the expected number of true positives
-//   we detect per month — counting the fact that a shorter test can be repeated?
-//
-// It returns a per-day curve of "monthly detection rate" with an interior optimum:
-// too short and each test is underpowered; too long and you run fewer tests per
-// month. The optimizer also enforces two floors — a statistical-power floor and a
-// seasonality floor (a test must span whole weekly cycles) — and refuses the whole
-// design if the power floor can't be met within max_days.
+// The headline lesson of this example is the SENSITIVITY of the answer to σ: the
+// historical standard deviation is an estimate, and revenue σ is volatile. We sweep
+// it at the end to show how much the recommendation moves when σ is off by ±35%.
 
 fn main() {
 	// ── Primary design ────────────────────────────────────────────────────────
 	params := experiment.DesignParams{
-		// Observed baseline conversion rate. Everything else is expressed relative
-		// to this. Pull it from the last few weeks of cart → purchase data.
-		baseline: 0.41
+		// Mean revenue per user over the last 90 days, in dollars. This is the metric
+		// baseline; the MDE below is taken relative to it.
+		baseline: 47.50
 
-		// Eligible sessions assigned to EACH variant per day. This is the primary
-		// lever on duration — doubling traffic roughly halves the runtime needed for
-		// a given power. Measure it from real cart volume, not total site traffic.
-		daily_traffic_per_variant: 1370
+		// Historical standard deviation of revenue per user, in dollars. REQUIRED for
+		// continuous metrics — it drives the two-sample power formula in place of the
+		// binomial variance used for proportions. For right-skewed revenue, σ is often
+		// 1.5–3× the mean. Source: SELECT STDDEV(revenue_7d) FROM orders WHERE …
+		metric_std_dev: 82.00
 
-		// Smallest relative improvement worth detecting, as a fraction of baseline.
-		// 0.05 = "detect lifts of at least 5% above the current rate", i.e. 41% → 43.05%.
-		// Required sample size scales ~quadratically: halving the MDE ≈ 4× the days.
+		// Users reaching the confirmation page per variant per day (i.e. who actually
+		// see the widget). Eligibility — not total site traffic — is what counts. This
+		// is a busy checkout; thinner traffic would push the design toward no-go.
+		daily_traffic_per_variant: 900
+
+		// Smallest relative lift worth acting on, as a fraction of baseline.
+		// 0.05 = detect a $2.38 increase on the $47.50 baseline. Revenue metrics
+		// usually need a LARGER MDE than conversion rates because σ ≫ mean inflates
+		// the sample size; chasing a 1–2% lift here is often simply unaffordable.
 		min_relative_lift: 0.05
 
-		// How confident are you the change will produce a positive effect?
-		//   0.2  speculative idea, no prior evidence
-		//   0.5  neutral — some signal, uncertain outcome
-		//   0.8  strong prior, incremental polish with history behind it
-		// Conviction shapes BOTH the prior over effect sizes AND the minimum monthly
-		// detection rate the design must clear to be judged "worth running". A button
-		// restyle with mixed past results is genuine skepticism — 0.30.
-		prior_conviction: 0.30
+		// Confidence the widget will lift revenue. Past upsell tests were mixed, so
+		// this is moderate skepticism — 0.35. Conviction sets both the prior over
+		// effect sizes and the minimum monthly detection rate required to say "go".
+		prior_conviction: 0.35
 
-		// A full weekly cycle is 7 days; require at least two so weekday/weekend mix
-		// is balanced across the window and novelty effects can wash out.
+		// Span at least two full weekly cycles so paydays / weekend spend balance out.
 		seasonality_min_days: 14
 
-		// Hard cap on duration. If the power floor exceeds this, the optimizer returns
-		// NO — the fix is more traffic or a larger min_relative_lift, not more patience.
-		max_days: 30
+		// Revenue experiments often need more calendar time than conversion tests, so
+		// allow a longer cap before declaring the design infeasible.
+		max_days: 60
 	}
 
 	config := experiment.optimizer_config(params)
 	result := experiment.find_optimal_runtime(config)
 
-	print_header('CONVERSION-RATE A/B DESIGN', config, params)
+	print_header('REVENUE-PER-USER A/B DESIGN', config, params)
 	print_readout(result, config)
 	print_runtime_curve(result)
 
 	// ── Sensitivity analysis ───────────────────────────────────────────────────
-	// A single point estimate is fragile: conviction is a judgement call, and traffic
-	// forecasts drift. Re-run the optimizer across a plausible range so you can see
-	// where the recommendation flips from "worth it" to "no-go" and how the optimal
-	// runtime moves. This is the part you actually take into the planning meeting.
+	// σ is an estimate from historical data and revenue variance drifts with the mix
+	// of products and promotions. Re-run the design at σ = $60 / $82 / $110 to see
+	// how the optimal runtime — and even the go/no-go verdict — shift. If the answer
+	// is stable across this band, you can trust it; if it flips, tighten the σ
+	// estimate before committing engineering time.
 	println('')
-	println('Sensitivity to prior conviction (all else fixed):')
-	for conviction in [0.15, 0.30, 0.50, 0.70] {
-		sweep_conviction(params, conviction)
+	println('Sensitivity to the historical σ estimate (all else fixed):')
+	for sigma in [60.0, 82.0, 110.0] {
+		sweep_sigma(params, sigma)
 	}
 }
 
-// design_with_conviction clones the base design but overrides the conviction.
+// design_with_sigma clones the base design but overrides metric_std_dev.
 // DesignParams fields are read-only outside the module, so we rebuild rather than
 // mutate a copy.
-fn design_with_conviction(base experiment.DesignParams, conviction f64) experiment.DesignParams {
+fn design_with_sigma(base experiment.DesignParams, sigma f64) experiment.DesignParams {
 	return experiment.DesignParams{
 		baseline:                  base.baseline
+		metric_std_dev:            sigma
 		daily_traffic_per_variant: base.daily_traffic_per_variant
 		min_relative_lift:         base.min_relative_lift
-		prior_conviction:          conviction
+		prior_conviction:          base.prior_conviction
 		seasonality_min_days:      base.seasonality_min_days
 		max_days:                  base.max_days
 	}
 }
 
-fn sweep_conviction(base experiment.DesignParams, conviction f64) {
-	cfg := experiment.optimizer_config(design_with_conviction(base, conviction))
+fn sweep_sigma(base experiment.DesignParams, sigma f64) {
+	cfg := experiment.optimizer_config(design_with_sigma(base, sigma))
 	res := experiment.find_optimal_runtime(cfg)
-	label := 'conviction ${conviction:.2f}'
+	label := 'σ = \$${sigma:.0f}'
 	if res.worth_running {
-		println('  ${label:-18}  →  optimal ${res.optimal_days:2} d   power ${res.power_at_optimal * 100:5.1f}%   det-rate ${res.monthly_detection_rate:.3f}')
+		println('  ${label:-12}  →  optimal ${res.optimal_days:2} d   power ${res.power_at_optimal * 100:5.1f}%   det-rate ${res.monthly_detection_rate:.3f}')
 	} else {
-		println('  ${label:-18}  →  NO-GO   ${res.no_go_reason}')
+		println('  ${label:-12}  →  NO-GO   ${res.no_go_reason}')
 	}
 }
 
 // ── Shared printing helpers ────────────────────────────────────────────────────
 
 fn print_header(title string, config experiment.OptimizerConfig, params experiment.DesignParams) {
+	mde_abs := params.baseline * params.min_relative_lift
 	pos_frac := 1.0 - config.prior.null_frac - config.prior.neg_frac
 	println('━━━ ${title} ━━━')
-	println('Baseline           : ${config.baseline * 100:.1f}% conversion')
+	println('Baseline           : \$${config.baseline:.2f} revenue/user')
+	println('Metric type        : continuous  (σ = \$${params.metric_std_dev:.2f}, i.e. ${params.metric_std_dev / params.baseline:.1f}× the mean)')
 	println('Traffic            : ${config.daily_traffic_per_variant}/variant/day')
-	println('Min lift           : ${params.min_relative_lift * 100:.0f}% relative  (${config.mde_tolerance * 100:.2f}pp absolute MDE)')
+	println('Min lift           : ${params.min_relative_lift * 100:.0f}% relative  (\$${mde_abs:.2f} absolute MDE)')
 	println('Prior              : conviction ${params.prior_conviction:.2f}  →  pos ${pos_frac * 100:.0f}%  null ${config.prior.null_frac * 100:.0f}%  neg ${config.prior.neg_frac * 100:.0f}%')
 	println('Go threshold       : monthly detection rate ≥ ${config.min_monthly_detection_rate:.3f}')
 	println('')
