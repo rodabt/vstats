@@ -17,6 +17,8 @@ examples/*/main
 chatbot_rollout_tutorial.md
 sequential_rollout.md.worktrees/
 apps/
+apps/tracker/.env
+apps/tracker/api_key.md
 docs/plans/
 docs/superpowers/
 docs/companion/
