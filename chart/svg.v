@@ -1,6 +1,7 @@
 module chart
 
 import strings
+import math
 
 fn xml_escape(s string) string {
 	return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
@@ -83,10 +84,128 @@ fn primitive_to_svg(p Primitive) string {
 	}
 }
 
+fn primitive_bounds(p Primitive) (f64, f64, f64, f64) {
+	match p {
+		Line {
+			return math.min(p.x1, p.x2), math.min(p.y1, p.y2), math.max(p.x1, p.x2), math.max(p.y1,
+				p.y2)
+		}
+		Rect {
+			return p.x, p.y, p.x + p.w, p.y + p.h
+		}
+		Circle {
+			return p.cx - p.r, p.cy - p.r, p.cx + p.r, p.cy + p.r
+		}
+		Polyline {
+			mut minx := math.inf(1)
+			mut miny := math.inf(1)
+			mut maxx := math.inf(-1)
+			mut maxy := math.inf(-1)
+			for pt in p.points {
+				if pt.x < minx {
+					minx = pt.x
+				}
+				if pt.y < miny {
+					miny = pt.y
+				}
+				if pt.x > maxx {
+					maxx = pt.x
+				}
+				if pt.y > maxy {
+					maxy = pt.y
+				}
+			}
+			return minx, miny, maxx, maxy
+		}
+		Polygon {
+			mut minx := math.inf(1)
+			mut miny := math.inf(1)
+			mut maxx := math.inf(-1)
+			mut maxy := math.inf(-1)
+			for pt in p.points {
+				if pt.x < minx {
+					minx = pt.x
+				}
+				if pt.y < miny {
+					miny = pt.y
+				}
+				if pt.x > maxx {
+					maxx = pt.x
+				}
+				if pt.y > maxy {
+					maxy = pt.y
+				}
+			}
+			return minx, miny, maxx, maxy
+		}
+		Text {
+			w, h := text_extent(p.content, p.size)
+			if p.rotate != 0.0 {
+				// rotated ±90°: width/height swap around the anchor point
+				return p.x - h, p.y - w, p.x + h, p.y + w
+			}
+			mut x0 := p.x
+			mut x1 := p.x + w
+			match p.anchor {
+				.start {
+					x0 = p.x
+					x1 = p.x + w
+				}
+				.middle {
+					x0 = p.x - w / 2.0
+					x1 = p.x + w / 2.0
+				}
+				.end {
+					x0 = p.x - w
+					x1 = p.x
+				}
+			}
+			return x0, p.y - h, x1, p.y + h * 0.3
+		}
+	}
+}
+
 pub fn render_svg(scene Scene, width int, height int, theme Theme) string {
+	mut minx := 0.0
+	mut miny := 0.0
+	mut maxx := f64(width)
+	mut maxy := f64(height)
+	for p in scene.primitives {
+		ax, ay, bx, by := primitive_bounds(p)
+		if ax < minx {
+			minx = ax
+		}
+		if ay < miny {
+			miny = ay
+		}
+		if bx > maxx {
+			maxx = bx
+		}
+		if by > maxy {
+			maxy = by
+		}
+	}
+	pad := 2.0
+	if minx < 0.0 {
+		minx -= pad
+	}
+	if miny < 0.0 {
+		miny -= pad
+	}
+	if maxx > f64(width) {
+		maxx += pad
+	}
+	if maxy > f64(height) {
+		maxy += pad
+	}
+	vb_x := fmt_tick(minx)
+	vb_y := fmt_tick(miny)
+	vb_w := fmt_tick(maxx - minx)
+	vb_h := fmt_tick(maxy - miny)
+
 	mut b := strings.new_builder(1024)
-	b.write_string('<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">')
-	b.write_string('<rect x="0" y="0" width="${width}" height="${height}" fill="${theme.background}"/>')
+	b.write_string('<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${vb_x} ${vb_y} ${vb_w} ${vb_h}">')
+	b.write_string('<rect x="${vb_x}" y="${vb_y}" width="${vb_w}" height="${vb_h}" fill="${theme.background}"/>')
 	for p in scene.primitives {
 		b.write_string(primitive_to_svg(p))
 	}

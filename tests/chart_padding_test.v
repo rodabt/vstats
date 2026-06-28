@@ -24,3 +24,41 @@ fn test__effective_margins_never_below_theme_floor() {
 	assert top >= 40
 	assert b >= 50
 }
+
+fn test__viewbox_expands_on_overflow_keeps_size() {
+	scene := chart.Scene{
+		primitives: [
+			chart.Primitive(chart.Text{
+				x:       395.0
+				y:       10.0
+				content: 'overflowing label text'
+				size:    12.0
+				fill:    'black'
+				anchor:  .start
+				family:  'sans-serif'
+			}),
+		]
+	}
+	svg := chart.render_svg(scene, 100, 100, chart.Theme{})
+	assert svg.contains('width="100"')
+	assert svg.contains('height="100"')
+	assert !svg.contains('viewBox="0 0 100 100"') // expanded
+}
+
+fn test__viewbox_unchanged_when_in_bounds() {
+	scene := chart.Scene{
+		primitives: [
+			chart.Primitive(chart.Rect{
+				x:      10.0
+				y:      10.0
+				w:      20.0
+				h:      20.0
+				fill:   'red'
+				stroke: 'none'
+				width:  0.0
+			}),
+		]
+	}
+	svg := chart.render_svg(scene, 100, 100, chart.Theme{})
+	assert svg.contains('viewBox="0 0 100 100"')
+}
