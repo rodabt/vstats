@@ -98,3 +98,20 @@ fn test__heatmap_tooltip_has_value() {
 		.render()
 	assert svg.contains('r0 × c0')
 }
+
+fn test__line_emits_transparent_hover_targets() {
+	svg := chart.new(width: 300, height: 200)
+		.line([0.0, 1.0, 2.0], [3.0, 4.0, 5.0], label: 'L')
+		.render()
+	assert svg.contains('fill="transparent"')
+	// one hover target per vertex, each carrying a tooltip
+	assert svg.count('data-tooltip') >= 3
+}
+
+fn test__area_emits_hover_targets() {
+	svg := chart.new(width: 300, height: 200)
+		.area([0.0, 1.0], [2.0, 3.0], label: 'A')
+		.render()
+	assert svg.contains('fill="transparent"')
+	assert svg.count('data-tooltip') >= 2
+}

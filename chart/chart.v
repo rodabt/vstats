@@ -1166,6 +1166,26 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 	}
 }
 
+fn (c Chart) draw_hover_targets(mut scene Scene, g Geom) {
+	t := c.theme
+	for s in c.series {
+		if s.kind !in [.line, .step, .area] {
+			continue
+		}
+		for i in 0 .. s.x.len {
+			scene.primitives << Circle{
+				cx:     g.xscale.map(s.x[i])
+				cy:     g.yscale.map(s.y[i])
+				r:      t.marker_radius + 2.0
+				fill:   'transparent'
+				stroke: 'none'
+				width:  0.0
+				meta:   point_meta(s.label, s.x[i], s.y[i])
+			}
+		}
+	}
+}
+
 fn (c Chart) draw_ticks(mut scene Scene, g Geom) {
 	t := c.theme
 	bottom := g.plot_y + g.plot_h
@@ -1604,6 +1624,7 @@ fn (c Chart) build_scene() Scene {
 	c.draw_ticks(mut scene, g)
 	c.draw_guides(mut scene, g)
 	c.draw_series(mut scene, g)
+	c.draw_hover_targets(mut scene, g)
 	c.draw_error_bars(mut scene, g)
 	c.draw_value_labels(mut scene, g)
 	c.draw_labels(mut scene, g)
