@@ -3,7 +3,35 @@ module chart
 import strings
 
 fn xml_escape(s string) string {
-	return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+	return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+}
+
+fn meta_attrs(m Meta) string {
+	if m.tooltip == '' {
+		return ''
+	}
+	mut b := ''
+	if m.series != '' {
+		b += ' data-series="${xml_escape(m.series)}"'
+	}
+	if m.label != '' {
+		b += ' data-label="${xml_escape(m.label)}"'
+	}
+	if m.x != '' {
+		b += ' data-x="${xml_escape(m.x)}"'
+	}
+	if m.y != '' {
+		b += ' data-y="${xml_escape(m.y)}"'
+	}
+	b += ' data-tooltip="${xml_escape(m.tooltip).replace('\n', '&#10;')}"'
+	return b
+}
+
+fn meta_title(m Meta) string {
+	if m.tooltip == '' {
+		return ''
+	}
+	return '<title>${xml_escape(m.tooltip)}</title>'
 }
 
 fn primitive_to_svg(p Primitive) string {
@@ -19,10 +47,18 @@ fn primitive_to_svg(p Primitive) string {
 			'<polyline fill="none" stroke="${p.stroke}" stroke-width="${p.width}" points="${pts.join(' ')}"/>'
 		}
 		Rect {
-			'<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" fill="${p.fill}" stroke="${p.stroke}" stroke-width="${p.width}"/>'
+			if p.meta.tooltip == '' {
+				'<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" fill="${p.fill}" stroke="${p.stroke}" stroke-width="${p.width}"/>'
+			} else {
+				'<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" fill="${p.fill}" stroke="${p.stroke}" stroke-width="${p.width}"${meta_attrs(p.meta)}>${meta_title(p.meta)}</rect>'
+			}
 		}
 		Circle {
-			'<circle cx="${p.cx}" cy="${p.cy}" r="${p.r}" fill="${p.fill}" stroke="${p.stroke}" stroke-width="${p.width}"/>'
+			if p.meta.tooltip == '' {
+				'<circle cx="${p.cx}" cy="${p.cy}" r="${p.r}" fill="${p.fill}" stroke="${p.stroke}" stroke-width="${p.width}"/>'
+			} else {
+				'<circle cx="${p.cx}" cy="${p.cy}" r="${p.r}" fill="${p.fill}" stroke="${p.stroke}" stroke-width="${p.width}"${meta_attrs(p.meta)}>${meta_title(p.meta)}</circle>'
+			}
 		}
 		Text {
 			anchor := match p.anchor {

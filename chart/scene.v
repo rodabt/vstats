@@ -6,6 +6,15 @@ pub:
 	y f64
 }
 
+pub struct Meta {
+pub:
+	tooltip string
+	series  string
+	label   string
+	x       string
+	y       string
+}
+
 pub enum TextAnchor {
 	start
 	middle
@@ -38,6 +47,7 @@ pub:
 	fill   string
 	stroke string
 	width  f64
+	meta   Meta
 }
 
 pub struct Circle {
@@ -48,6 +58,7 @@ pub:
 	fill   string
 	stroke string
 	width  f64
+	meta   Meta
 }
 
 pub struct Text {
