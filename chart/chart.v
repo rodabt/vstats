@@ -543,6 +543,12 @@ fn lerp_color(lo string, hi string, t f64) string {
 	return '#${r:02x}${gv:02x}${b:02x}'
 }
 
+// text_extent approximates a label's drawn width and height (no font metrics in V).
+// 0.6 glyph-width factor tuned for sans-serif, intentionally slightly generous.
+fn text_extent(content string, size f64) (f64, f64) {
+	return f64(content.len) * size * 0.6, size
+}
+
 fn bar_meta(series string, label string, v f64) Meta {
 	head := if series != '' { '${series}\n' } else { '' }
 	return Meta{
@@ -705,12 +711,7 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 	}
 }
 
-fn (c Chart) geometry() Geom {
-	t := c.theme
-	plot_x := f64(t.margin_left)
-	plot_y := f64(t.margin_top)
-	plot_w := f64(c.width - t.margin_left - t.margin_right)
-	plot_h := f64(c.height - t.margin_top - t.margin_bottom)
+fn (c Chart) data_bounds() (f64, f64, f64, f64) {
 	mut xmin := 0.0
 	mut xmax := 1.0
 	mut ymin := 0.0
@@ -742,6 +743,76 @@ fn (c Chart) geometry() Geom {
 	if ymax == ymin {
 		ymax = ymin + 1.0
 	}
+	return xmin, xmax, ymin, ymax
+}
+
+// effective_margins grows the theme margins inward so labels are not trimmed,
+// while keeping the requested width/height. Theme margins act as floors.
+pub fn (c Chart) effective_margins() (int, int, int, int) {
+	t := c.theme
+	mut ml := t.margin_left
+	mut mr := t.margin_right
+	mt := t.margin_top
+	mb := t.margin_bottom
+	_, _, ymin, ymax := c.data_bounds()
+
+	// left: widest y-axis label (numeric ticks or categorical row labels) + axis title
+	mut max_left := 0.0
+	for tk in nice_ticks(ymin, ymax, 5) {
+		w, _ := text_extent(fmt_tick(tk), t.font_size)
+		if w > max_left {
+			max_left = w
+		}
+	}
+	for s in c.series {
+		if s.kind in [.dot, .hbar] {
+			for lb in s.labels {
+				w, _ := text_extent(lb, t.font_size)
+				if w > max_left {
+					max_left = w
+				}
+			}
+		}
+	}
+	need_left := int(max_left) + 12 + int(t.font_size) // tick gap + rotated y-title allowance
+	if need_left > ml {
+		ml = need_left
+	}
+
+	// right: widest right-side value label (hbar/dot) + legend block
+	mut max_right := 0.0
+	for s in c.series {
+		if s.show_values && s.kind in [.hbar, .dot] {
+			for v in s.y {
+				w, _ := text_extent(fmt_tick(v), t.font_size)
+				if w > max_right {
+					max_right = w
+				}
+			}
+		}
+		if s.label != '' {
+			w, _ := text_extent(s.label, t.font_size)
+			lw := w + 24.0 // legend swatch + gap
+			if lw > max_right {
+				max_right = lw
+			}
+		}
+	}
+	need_right := int(max_right) + 8
+	if need_right > mr {
+		mr = need_right
+	}
+
+	return ml, mr, mt, mb
+}
+
+fn (c Chart) geometry() Geom {
+	ml, mr, mt, mb := c.effective_margins()
+	plot_x := f64(ml)
+	plot_y := f64(mt)
+	plot_w := f64(c.width - ml - mr)
+	plot_h := f64(c.height - mt - mb)
+	xmin, xmax, ymin, ymax := c.data_bounds()
 	return Geom{
 		plot_x: plot_x
 		plot_y: plot_y
