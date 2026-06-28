@@ -543,6 +543,61 @@ fn lerp_color(lo string, hi string, t f64) string {
 	return '#${r:02x}${gv:02x}${b:02x}'
 }
 
+fn bar_meta(series string, label string, v f64) Meta {
+	head := if series != '' { '${series}\n' } else { '' }
+	return Meta{
+		tooltip: '${head}${label}: ${fmt_tick(v)}'
+		series:  series
+		label:   label
+		y:       fmt_tick(v)
+	}
+}
+
+fn point_meta(series string, xv f64, yv f64) Meta {
+	head := if series != '' { '${series}\n' } else { '' }
+	return Meta{
+		tooltip: '${head}x: ${fmt_tick(xv)}, y: ${fmt_tick(yv)}'
+		series:  series
+		x:       fmt_tick(xv)
+		y:       fmt_tick(yv)
+	}
+}
+
+fn hist_meta(edge_lo f64, edge_hi f64, count int) Meta {
+	rng := '[${fmt_tick(edge_lo)}, ${fmt_tick(edge_hi)})'
+	return Meta{
+		tooltip: '${rng}: ${count}'
+		x:       rng
+		y:       '${count}'
+	}
+}
+
+fn cell_meta(rc string, v f64) Meta {
+	return Meta{
+		tooltip: '${rc}: ${fmt_tick(v)}'
+		label:   rc
+		y:       fmt_tick(v)
+	}
+}
+
+fn box_meta(series string, q1 f64, med f64, q3 f64) Meta {
+	head := if series != '' { '${series}\n' } else { '' }
+	return Meta{
+		tooltip: '${head}Q1 ${fmt_tick(q1)} / med ${fmt_tick(med)} / Q3 ${fmt_tick(q3)}'
+		series:  series
+		y:       fmt_tick(med)
+	}
+}
+
+fn seg_meta(bar_label string, seg int, v f64) Meta {
+	head := if bar_label != '' { '${bar_label}\n' } else { '' }
+	return Meta{
+		tooltip: '${head}seg ${seg + 1}: ${fmt_tick(v)}'
+		label:   bar_label
+		y:       fmt_tick(v)
+	}
+}
+
 fn series_bounds(s Series) (f64, f64, f64, f64) {
 	return match s.kind {
 		.line, .scatter {
@@ -882,6 +937,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 						fill:   s.color
 						stroke: 'none'
 						width:  0.0
+						meta:   point_meta(s.label, s.x[i], s.y[i])
 					}
 				}
 			}
@@ -919,6 +975,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 				for i in 0 .. s.y.len {
 					cx := g.xscale.map(f64(i))
 					top := g.yscale.map(s.y[i])
+					lbl := if s.labels.len > i { s.labels[i] } else { fmt_tick(f64(i)) }
 					scene.primitives << Rect{
 						x:      cx - bw / 2.0
 						y:      math.min(top, baseline)
@@ -927,6 +984,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 						fill:   s.color
 						stroke: 'none'
 						width:  0.0
+						meta:   bar_meta(s.label, lbl, s.y[i])
 					}
 				}
 			}
@@ -945,6 +1003,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 						fill:   s.color
 						stroke: t.background
 						width:  1.0
+						meta:   hist_meta(b.edges[i], b.edges[i + 1], b.counts[i])
 					}
 				}
 			}
@@ -966,6 +1025,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 					fill:   s.color
 					stroke: t.axis_color
 					width:  t.axis_width
+					meta:   box_meta(s.label, s.y[0], s.y[1], s.y[2])
 				}
 				scene.primitives << Line{
 					x1:     cx - bw / 2.0
@@ -1003,6 +1063,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 						stroke: t.grid_color
 						width:  t.axis_width
 					}
+					dot_lbl := if s.labels.len > i { s.labels[i] } else { fmt_tick(f64(i)) }
 					scene.primitives << Circle{
 						cx:     px
 						cy:     py
@@ -1010,6 +1071,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 						fill:   s.color
 						stroke: 'none'
 						width:  0.0
+						meta:   bar_meta(s.label, dot_lbl, s.y[i])
 					}
 				}
 			}
@@ -1021,6 +1083,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 				for i in 0 .. s.y.len {
 					cy := g.yscale.map(f64(i))
 					right_edge := g.xscale.map(s.y[i])
+					hbar_lbl := if s.labels.len > i { s.labels[i] } else { fmt_tick(f64(i)) }
 					scene.primitives << Rect{
 						x:      math.min(baseline, right_edge)
 						y:      cy - bh / 2.0
@@ -1029,6 +1092,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 						fill:   s.color
 						stroke: 'none'
 						width:  0.0
+						meta:   bar_meta(s.label, hbar_lbl, s.y[i])
 					}
 				}
 			}
@@ -1052,6 +1116,8 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 						col := lerp_color(s.color_lo, s.color_hi, t_val)
 						px := g.xscale.map(f64(j))
 						py := g.yscale.map(f64(nrows - 1 - i))
+						row_lbl := if s.labels.len > ncols + i { s.labels[ncols + i] } else { 'row ${i}' }
+						col_lbl := if s.labels.len > j { s.labels[j] } else { 'col ${j}' }
 						scene.primitives << Rect{
 							x:      px - cell_w / 2.0
 							y:      py - cell_h / 2.0
@@ -1060,6 +1126,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 							fill:   col
 							stroke: 'none'
 							width:  0.0
+							meta:   cell_meta('${row_lbl} × ${col_lbl}', val)
 						}
 					}
 				}
@@ -1080,6 +1147,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 						bottom_px := g.yscale.map(cum)
 						top_px := g.yscale.map(cum + seg_val)
 						col := if s.colors.len > j { s.colors[j] } else { c.theme.color(j) }
+						bar_lbl := if s.labels.len > i { s.labels[i] } else { fmt_tick(f64(i)) }
 						scene.primitives << Rect{
 							x:      cx - bw / 2.0
 							y:      math.min(top_px, bottom_px)
@@ -1088,6 +1156,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 							fill:   col
 							stroke: 'none'
 							width:  0.0
+							meta:   seg_meta(bar_lbl, j, seg_val)
 						}
 						cum += seg_val
 					}

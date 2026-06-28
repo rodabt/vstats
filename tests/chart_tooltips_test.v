@@ -65,3 +65,36 @@ fn test__xml_escape_handles_quote_and_angle() {
 	svg := chart.render_svg(scene, 50, 50, chart.Theme{})
 	assert svg.contains('a&lt;b &amp; &quot;c&quot;')
 }
+
+fn test__bar_tooltip_has_series_and_label() {
+	svg := chart.new(width: 300, height: 200)
+		.bar([10.0, 20.0], label: 'Revenue', labels: ['Q1', 'Q2'])
+		.render()
+	assert svg.contains('<title>Revenue')
+	assert svg.contains('data-series="Revenue"')
+	assert svg.contains('Q1: 10')
+	assert svg.contains('Q2: 20')
+}
+
+fn test__scatter_tooltip_has_xy() {
+	svg := chart.new(width: 300, height: 200)
+		.scatter([1.0], [8.0], label: 'A')
+		.render()
+	assert svg.contains('x: 1, y: 8')
+	assert svg.contains('data-x="1"')
+	assert svg.contains('data-y="8"')
+}
+
+fn test__histogram_tooltip_has_range_and_count() {
+	svg := chart.new(width: 300, height: 200)
+		.histogram([1.0, 2.0, 2.0, 3.0, 3.0, 3.0], nbins: 3)
+		.render()
+	assert svg.contains('data-tooltip="[')
+}
+
+fn test__heatmap_tooltip_has_value() {
+	svg := chart.new(width: 300, height: 300)
+		.heatmap([[1.0, 2.0], [3.0, 4.0]], row_labels: ['r0', 'r1'], col_labels: ['c0', 'c1'])
+		.render()
+	assert svg.contains('r0 × c0')
+}
