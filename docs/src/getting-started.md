@@ -94,6 +94,5 @@ println('Worst step: ${drop.from_stage} → ${drop.to_stage}')
 
 ## Next Steps
 
-- [Examples](examples.html) — six end-to-end scenarios
+- [Examples](examples.html) — end-to-end scenarios
 - [Module Reference](modules/stats.html) — full API
-- [Companion Docs](companion/index.html) — statistical concepts

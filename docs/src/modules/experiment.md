@@ -87,7 +87,127 @@ match_units(propensity_scores []f64, treatment []int, caliper f64) []MatchedPair
 estimate_att(outcomes []f64, treatment []int, matched_pairs []MatchedPair) f64
 ```
 
+## Design Optimizer
+
+> Answers: "Should I run this experiment, and for how long?" without requiring you
+> to choose alpha, power, or an MDE manually.
+
+### Simplified entry point
+
+```v
+// DesignParams — human-friendly inputs; pass to optimizer_config() to get OptimizerConfig.
+DesignParams{
+    baseline                  f64        // observed metric value (rate or mean)
+    daily_traffic_per_variant int        // eligible users per variant per day
+    min_relative_lift         f64 = 0.05 // smallest lift worth detecting, as fraction of baseline
+    prior_conviction          f64 = 0.50 // belief that the experiment will find a positive effect
+                                         // 0.0 = very skeptical · 1.0 = very confident
+    metric_std_dev            f64 = 0.0  // historical σ per user; leave 0 for proportion metrics
+    max_days                  int = 90
+    // advanced overrides (sensible defaults):
+    alpha                f64 = 0.05
+    min_power            f64 = 0.80
+    seasonality_min_days int = 14
+    seed                 u32
+}
+
+optimizer_config(params DesignParams) OptimizerConfig
+// Derives mde_tolerance, MixturePrior, and min_monthly_detection_rate from params.
+
+conviction_to_prior(conviction f64, mde f64) (MixturePrior, f64)
+// Returns (prior, min_monthly_detection_rate) for a given conviction score.
+// Exposed for inspection; called internally by optimizer_config().
+
+find_optimal_runtime(config OptimizerConfig) OptimizationResult
+// OptimizationResult{ optimal_days int; monthly_detection_rate f64;
+//                     all_results []RuntimeResult; worth_running bool;
+//                     power_min_days, effective_min_days int;
+//                     power_at_optimal f64; no_go_reason string }
+```
+
+### Metric types
+
+| `metric_std_dev` | Metric type | Power formula |
+|---|---|---|
+| `0` (default) | Proportion (conversion rate, CTR) | Two-proportion z-test |
+| `> 0` | Continuous (revenue, session time, AOV) | Two-sample t-test (`n = 2σ²(z_α+z_β)²/δ²`) |
+
+### `prior_conviction` mapping
+
+| conviction | null % | neg % | pos % | detection threshold |
+|---|---|---|---|---|
+| 0.0 (very skeptical) | 65% | 30% | 5% | 0.50 |
+| 0.2 (crossover) | 54% | 26% | 20% | 0.40 |
+| 0.5 (neutral) | 38% | 20% | 42% | 0.26 |
+| 1.0 (very confident) | 10% | 10% | 80% | 0.02 |
+
+The `monthly_detection_rate` is the prior-weighted probability of finding a true positive in any given month. The experiment is not worth running (`worth_running = false`) when this falls below the conviction-derived threshold.
+
+### Advanced: `OptimizerConfig` directly
+
+```v
+OptimizerConfig{
+    baseline                  f64
+    daily_traffic_per_variant int
+    mde_tolerance             f64        // absolute MDE (in metric units)
+    alpha                     f64 = 0.05
+    prior                     MixturePrior
+    seasonality_min_days      int = 14
+    min_power                 f64 = 0.80
+    max_days                  int = 90
+    min_monthly_detection_rate f64 = 0.05
+    metric_std_dev            f64 = 0.0
+    seed                      u32
+}
+
+MixturePrior{
+    null_frac f64 = 0.40   // fraction with no effect
+    neg_frac  f64 = 0.30   // fraction with harmful effect
+    neg_mean  f64 = -0.02  // centre of negative-effect distribution
+    neg_std   f64 = 0.01
+    pos_mean  f64 = 0.02   // centre of positive-effect distribution
+    pos_std   f64 = 0.01
+    n_samples int = 100_000
+}
+```
+
+### Example — proportion metric
+
+```v
+import vstats.experiment
+
+params := experiment.DesignParams{
+    baseline:                  0.41   // 41% conversion rate
+    daily_traffic_per_variant: 1370
+    min_relative_lift:         0.05   // detect ≥5% relative improvement
+    prior_conviction:          0.30   // moderately skeptical
+    max_days:                  30
+}
+config := experiment.optimizer_config(params)
+result := experiment.find_optimal_runtime(config)
+println(result.worth_running)           // true
+println(result.optimal_days)            // 14
+println(result.monthly_detection_rate)  // 0.584
+```
+
+### Example — continuous metric (revenue per user)
+
+```v
+params := experiment.DesignParams{
+    baseline:                  47.50   // $47.50 mean order value
+    metric_std_dev:            82.00   // $82 historical σ — required for continuous
+    daily_traffic_per_variant: 620
+    min_relative_lift:         0.05    // detect ≥$2.38 lift
+    prior_conviction:          0.40
+    max_days:                  60
+}
+config := experiment.optimizer_config(params)
+result := experiment.find_optimal_runtime(config)
+```
+
 ## See Also
 
 - [rigorous-ab-readout example](../examples.html#rigorous-ab-readout)
 - [causal-did example](../examples.html#causal-did)
+- [ab-design-optimizer example](../examples.html#ab-design-optimizer)
+- [revenue-per-user-optimizer example](../examples.html#revenue-per-user-optimizer)

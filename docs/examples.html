@@ -33,10 +33,7 @@
   <li><a href="modules/utils.html">utils</a></li>
   <li><a href="modules/chart.html">chart</a></li>
 </ul>
-<span class="nav-section-label">Resources</span>
-<ul class="nav-list">
-  <li><a href="companion/index.html">Companion Docs</a></li>
-</ul>
+
     </nav>
   </aside>
   <main class="content">
@@ -745,6 +742,211 @@ fn main() {
 
     println('Final average retention: ${ca.avg_retention[periods - 1] * 100:.1f}%')
     println('wrote 2 charts to ${out_dir}')
+}
+</code></pre>
+<hr />
+<h2 id="ab-design-optimizer">ab-design-optimizer</h2>
+<p>Prior-based experiment design optimizer for proportion metrics: given baseline,
+daily traffic, a minimum relative lift, and a conviction score, returns the optimal
+runtime and a go/no-go recommendation — no manual alpha, power, or MDE selection.</p>
+<pre><code class="language-v">module main
+
+import os
+import vstats.experiment
+import vstats.chart
+
+fn main() {
+    params := experiment.DesignParams{
+        // Observed baseline conversion rate. Everything else is relative to this.
+        baseline: 0.41
+
+        // Eligible users assigned to each variant per day. This is the primary lever
+        // for controlling experiment duration — doubling traffic halves runtime.
+        daily_traffic_per_variant: 1370
+
+        // Smallest relative improvement worth detecting, as a fraction of the baseline.
+        // 0.05 = detect lifts of at least 5% above the current rate.
+        // The required sample size scales quadratically: halving this ≈ 4× more days.
+        min_relative_lift: 0.05
+
+        // How confident are you that this experiment will find a positive effect?
+        // 0.0 = very skeptical (speculative idea, no prior evidence)
+        // 0.5 = neutral (some evidence, uncertain outcome)
+        // 1.0 = very confident (strong prior signal, incremental improvement)
+        // This controls the prior distribution over effect sizes and the minimum
+        // detection rate threshold required to justify running the experiment.
+        prior_conviction: 0.30
+
+        // Hard cap on experiment duration. If the statistical power floor exceeds this,
+        // the optimizer returns NO — increase traffic or relax min_relative_lift.
+        max_days: 30
+    }
+
+    config := experiment.optimizer_config(params)
+    result := experiment.find_optimal_runtime(config)
+
+    pos_frac := 1.0 - config.prior.null_frac - config.prior.neg_frac
+
+    if result.worth_running {
+        println('Worth running      : yes')
+        println('Prior              : conviction ${params.prior_conviction:.2f}  →  pos ${pos_frac * 100:.0f}%  null ${config.prior.null_frac * 100:.0f}%  neg ${config.prior.neg_frac * 100:.0f}%')
+        println('Min lift           : ${params.min_relative_lift * 100:.0f}% relative  (${config.mde_tolerance * 100:.2f}pp at ${config.baseline * 100:.0f}% baseline)')
+        println('Power floor        : ${result.power_min_days} days  (${config.min_power * 100:.0f}% power for ${config.mde_tolerance * 100:.1f}pp MDE)')
+        println('Seasonality floor  : ${config.seasonality_min_days} days')
+        println('Effective min      : ${result.effective_min_days} days  (binding: ${if result.power_min_days &gt;= result.effective_min_days {
+            'power'
+        } else {
+            'seasonality'
+        }})')
+        println('Optimal runtime    : ${result.optimal_days} days')
+        println('Power at optimal   : ${result.power_at_optimal * 100:.1f}%')
+        println('Monthly detections : ${result.monthly_detection_rate:.3f}')
+    } else {
+        println('Worth running      : NO')
+        println('Reason             : ${result.no_go_reason}')
+    }
+
+    out_dir := os.dir(@FILE)
+
+    if result.worth_running {
+        days_x := result.all_results.map(f64(it.runtime_days))
+        dr_y := result.all_results.map(it.monthly_detection_rate)
+
+        chart.new(
+            title:    'Optimal runtime: ${result.optimal_days} days  (power floor: ${result.power_min_days} days)'
+            subtitle: 'Baseline ${config.baseline * 100:.0f}%  ·  ${config.daily_traffic_per_variant}/day  ·  min lift ≥${params.min_relative_lift * 100:.0f}%  ·  conviction ${params.prior_conviction:.2f}  ·  max ${config.max_days} days'
+            width:    700
+            height:   420
+        )
+            .line(days_x, dr_y)
+            .axvline(f64(result.effective_min_days))
+            .xlabel('Runtime (days)')
+            .ylabel('Monthly detection rate')
+            .save(os.join_path(out_dir, 'detection_rate_vs_runtime.svg'))!
+    } else {
+        days_x := result.all_results.map(f64(it.runtime_days))
+        dr_y := result.all_results.map(it.monthly_detection_rate)
+        if days_x.len &gt; 0 {
+            chart.new(
+                title:    'Not worth running: ${result.no_go_reason}'
+                subtitle: 'Baseline ${config.baseline * 100:.0f}%  ·  ${config.daily_traffic_per_variant}/day  ·  min lift ≥${params.min_relative_lift * 100:.0f}%  ·  conviction ${params.prior_conviction:.2f}  ·  max ${config.max_days} days'
+                width:    700
+                height:   420
+            )
+                .line(days_x, dr_y)
+                .xlabel('Runtime (days)')
+                .ylabel('Monthly detection rate')
+                .save(os.join_path(out_dir, 'detection_rate_vs_runtime.svg'))!
+        } else {
+            println('(no chart — experiment cannot reach target power within max_days)')
+        }
+    }
+}
+</code></pre>
+<hr />
+<h2 id="revenue-per-user-optimizer">revenue-per-user-optimizer</h2>
+<p>Same optimizer applied to a continuous metric (average order value): shows how
+setting <code>metric_std_dev</code> switches the power formula from the binomial z-test to
+the two-sample t-test, and why high-variance revenue metrics need longer runtimes.</p>
+<pre><code class="language-v">module main
+
+import os
+import vstats.experiment
+import vstats.chart
+
+fn main() {
+    // E-commerce checkout: testing a new upsell widget on the order confirmation page.
+    // Metric: revenue per user (not a rate — requires metric_std_dev from history).
+    params := experiment.DesignParams{
+        // Mean revenue per user over the last 90 days ($).
+        baseline: 47.50
+
+        // Historical standard deviation of revenue per user ($).
+        // Required for continuous metrics — drives the power calculation instead of
+        // the binomial p(1-p)/n formula used for proportions.
+        // Rule of thumb: std_dev ≈ 1.5–3× baseline is common for right-skewed revenue.
+        // Obtain from: SELECT STDDEV(revenue) FROM orders WHERE date &gt;= ...
+        metric_std_dev: 82.00
+
+        // Eligible users per variant per day (users who reach the confirmation page).
+        daily_traffic_per_variant: 620
+
+        // Smallest relative lift worth acting on.
+        // 0.05 = detect a $2.38 increase on a $47.50 baseline.
+        // Revenue metrics typically need larger MDEs than conversion rates because
+        // high variance (std_dev &gt;&gt; baseline) requires many more observations.
+        min_relative_lift: 0.05
+
+        // How confident are you this widget will increase revenue?
+        // 0.35 = moderate skepticism: similar upsell tests in the past had mixed results.
+        prior_conviction: 0.35
+
+        // Maximum experiment window. Revenue experiments often need more calendar time
+        // than conversion experiments because of higher per-user variance.
+        max_days: 60
+    }
+
+    config := experiment.optimizer_config(params)
+    result := experiment.find_optimal_runtime(config)
+
+    mde_abs := params.baseline * params.min_relative_lift
+    pos_frac := 1.0 - config.prior.null_frac - config.prior.neg_frac
+
+    if result.worth_running {
+        println('Worth running      : yes')
+        println('Metric             : continuous  (σ = \$${params.metric_std_dev:.2f})')
+        println('Prior              : conviction ${params.prior_conviction:.2f}  →  pos ${pos_frac * 100:.0f}%  null ${config.prior.null_frac * 100:.0f}%  neg ${config.prior.neg_frac * 100:.0f}%')
+        println('Min lift           : ${params.min_relative_lift * 100:.0f}% relative  (\$${mde_abs:.2f} on \$${params.baseline:.2f} baseline)')
+        println('Power floor        : ${result.power_min_days} days  (${config.min_power * 100:.0f}% power for \$${mde_abs:.2f} MDE)')
+        println('Seasonality floor  : ${config.seasonality_min_days} days')
+        println('Effective min      : ${result.effective_min_days} days  (binding: ${if result.power_min_days &gt;= result.effective_min_days {
+            'power'
+        } else {
+            'seasonality'
+        }})')
+        println('Optimal runtime    : ${result.optimal_days} days')
+        println('Power at optimal   : ${result.power_at_optimal * 100:.1f}%')
+        println('Monthly detections : ${result.monthly_detection_rate:.3f}')
+    } else {
+        println('Worth running      : NO')
+        println('Reason             : ${result.no_go_reason}')
+    }
+
+    out_dir := os.dir(@FILE)
+
+    if result.worth_running {
+        days_x := result.all_results.map(f64(it.runtime_days))
+        dr_y := result.all_results.map(it.monthly_detection_rate)
+
+        chart.new(
+            title:    'Optimal runtime: ${result.optimal_days} days  (power floor: ${result.power_min_days} days)'
+            subtitle: 'Revenue/user \$${params.baseline:.2f}  ·  σ=\$${params.metric_std_dev:.0f}  ·  ${config.daily_traffic_per_variant}/day  ·  min lift ≥${params.min_relative_lift * 100:.0f}%  ·  conviction ${params.prior_conviction:.2f}'
+            width:    700
+            height:   420
+        )
+            .line(days_x, dr_y)
+            .axvline(f64(result.effective_min_days))
+            .xlabel('Runtime (days)')
+            .ylabel('Monthly detection rate')
+            .save(os.join_path(out_dir, 'detection_rate_vs_runtime.svg'))!
+    } else {
+        days_x := result.all_results.map(f64(it.runtime_days))
+        dr_y := result.all_results.map(it.monthly_detection_rate)
+        if days_x.len &gt; 0 {
+            chart.new(
+                title:    'Not worth running: ${result.no_go_reason}'
+                subtitle: 'Revenue/user \$${params.baseline:.2f}  ·  σ=\$${params.metric_std_dev:.0f}  ·  ${config.daily_traffic_per_variant}/day  ·  min lift ≥${params.min_relative_lift * 100:.0f}%  ·  conviction ${params.prior_conviction:.2f}'
+                width:    700
+                height:   420
+            )
+                .line(days_x, dr_y)
+                .xlabel('Runtime (days)')
+                .ylabel('Monthly detection rate')
+                .save(os.join_path(out_dir, 'detection_rate_vs_runtime.svg'))!
+        } else {
+            println('(no chart — experiment cannot reach target power within max_days)')
+        }
+    }
 }
 </code></pre>
   </main>

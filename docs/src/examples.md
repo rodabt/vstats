@@ -98,3 +98,23 @@ Cohort retention with uncertainty: the average retention line with a cross-cohor
 min/max band and faint per-cohort lines, plus the average curve as an area fill.
 
 <!-- include: examples/retention-bands/main.v -->
+
+---
+
+## ab-design-optimizer
+
+Prior-based experiment design optimizer for proportion metrics: given baseline,
+daily traffic, a minimum relative lift, and a conviction score, returns the optimal
+runtime and a go/no-go recommendation — no manual alpha, power, or MDE selection.
+
+<!-- include: examples/ab-design-optimizer/main.v -->
+
+---
+
+## revenue-per-user-optimizer
+
+Same optimizer applied to a continuous metric (average order value): shows how
+setting `metric_std_dev` switches the power formula from the binomial z-test to
+the two-sample t-test, and why high-variance revenue metrics need longer runtimes.
+
+<!-- include: examples/revenue-per-user-optimizer/main.v -->

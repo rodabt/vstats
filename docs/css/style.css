@@ -22,6 +22,13 @@
     --amber-dim:      rgba(158, 125, 58, 0.12);
     --sidebar-width:  256px;
     --content-max:    860px;
+    /* syntax highlighting */
+    --syn-keyword: #c4a45a;
+    --syn-type:    #5a9e6f;
+    --syn-string:  #a07858;
+    --syn-comment: #506050;
+    --syn-number:  #7a6e9e;
+    --syn-attr:    #5a8a9e;
 }
 
 /* ── Light theme ──────────────────────────────────── */
@@ -45,6 +52,13 @@
     --red-dim:        rgba(122, 56, 56, 0.1);
     --amber:          #7a5a18;
     --amber-dim:      rgba(122, 90, 24, 0.1);
+    /* syntax highlighting */
+    --syn-keyword: #8b6914;
+    --syn-type:    #3a6e4e;
+    --syn-string:  #7a4a28;
+    --syn-comment: #607860;
+    --syn-number:  #4a3a7a;
+    --syn-attr:    #2a6a7a;
 }
 
 [data-theme="light"] code {
@@ -544,6 +558,14 @@ pre code {
     font-size: 0.84rem;
     line-height: 1.65;
 }
+
+/* ── V syntax tokens ──────────────────────────────── */
+.vs-keyword { color: var(--syn-keyword); font-weight: 500; }
+.vs-type    { color: var(--syn-type); }
+.vs-string  { color: var(--syn-string); }
+.vs-comment { color: var(--syn-comment); font-style: italic; }
+.vs-number  { color: var(--syn-number); }
+.vs-attr    { color: var(--syn-attr); }
 
 :not(pre) > code {
     background: var(--bg-tertiary);

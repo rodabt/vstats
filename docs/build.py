@@ -35,10 +35,7 @@ SIDEBAR_ROOT = """\
   <li><a href="modules/utils.html">utils</a></li>
   <li><a href="modules/chart.html">chart</a></li>
 </ul>
-<span class="nav-section-label">Resources</span>
-<ul class="nav-list">
-  <li><a href="companion/index.html">Companion Docs</a></li>
-</ul>"""
+"""
 
 SIDEBAR_SUB = SIDEBAR_ROOT \
     .replace('href="index.html"', 'href="../index.html"') \

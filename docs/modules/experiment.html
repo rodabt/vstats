@@ -33,10 +33,7 @@
   <li><a href="../modules/utils.html">utils</a></li>
   <li><a href="../modules/chart.html">chart</a></li>
 </ul>
-<span class="nav-section-label">Resources</span>
-<ul class="nav-list">
-  <li><a href="../companion/index.html">Companion Docs</a></li>
-</ul>
+
     </nav>
   </aside>
   <main class="content">
@@ -115,10 +112,165 @@ event_study(y []f64, group []int, relative_time []int, cfg DiDConfig) EventStudy
 match_units(propensity_scores []f64, treatment []int, caliper f64) []MatchedPair
 estimate_att(outcomes []f64, treatment []int, matched_pairs []MatchedPair) f64
 </code></pre>
+<h2 id="design-optimizer">Design Optimizer</h2>
+<blockquote>
+<p>Answers: "Should I run this experiment, and for how long?" without requiring you
+to choose alpha, power, or an MDE manually.</p>
+</blockquote>
+<h3 id="simplified-entry-point">Simplified entry point</h3>
+<pre><code class="language-v">// DesignParams — human-friendly inputs; pass to optimizer_config() to get OptimizerConfig.
+DesignParams{
+    baseline                  f64        // observed metric value (rate or mean)
+    daily_traffic_per_variant int        // eligible users per variant per day
+    min_relative_lift         f64 = 0.05 // smallest lift worth detecting, as fraction of baseline
+    prior_conviction          f64 = 0.50 // belief that the experiment will find a positive effect
+                                         // 0.0 = very skeptical · 1.0 = very confident
+    metric_std_dev            f64 = 0.0  // historical σ per user; leave 0 for proportion metrics
+    max_days                  int = 90
+    // advanced overrides (sensible defaults):
+    alpha                f64 = 0.05
+    min_power            f64 = 0.80
+    seasonality_min_days int = 14
+    seed                 u32
+}
+
+optimizer_config(params DesignParams) OptimizerConfig
+// Derives mde_tolerance, MixturePrior, and min_monthly_detection_rate from params.
+
+conviction_to_prior(conviction f64, mde f64) (MixturePrior, f64)
+// Returns (prior, min_monthly_detection_rate) for a given conviction score.
+// Exposed for inspection; called internally by optimizer_config().
+
+find_optimal_runtime(config OptimizerConfig) OptimizationResult
+// OptimizationResult{ optimal_days int; monthly_detection_rate f64;
+//                     all_results []RuntimeResult; worth_running bool;
+//                     power_min_days, effective_min_days int;
+//                     power_at_optimal f64; no_go_reason string }
+</code></pre>
+<h3 id="metric-types">Metric types</h3>
+<table>
+<thead>
+<tr>
+<th><code>metric_std_dev</code></th>
+<th>Metric type</th>
+<th>Power formula</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code> (default)</td>
+<td>Proportion (conversion rate, CTR)</td>
+<td>Two-proportion z-test</td>
+</tr>
+<tr>
+<td><code>&gt; 0</code></td>
+<td>Continuous (revenue, session time, AOV)</td>
+<td>Two-sample t-test (<code>n = 2σ²(z_α+z_β)²/δ²</code>)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="prior_conviction-mapping"><code>prior_conviction</code> mapping</h3>
+<table>
+<thead>
+<tr>
+<th>conviction</th>
+<th>null %</th>
+<th>neg %</th>
+<th>pos %</th>
+<th>detection threshold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.0 (very skeptical)</td>
+<td>65%</td>
+<td>30%</td>
+<td>5%</td>
+<td>0.50</td>
+</tr>
+<tr>
+<td>0.2 (crossover)</td>
+<td>54%</td>
+<td>26%</td>
+<td>20%</td>
+<td>0.40</td>
+</tr>
+<tr>
+<td>0.5 (neutral)</td>
+<td>38%</td>
+<td>20%</td>
+<td>42%</td>
+<td>0.26</td>
+</tr>
+<tr>
+<td>1.0 (very confident)</td>
+<td>10%</td>
+<td>10%</td>
+<td>80%</td>
+<td>0.02</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>monthly_detection_rate</code> is the prior-weighted probability of finding a true positive in any given month. The experiment is not worth running (<code>worth_running = false</code>) when this falls below the conviction-derived threshold.</p>
+<h3 id="advanced-optimizerconfig-directly">Advanced: <code>OptimizerConfig</code> directly</h3>
+<pre><code class="language-v">OptimizerConfig{
+    baseline                  f64
+    daily_traffic_per_variant int
+    mde_tolerance             f64        // absolute MDE (in metric units)
+    alpha                     f64 = 0.05
+    prior                     MixturePrior
+    seasonality_min_days      int = 14
+    min_power                 f64 = 0.80
+    max_days                  int = 90
+    min_monthly_detection_rate f64 = 0.05
+    metric_std_dev            f64 = 0.0
+    seed                      u32
+}
+
+MixturePrior{
+    null_frac f64 = 0.40   // fraction with no effect
+    neg_frac  f64 = 0.30   // fraction with harmful effect
+    neg_mean  f64 = -0.02  // centre of negative-effect distribution
+    neg_std   f64 = 0.01
+    pos_mean  f64 = 0.02   // centre of positive-effect distribution
+    pos_std   f64 = 0.01
+    n_samples int = 100_000
+}
+</code></pre>
+<h3 id="example-proportion-metric">Example — proportion metric</h3>
+<pre><code class="language-v">import vstats.experiment
+
+params := experiment.DesignParams{
+    baseline:                  0.41   // 41% conversion rate
+    daily_traffic_per_variant: 1370
+    min_relative_lift:         0.05   // detect ≥5% relative improvement
+    prior_conviction:          0.30   // moderately skeptical
+    max_days:                  30
+}
+config := experiment.optimizer_config(params)
+result := experiment.find_optimal_runtime(config)
+println(result.worth_running)           // true
+println(result.optimal_days)            // 14
+println(result.monthly_detection_rate)  // 0.584
+</code></pre>
+<h3 id="example-continuous-metric-revenue-per-user">Example — continuous metric (revenue per user)</h3>
+<pre><code class="language-v">params := experiment.DesignParams{
+    baseline:                  47.50   // $47.50 mean order value
+    metric_std_dev:            82.00   // $82 historical σ — required for continuous
+    daily_traffic_per_variant: 620
+    min_relative_lift:         0.05    // detect ≥$2.38 lift
+    prior_conviction:          0.40
+    max_days:                  60
+}
+config := experiment.optimizer_config(params)
+result := experiment.find_optimal_runtime(config)
+</code></pre>
 <h2 id="see-also">See Also</h2>
 <ul>
 <li><a href="../examples.html#rigorous-ab-readout">rigorous-ab-readout example</a></li>
 <li><a href="../examples.html#causal-did">causal-did example</a></li>
+<li><a href="../examples.html#ab-design-optimizer">ab-design-optimizer example</a></li>
+<li><a href="../examples.html#revenue-per-user-optimizer">revenue-per-user-optimizer example</a></li>
 </ul>
   </main>
 </div>

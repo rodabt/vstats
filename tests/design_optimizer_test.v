@@ -242,6 +242,37 @@ fn test__worth_running_true_and_power_at_optimal_meets_floor() {
 	assert result.power_at_optimal >= config.min_power
 }
 
+fn test__monthly_detection_rate_never_exceeds_one() {
+	// Regression: the old detection_rate scaled linearly by 30/runtime_days, which
+	// pushed the "monthly detection rate" above 1.0 for short runtimes (a probability
+	// cannot exceed 1). Small MDE + high traffic + short seasonality reproduces it:
+	// at the seasonality floor of 3 days the scaling factor is 30/3 = 10.
+	config := experiment.OptimizerConfig{
+		baseline:                  0.10
+		daily_traffic_per_variant: 10_000
+		mde_tolerance:             0.005
+		alpha:                     0.05
+		min_power:                 0.10
+		seasonality_min_days:      3
+		prior:                     experiment.MixturePrior{
+			null_frac: 0.10
+			neg_frac:  0.10
+			pos_mean:  0.02
+			pos_std:   0.005
+			n_samples: 10_000
+		}
+		max_days: 30
+		seed:     7
+	}
+	result := experiment.find_optimal_runtime(config)
+	assert result.monthly_detection_rate <= 1.0
+	assert result.monthly_detection_rate >= 0.0
+	for r in result.all_results {
+		assert r.monthly_detection_rate <= 1.0
+		assert r.monthly_detection_rate >= 0.0
+	}
+}
+
 fn test__mde_tolerance_at_boundary() {
 	// pos_mean exactly at mde_tolerance → ~50% of positive samples pass the filter → rate > 0
 	config := experiment.OptimizerConfig{
