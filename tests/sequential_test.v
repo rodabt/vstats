@@ -2,6 +2,7 @@ module main
 
 import experiment
 import math
+import stats
 
 fn test__sprt_reject_null() {
 	// Control: 50/1000 (rate=0.05). Treatment: 80/1000 (rate=0.08).
@@ -97,4 +98,16 @@ fn test__msprt_provided_sigma() {
 
 	assert result.decision == .reject_null
 	assert math.abs(result.sigma_hat - 0.2) < 1e-10
+}
+
+fn test__msprt_stats_matches_array() {
+	ctrl := [1.0, 2.0, 3.0, 4.0, 5.0, 2.0, 3.0, 4.0]
+	trt := [2.0, 3.0, 4.0, 5.0, 6.0, 3.0, 4.0, 5.0]
+	cfg := experiment.MSPRTConfig{}
+	r1 := experiment.msprt_test(ctrl, trt, cfg)
+	r2 := experiment.msprt_test_stats(ctrl.len, stats.mean(ctrl), trt.len, stats.mean(trt),
+		r1.sigma_hat, cfg)
+	assert math.abs(r1.log_mixture_ratio - r2.log_mixture_ratio) < 1e-9
+	assert r1.decision == r2.decision
+	assert math.abs(r1.effect - r2.effect) < 1e-9
 }

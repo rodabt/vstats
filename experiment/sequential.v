@@ -140,8 +140,17 @@ pub fn msprt_test(ctrl []f64, trt []f64, cfg MSPRTConfig) MSPRTResult {
 		math.sqrt(pooled_var)
 	}
 
-	sigma2 := sigma_hat * sigma_hat
-	tau2 := cfg.tau_sigma_ratio * sigma_hat * cfg.tau_sigma_ratio * sigma_hat
+	return msprt_test_stats(n_c, m_c, n_t, m_t, sigma_hat, cfg)
+}
+
+// msprt_test_stats is the sufficient-statistics form of msprt_test: it takes the
+// group sizes, means, and a pooled sigma directly instead of raw samples. Used by
+// callers (e.g. the tracker readout) that hold aggregates, not per-row data.
+pub fn msprt_test_stats(n_c int, m_c f64, n_t int, m_t f64, sigma f64, cfg MSPRTConfig) MSPRTResult {
+	assert n_c >= 2 && n_t >= 2, 'each group needs at least 2 observations'
+
+	sigma2 := sigma * sigma
+	tau2 := cfg.tau_sigma_ratio * sigma * cfg.tau_sigma_ratio * sigma
 	d := m_t - m_c
 	s2 := sigma2 * (1.0 / f64(n_c) + 1.0 / f64(n_t))
 
@@ -170,7 +179,7 @@ pub fn msprt_test(ctrl []f64, trt []f64, cfg MSPRTConfig) MSPRTResult {
 		control_mean:      m_c
 		treatment_mean:    m_t
 		effect:            d
-		sigma_hat:         sigma_hat
+		sigma_hat:         sigma
 		n_control:         n_c
 		n_treatment:       n_t
 	}
