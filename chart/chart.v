@@ -1662,7 +1662,7 @@ fn (c Chart) draw_legend(mut scene Scene, g Geom) {
 	if labeled.len < 2 {
 		return
 	}
-	lx := g.plot_x + g.plot_w - 100.0
+	lx := g.plot_x + g.plot_w + 8.0 // sit in the reserved right margin, clear of the plot
 	mut ly := g.plot_y + 4.0
 	for s in labeled {
 		scene.primitives << Rect{
