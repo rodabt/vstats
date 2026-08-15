@@ -40,3 +40,38 @@ pub fn rows_to_matrix(rows []map[string]f64, columns []string) ![][]f64 {
 	}
 	return result
 }
+
+// rows_to_dataset builds a classification Dataset from row-oriented data. The target
+// column's values are truncated to int (V's int(v) cast) since Dataset.target is
+// []int -- pass already-integer-valued columns (e.g. encoded class labels).
+pub fn rows_to_dataset(rows []map[string]f64, feature_cols []string, target_col string, name string) !Dataset {
+	features := rows_to_matrix(rows, feature_cols)!
+	target_f64 := rows_to_vector(rows, target_col)!
+	mut target := []int{cap: target_f64.len}
+	for v in target_f64 {
+		target << int(v)
+	}
+	return Dataset{
+		name:          name
+		features:      features
+		target:        target
+		feature_names: feature_cols
+		target_name:   target_col
+		description:   ''
+	}
+}
+
+// rows_to_regression_dataset builds a RegressionDataset from row-oriented data. The
+// target column stays f64 -- no cast.
+pub fn rows_to_regression_dataset(rows []map[string]f64, feature_cols []string, target_col string, name string) !RegressionDataset {
+	features := rows_to_matrix(rows, feature_cols)!
+	target := rows_to_vector(rows, target_col)!
+	return RegressionDataset{
+		name:          name
+		features:      features
+		target:        target
+		feature_names: feature_cols
+		target_name:   target_col
+		description:   ''
+	}
+}

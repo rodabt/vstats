@@ -60,3 +60,40 @@ fn test__rows_to_matrix_errors_on_missing_column() {
 	}
 	assert false, 'expected an error for a missing column'
 }
+
+fn test__rows_to_dataset_truncates_target_to_int() {
+	rows := [
+		{'x': 1.0, 'label': 2.9},
+		{'x': 2.0, 'label': 0.4},
+	]
+	ds := utils.rows_to_dataset(rows, ['x'], 'label', 'synthetic') or { panic(err.msg()) }
+	assert ds.target == [2, 0]
+	assert ds.features == [[1.0], [2.0]]
+	assert ds.feature_names == ['x']
+	assert ds.target_name == 'label'
+	assert ds.name == 'synthetic'
+}
+
+fn test__rows_to_dataset_propagates_missing_column_error() {
+	rows := [
+		{'x': 1.0},
+	]
+	utils.rows_to_dataset(rows, ['x'], 'label', 'synthetic') or {
+		assert err.msg().contains('label')
+		return
+	}
+	assert false, 'expected an error for a missing target column'
+}
+
+fn test__rows_to_regression_dataset_keeps_target_as_f64() {
+	rows := [
+		{'x': 1.0, 'y': 2.9},
+		{'x': 2.0, 'y': 0.4},
+	]
+	ds := utils.rows_to_regression_dataset(rows, ['x'], 'y', 'synthetic') or { panic(err.msg()) }
+	assert ds.target == [2.9, 0.4]
+	assert ds.features == [[1.0], [2.0]]
+	assert ds.feature_names == ['x']
+	assert ds.target_name == 'y'
+	assert ds.name == 'synthetic'
+}
