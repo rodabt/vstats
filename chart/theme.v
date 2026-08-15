@@ -21,6 +21,9 @@ pub:
 	subtitle_size  f64      = 12.0
 	subtitle_color string   = '#666666'
 	palette        []string = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+	waterfall_increase string = '#2ca02c'
+	waterfall_decrease string = '#d62728'
+	waterfall_total    string = '#7f7f7f'
 }
 
 pub fn (t Theme) color(i int) string {

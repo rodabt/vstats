@@ -18,6 +18,9 @@ enum SeriesKind {
 	hbar
 	heatmap
 	stacked_bar
+	waterfall
+	grouped_bar
+	dumbbell
 }
 
 struct Series {
@@ -73,6 +76,10 @@ pub:
 	err            []f64
 	colors         []string   // per-segment colors (stacked_bar)
 	secondary_axis bool
+	color_increase string
+	color_decrease string
+	color_total    string
+	color_hi       string
 }
 
 pub fn new(opts ChartOpts) Chart {
@@ -441,6 +448,29 @@ pub fn (c Chart) stacked_bar(groups [][]f64, opts SeriesOpts) Chart {
 	return nc
 }
 
+pub fn (c Chart) waterfall(values []f64, labels []string, opts SeriesOpts) Chart {
+	assert values.len >= 2
+	assert labels.len == values.len
+	mut nc := c
+	mut sv := c.series.clone()
+	col_inc := if opts.color_increase != '' { opts.color_increase } else { c.theme.waterfall_increase }
+	col_dec := if opts.color_decrease != '' { opts.color_decrease } else { c.theme.waterfall_decrease }
+	col_tot := if opts.color_total != '' { opts.color_total } else { c.theme.waterfall_total }
+	sv << Series{
+		kind:           .waterfall
+		y:              values.clone()
+		labels:         labels.clone()
+		color:          col_inc
+		color_lo:       col_dec
+		color_hi:       col_tot
+		show_values:    opts.show_values
+		label:          opts.label
+		secondary_axis: opts.secondary_axis
+	}
+	nc.series = sv
+	return nc
+}
+
 // ---- geometry & bounds ----
 
 struct Geom {
@@ -633,6 +663,22 @@ fn seg_meta(bar_label string, seg int, v f64) Meta {
 	}
 }
 
+fn waterfall_meta(series string, label string, delta f64, is_total bool, running f64) Meta {
+	head := if series != '' { '${series}\n' } else { '' }
+	body := if is_total {
+		'${label}: ${fmt_tick(running)}'
+	} else {
+		sign := if delta >= 0.0 { '+' } else { '' }
+		'${label}: ${sign}${fmt_tick(delta)} (running: ${fmt_tick(running)})'
+	}
+	return Meta{
+		tooltip: '${head}${body}'
+		series:  series
+		label:   label
+		y:       fmt_tick(running)
+	}
+}
+
 fn series_bounds(s Series) (f64, f64, f64, f64) {
 	return match s.kind {
 		.line, .scatter {
@@ -736,6 +782,31 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 				}
 			}
 			-0.5, f64(nbars) - 0.5, 0.0, max_stack
+		}
+		.waterfall {
+			mut cum := 0.0
+			mut ymin := 0.0
+			mut ymax := 0.0
+			for i, v in s.y {
+				if i == 0 || i == s.y.len - 1 {
+					cum = v
+				} else {
+					cum += v
+				}
+				if cum < ymin {
+					ymin = cum
+				}
+				if cum > ymax {
+					ymax = cum
+				}
+			}
+			-0.5, f64(s.y.len) - 0.5, ymin, ymax
+		}
+		.grouped_bar {
+			-0.5, 0.5, 0.0, 1.0 // implemented in Task 4
+		}
+		.dumbbell {
+			-0.5, 0.5, 0.0, 1.0 // implemented in Task 5
 		}
 	}
 }
@@ -1323,6 +1394,57 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 					}
 				}
 			}
+			.grouped_bar {}
+			.dumbbell {}
+			.waterfall {
+				ys := g.yscale_for(s)
+				band := g.xscale.map(1.0) - g.xscale.map(0.0)
+				bw := band * 0.8
+				mut cum := 0.0
+				mut prev_top_px := 0.0
+				for i, v in s.y {
+					is_total := i == 0 || i == s.y.len - 1
+					mut base := cum
+					if is_total {
+						cum = v
+						base = 0.0
+					} else {
+						cum += v
+					}
+					top := ys.map(math.max(base, cum))
+					bottom := ys.map(math.min(base, cum))
+					col := if is_total {
+						s.color_hi
+					} else if v >= 0.0 {
+						s.color
+					} else {
+						s.color_lo
+					}
+					cx := g.xscale.map(f64(i))
+					lbl := if s.labels.len > i { s.labels[i] } else { fmt_tick(f64(i)) }
+					scene.primitives << Rect{
+						x:      cx - bw / 2.0
+						y:      top
+						w:      bw
+						h:      bottom - top
+						fill:   col
+						stroke: 'none'
+						width:  0.0
+						meta:   waterfall_meta(s.label, lbl, v, is_total, cum)
+					}
+					if i > 0 {
+						scene.primitives << Line{
+							x1:     g.xscale.map(f64(i - 1)) + bw / 2.0
+							y1:     prev_top_px
+							x2:     cx - bw / 2.0
+							y2:     top
+							stroke: t.grid_color
+							width:  t.axis_width
+						}
+					}
+					prev_top_px = top
+				}
+			}
 		}
 	}
 }
@@ -1358,7 +1480,7 @@ fn (c Chart) draw_ticks(mut scene Scene, g Geom) {
 		if s.kind in [.dot, .hbar] && s.labels.len > 0 && y_cat_labels.len == 0 {
 			y_cat_labels = s.labels.clone()
 		}
-		if s.kind == .stacked_bar && s.labels.len > 0 && x_cat_labels.len == 0 {
+		if s.kind in [.stacked_bar, .waterfall] && s.labels.len > 0 && x_cat_labels.len == 0 {
 			x_cat_labels = s.labels.clone()
 		}
 		if s.kind == .heatmap && s.labels.len > 0 {
@@ -1765,6 +1887,34 @@ fn (c Chart) draw_value_labels(mut scene Scene, g Geom) {
 							anchor:  .middle
 							family:  t.font_family
 						}
+					}
+				}
+			}
+			.waterfall {
+				ys := g.yscale_for(s)
+				mut cum := 0.0
+				for i, v in s.y {
+					is_total := i == 0 || i == s.y.len - 1
+					if is_total {
+						cum = v
+					} else {
+						cum += v
+					}
+					text := if is_total {
+						fmt_tick(cum)
+					} else if v >= 0.0 {
+						'+${fmt_tick(v)}'
+					} else {
+						fmt_tick(v)
+					}
+					scene.primitives << Text{
+						x:       g.xscale.map(f64(i))
+						y:       ys.map(cum) - 4.0
+						content: text
+						size:    t.font_size
+						fill:    t.axis_color
+						anchor:  .middle
+						family:  t.font_family
 					}
 				}
 			}
