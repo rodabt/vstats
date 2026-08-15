@@ -39,16 +39,17 @@ struct Series {
 
 pub struct Chart {
 mut:
-	title    string
-	subtitle string
-	width    int
-	height   int
-	theme    Theme
-	xlabel_  string
-	ylabel_  string
-	series   []Series
-	hlines   []f64
-	vlines   []f64
+	title        string
+	subtitle     string
+	width        int
+	height       int
+	theme        Theme
+	xlabel_      string
+	ylabel_      string
+	series       []Series
+	hlines       []f64
+	vlines       []f64
+	xcategories_ []string
 }
 
 @[params]
@@ -208,6 +209,12 @@ pub fn (c Chart) xlabel(s string) Chart {
 pub fn (c Chart) ylabel(s string) Chart {
 	mut nc := c
 	nc.ylabel_ = s
+	return nc
+}
+
+pub fn (c Chart) xcategories(labels []string) Chart {
+	mut nc := c
+	nc.xcategories_ = labels.clone()
 	return nc
 }
 
@@ -1281,8 +1288,9 @@ fn (c Chart) draw_ticks(mut scene Scene, g Geom) {
 	}
 
 	// x-axis ticks
-	if x_cat_labels.len > 0 {
-		for i, lbl in x_cat_labels {
+	x_labels_to_use := if c.xcategories_.len > 0 { c.xcategories_ } else { x_cat_labels }
+	if x_labels_to_use.len > 0 {
+		for i, lbl in x_labels_to_use {
 			px := g.xscale.map(f64(i))
 			scene.primitives << Line{
 				x1:     px
