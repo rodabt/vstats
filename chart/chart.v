@@ -21,20 +21,21 @@ enum SeriesKind {
 }
 
 struct Series {
-	kind        SeriesKind
-	x           []f64
-	y           []f64
-	lo          []f64
-	hi          []f64
-	err         []f64
-	label       string
-	color       string
-	color_lo    string
-	color_hi    string
-	nbins       int
-	show_values bool
-	labels      []string
-	colors      []string   // per-segment colors (stacked_bar)
+	kind           SeriesKind
+	x              []f64
+	y              []f64
+	lo             []f64
+	hi             []f64
+	err            []f64
+	label          string
+	color          string
+	color_lo       string
+	color_hi       string
+	nbins          int
+	show_values    bool
+	labels         []string
+	colors         []string   // per-segment colors (stacked_bar)
+	secondary_axis bool
 }
 
 pub struct Chart {
@@ -65,12 +66,13 @@ pub:
 @[params]
 pub struct SeriesOpts {
 pub:
-	label       string
-	color       string
-	show_values bool
-	labels      []string
-	err         []f64
-	colors      []string   // per-segment colors (stacked_bar)
+	label          string
+	color          string
+	show_values    bool
+	labels         []string
+	err            []f64
+	colors         []string   // per-segment colors (stacked_bar)
+	secondary_axis bool
 }
 
 pub fn new(opts ChartOpts) Chart {
@@ -94,14 +96,15 @@ pub fn (c Chart) line(x []f64, y []f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut s := c.series.clone()
 	s << Series{
-		kind:        .line
-		x:           x.clone()
-		y:           y.clone()
-		err:         opts.err.clone()
-		label:       opts.label
-		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
-		show_values: opts.show_values
-		labels:      opts.labels.clone()
+		kind:           .line
+		x:              x.clone()
+		y:              y.clone()
+		err:            opts.err.clone()
+		label:          opts.label
+		color:          if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		show_values:    opts.show_values
+		labels:         opts.labels.clone()
+		secondary_axis: opts.secondary_axis
 	}
 	nc.series = s
 	return nc
@@ -118,14 +121,15 @@ pub fn (c Chart) scatter(x []f64, y []f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut s := c.series.clone()
 	s << Series{
-		kind:        .scatter
-		x:           x.clone()
-		y:           y.clone()
-		err:         opts.err.clone()
-		label:       opts.label
-		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
-		show_values: opts.show_values
-		labels:      opts.labels.clone()
+		kind:           .scatter
+		x:              x.clone()
+		y:              y.clone()
+		err:            opts.err.clone()
+		label:          opts.label
+		color:          if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		show_values:    opts.show_values
+		labels:         opts.labels.clone()
+		secondary_axis: opts.secondary_axis
 	}
 	nc.series = s
 	return nc
@@ -159,14 +163,15 @@ pub fn (c Chart) bar(values []f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut s := c.series.clone()
 	s << Series{
-		kind:        .bar
-		x:           []f64{}
-		y:           values.clone()
-		err:         opts.err.clone()
-		label:       opts.label
-		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
-		show_values: opts.show_values
-		labels:      opts.labels.clone()
+		kind:           .bar
+		x:              []f64{}
+		y:              values.clone()
+		err:            opts.err.clone()
+		label:          opts.label
+		color:          if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		show_values:    opts.show_values
+		labels:         opts.labels.clone()
+		secondary_axis: opts.secondary_axis
 	}
 	nc.series = s
 	return nc
@@ -240,12 +245,13 @@ pub fn (c Chart) band(x []f64, lower []f64, upper []f64, opts SeriesOpts) Chart 
 	mut nc := c
 	mut s := c.series.clone()
 	s << Series{
-		kind:  .band
-		x:     x.clone()
-		lo:    lower.clone()
-		hi:    upper.clone()
-		label: opts.label
-		color: if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		kind:           .band
+		x:              x.clone()
+		lo:             lower.clone()
+		hi:             upper.clone()
+		label:          opts.label
+		color:          if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		secondary_axis: opts.secondary_axis
 	}
 	nc.series = s
 	return nc
@@ -256,11 +262,12 @@ pub fn (c Chart) area(x []f64, y []f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut s := c.series.clone()
 	s << Series{
-		kind:  .area
-		x:     x.clone()
-		y:     y.clone()
-		label: opts.label
-		color: if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		kind:           .area
+		x:              x.clone()
+		y:              y.clone()
+		label:          opts.label
+		color:          if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		secondary_axis: opts.secondary_axis
 	}
 	nc.series = s
 	return nc
@@ -271,12 +278,13 @@ pub fn (c Chart) step(x []f64, y []f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut s := c.series.clone()
 	s << Series{
-		kind:        .step
-		x:           x.clone()
-		y:           y.clone()
-		label:       opts.label
-		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
-		show_values: opts.show_values
+		kind:           .step
+		x:              x.clone()
+		y:              y.clone()
+		label:          opts.label
+		color:          if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		show_values:    opts.show_values
+		secondary_axis: opts.secondary_axis
 	}
 	nc.series = s
 	return nc
@@ -294,15 +302,16 @@ pub fn (c Chart) box(data []f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut sv := c.series.clone()
 	sv << Series{
-		kind:        .box_plot
-		x:           [f64(box_idx)]
-		y:           [q1, med, q3]
-		lo:          [wlo]
-		hi:          [whi]
-		err:         outliers
-		label:       opts.label
-		color:       if opts.color != '' { opts.color } else { c.theme.color(box_idx) }
-		show_values: opts.show_values
+		kind:           .box_plot
+		x:              [f64(box_idx)]
+		y:              [q1, med, q3]
+		lo:             [wlo]
+		hi:             [whi]
+		err:            outliers
+		label:          opts.label
+		color:          if opts.color != '' { opts.color } else { c.theme.color(box_idx) }
+		show_values:    opts.show_values
+		secondary_axis: opts.secondary_axis
 	}
 	nc.series = sv
 	return nc
@@ -315,12 +324,13 @@ pub fn (c Chart) dot(values []f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut sv := c.series.clone()
 	sv << Series{
-		kind:        .dot
-		y:           values.clone()
-		label:       opts.label
-		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
-		labels:      opts.labels.clone()
-		show_values: opts.show_values
+		kind:           .dot
+		y:              values.clone()
+		label:          opts.label
+		color:          if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		labels:         opts.labels.clone()
+		show_values:    opts.show_values
+		secondary_axis: opts.secondary_axis
 	}
 	nc.series = sv
 	return nc
@@ -339,15 +349,16 @@ pub fn (c Chart) violin(data []f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut sv := c.series.clone()
 	sv << Series{
-		kind:        .violin
-		x:           [f64(violin_idx)]
-		y:           grid
-		err:         density
-		lo:          [lo]
-		hi:          [hi]
-		label:       opts.label
-		color:       if opts.color != '' { opts.color } else { c.theme.color(violin_idx) }
-		show_values: opts.show_values
+		kind:           .violin
+		x:              [f64(violin_idx)]
+		y:              grid
+		err:            density
+		lo:             [lo]
+		hi:             [hi]
+		label:          opts.label
+		color:          if opts.color != '' { opts.color } else { c.theme.color(violin_idx) }
+		show_values:    opts.show_values
+		secondary_axis: opts.secondary_axis
 	}
 	nc.series = sv
 	return nc
@@ -360,12 +371,13 @@ pub fn (c Chart) hbar(values []f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut sv := c.series.clone()
 	sv << Series{
-		kind:        .hbar
-		y:           values.clone()
-		label:       opts.label
-		color:       if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
-		labels:      opts.labels.clone()
-		show_values: opts.show_values
+		kind:           .hbar
+		y:              values.clone()
+		label:          opts.label
+		color:          if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+		labels:         opts.labels.clone()
+		show_values:    opts.show_values
+		secondary_axis: opts.secondary_axis
 	}
 	nc.series = sv
 	return nc
@@ -415,14 +427,15 @@ pub fn (c Chart) stacked_bar(groups [][]f64, opts SeriesOpts) Chart {
 	mut nc := c
 	mut sv := c.series.clone()
 	sv << Series{
-		kind:        .stacked_bar
-		x:           flat
-		nbins:       nseg
-		label:       opts.label
-		color:       ''
-		labels:      opts.labels.clone()
-		colors:      opts.colors.clone()
-		show_values: opts.show_values
+		kind:           .stacked_bar
+		x:              flat
+		nbins:          nseg
+		label:          opts.label
+		color:          ''
+		labels:         opts.labels.clone()
+		colors:         opts.colors.clone()
+		show_values:    opts.show_values
+		secondary_axis: opts.secondary_axis
 	}
 	nc.series = sv
 	return nc
@@ -431,16 +444,25 @@ pub fn (c Chart) stacked_bar(groups [][]f64, opts SeriesOpts) Chart {
 // ---- geometry & bounds ----
 
 struct Geom {
-	plot_x f64
-	plot_y f64
-	plot_w f64
-	plot_h f64
-	xmin   f64
-	xmax   f64
-	ymin   f64
-	ymax   f64
-	xscale LinearScale
-	yscale LinearScale
+	plot_x        f64
+	plot_y        f64
+	plot_w        f64
+	plot_h        f64
+	xmin          f64
+	xmax          f64
+	ymin          f64
+	ymax          f64
+	xscale        LinearScale
+	yscale        LinearScale
+	yscale2       LinearScale
+	has_secondary bool
+}
+
+fn (g Geom) yscale_for(s Series) LinearScale {
+	if s.secondary_axis && g.has_secondary {
+		return g.yscale2
+	}
+	return g.yscale
 }
 
 fn percentile(sorted []f64, p f64) f64 {
@@ -718,13 +740,13 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 	}
 }
 
-fn (c Chart) data_bounds() (f64, f64, f64, f64) {
+fn bounds_for(series []Series) (f64, f64, f64, f64) {
 	mut xmin := 0.0
 	mut xmax := 1.0
 	mut ymin := 0.0
 	mut ymax := 1.0
 	mut first := true
-	for s in c.series {
+	for s in series {
 		bx0, bx1, by0, by1 := series_bounds(s)
 		if first {
 			xmin, xmax, ymin, ymax = bx0, bx1, by0, by1
@@ -751,6 +773,38 @@ fn (c Chart) data_bounds() (f64, f64, f64, f64) {
 		ymax = ymin + 1.0
 	}
 	return xmin, xmax, ymin, ymax
+}
+
+fn (c Chart) data_bounds() (f64, f64, f64, f64) {
+	mut primary := []Series{}
+	for s in c.series {
+		if !s.secondary_axis {
+			primary << s
+		}
+	}
+	if primary.len == 0 {
+		primary = c.series.clone()
+	}
+	return bounds_for(primary)
+}
+
+fn (c Chart) data_bounds_secondary() (f64, f64, f64, f64) {
+	mut secondary := []Series{}
+	for s in c.series {
+		if s.secondary_axis {
+			secondary << s
+		}
+	}
+	return bounds_for(secondary)
+}
+
+fn (c Chart) has_secondary_series() bool {
+	for s in c.series {
+		if s.secondary_axis {
+			return true
+		}
+	}
+	return false
 }
 
 // effective_margins grows the theme margins inward so labels are not trimmed,
@@ -805,6 +859,17 @@ pub fn (c Chart) effective_margins() (int, int, int, int) {
 			}
 		}
 	}
+	if c.has_secondary_series() {
+		_, _, symin, symax := c.data_bounds_secondary()
+		for tk in nice_ticks(symin, symax, 5) {
+			w, _ := text_extent(fmt_tick(tk), t.font_size)
+			// ticks sit further right than value labels: gap (13px) + tick text
+			total := w + 13.0
+			if total > max_right {
+				max_right = total
+			}
+		}
+	}
 	need_right := int(max_right) + 8
 	if need_right > mr {
 		mr = need_right
@@ -820,27 +885,40 @@ fn (c Chart) geometry() Geom {
 	plot_w := f64(c.width - ml - mr)
 	plot_h := f64(c.height - mt - mb)
 	xmin, xmax, ymin, ymax := c.data_bounds()
+	has_secondary := c.has_secondary_series()
+	mut yscale2 := LinearScale{}
+	if has_secondary {
+		_, _, symin, symax := c.data_bounds_secondary()
+		yscale2 = LinearScale{
+			domain_min: symin
+			domain_max: symax
+			range_min:  plot_y + plot_h
+			range_max:  plot_y
+		}
+	}
 	return Geom{
-		plot_x: plot_x
-		plot_y: plot_y
-		plot_w: plot_w
-		plot_h: plot_h
-		xmin:   xmin
-		xmax:   xmax
-		ymin:   ymin
-		ymax:   ymax
-		xscale: LinearScale{
+		plot_x:        plot_x
+		plot_y:        plot_y
+		plot_w:        plot_w
+		plot_h:        plot_h
+		xmin:          xmin
+		xmax:          xmax
+		ymin:          ymin
+		ymax:          ymax
+		xscale:        LinearScale{
 			domain_min: xmin
 			domain_max: xmax
 			range_min:  plot_x
 			range_max:  plot_x + plot_w
 		}
-		yscale: LinearScale{
+		yscale:        LinearScale{
 			domain_min: ymin
 			domain_max: ymax
 			range_min:  plot_y + plot_h
 			range_max:  plot_y
 		}
+		yscale2:       yscale2
+		has_secondary: has_secondary
 	}
 }
 
@@ -930,7 +1008,8 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 				}
 			}
 			.area {
-				baseline := g.yscale.map(0.0)
+				ys := g.yscale_for(s)
+				baseline := ys.map(0.0)
 				mut pts := []Point{}
 				pts << Point{
 					x: g.xscale.map(s.x[0])
@@ -939,7 +1018,7 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 				for i in 0 .. s.x.len {
 					pts << Point{
 						x: g.xscale.map(s.x[i])
-						y: g.yscale.map(s.y[i])
+						y: ys.map(s.y[i])
 					}
 				}
 				pts << Point{
@@ -993,11 +1072,12 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 	for s in c.series {
 		match s.kind {
 			.line {
+				ys := g.yscale_for(s)
 				mut pts := []Point{}
 				for i in 0 .. s.x.len {
 					pts << Point{
 						x: g.xscale.map(s.x[i])
-						y: g.yscale.map(s.y[i])
+						y: ys.map(s.y[i])
 					}
 				}
 				scene.primitives << Polyline{
@@ -1007,10 +1087,11 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 				}
 			}
 			.scatter {
+				ys := g.yscale_for(s)
 				for i in 0 .. s.x.len {
 					scene.primitives << Circle{
 						cx:     g.xscale.map(s.x[i])
-						cy:     g.yscale.map(s.y[i])
+						cy:     ys.map(s.y[i])
 						r:      t.marker_radius
 						fill:   s.color
 						stroke: 'none'
@@ -1023,11 +1104,12 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 				if s.x.len < 2 {
 					continue
 				}
+				ys := g.yscale_for(s)
 				for i in 0 .. s.x.len - 1 {
 					px1 := g.xscale.map(s.x[i])
 					px2 := g.xscale.map(s.x[i + 1])
-					py1 := g.yscale.map(s.y[i])
-					py2 := g.yscale.map(s.y[i + 1])
+					py1 := ys.map(s.y[i])
+					py2 := ys.map(s.y[i + 1])
 					scene.primitives << Line{
 						x1:     px1
 						y1:     py1
@@ -1047,12 +1129,13 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 				}
 			}
 			.bar {
+				ys := g.yscale_for(s)
 				band := g.xscale.map(1.0) - g.xscale.map(0.0)
 				bw := band * 0.8
-				baseline := g.yscale.map(0.0)
+				baseline := ys.map(0.0)
 				for i in 0 .. s.y.len {
 					cx := g.xscale.map(f64(i))
-					top := g.yscale.map(s.y[i])
+					top := ys.map(s.y[i])
 					lbl := if s.labels.len > i { s.labels[i] } else { fmt_tick(f64(i)) }
 					scene.primitives << Rect{
 						x:      cx - bw / 2.0
@@ -1385,6 +1468,33 @@ fn (c Chart) draw_ticks(mut scene Scene, g Geom) {
 			}
 		}
 	}
+
+	// secondary y-axis ticks (right side)
+	if g.has_secondary {
+		for tk in nice_ticks(g.yscale2.domain_min, g.yscale2.domain_max, 5) {
+			if tk < g.yscale2.domain_min - 1.0e-9 || tk > g.yscale2.domain_max + 1.0e-9 {
+				continue
+			}
+			py := g.yscale2.map(tk)
+			scene.primitives << Line{
+				x1:     g.plot_x + g.plot_w
+				y1:     py
+				x2:     g.plot_x + g.plot_w + 5.0
+				y2:     py
+				stroke: t.axis_color
+				width:  t.axis_width
+			}
+			scene.primitives << Text{
+				x:       g.plot_x + g.plot_w + 8.0
+				y:       py + 4.0
+				content: fmt_tick(tk)
+				size:    t.font_size
+				fill:    t.axis_color
+				anchor:  .start
+				family:  t.font_family
+			}
+		}
+	}
 }
 
 fn (c Chart) draw_guides(mut scene Scene, g Geom) {
@@ -1481,13 +1591,14 @@ fn (c Chart) draw_error_bars(mut scene Scene, g Geom) {
 		if s.kind in [.box_plot, .dot, .violin] {
 			continue
 		}
+		ys := g.yscale_for(s)
 		for i in 0 .. s.y.len {
 			px := match s.kind {
 				.bar { g.xscale.map(f64(i)) }
 				else { g.xscale.map(s.x[i]) }
 			}
-			y_hi := g.yscale.map(s.y[i] + s.err[i])
-			y_lo := g.yscale.map(s.y[i] - s.err[i])
+			y_hi := ys.map(s.y[i] + s.err[i])
+			y_lo := ys.map(s.y[i] - s.err[i])
 			scene.primitives << Line{
 				x1:     px
 				y1:     y_lo
@@ -1524,10 +1635,11 @@ fn (c Chart) draw_value_labels(mut scene Scene, g Geom) {
 		}
 		match s.kind {
 			.line, .scatter {
+				ys := g.yscale_for(s)
 				for i in 0 .. s.x.len {
 					scene.primitives << Text{
 						x:       g.xscale.map(s.x[i])
-						y:       g.yscale.map(s.y[i]) - t.marker_radius - 4.0
+						y:       ys.map(s.y[i]) - t.marker_radius - 4.0
 						content: c.value_text(s, i, s.y[i])
 						size:    t.font_size
 						fill:    t.axis_color
@@ -1537,9 +1649,10 @@ fn (c Chart) draw_value_labels(mut scene Scene, g Geom) {
 				}
 			}
 			.bar {
-				baseline := g.yscale.map(0.0)
+				ys := g.yscale_for(s)
+				baseline := ys.map(0.0)
 				for i in 0 .. s.y.len {
-					top := g.yscale.map(s.y[i])
+					top := ys.map(s.y[i])
 					scene.primitives << Text{
 						x:       g.xscale.map(f64(i))
 						y:       math.min(top, baseline) - 4.0
@@ -1552,10 +1665,11 @@ fn (c Chart) draw_value_labels(mut scene Scene, g Geom) {
 				}
 			}
 			.step {
+				ys := g.yscale_for(s)
 				for i in 0 .. s.x.len {
 					scene.primitives << Text{
 						x:       g.xscale.map(s.x[i])
-						y:       g.yscale.map(s.y[i]) - t.marker_radius - 4.0
+						y:       ys.map(s.y[i]) - t.marker_radius - 4.0
 						content: c.value_text(s, i, s.y[i])
 						size:    t.font_size
 						fill:    t.axis_color
