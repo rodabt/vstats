@@ -499,6 +499,28 @@ pub fn (c Chart) grouped_bar(groups [][]f64, opts SeriesOpts) Chart {
 	return nc
 }
 
+pub fn (c Chart) dumbbell(before []f64, after []f64, labels []string, opts SeriesOpts) Chart {
+	assert before.len == after.len
+	assert labels.len == before.len
+	mut nc := c
+	mut sv := c.series.clone()
+	before_col := if opts.color != '' { opts.color } else { c.theme.color(c.series.len) }
+	after_col := if opts.color_hi != '' { opts.color_hi } else { c.theme.color(c.series.len + 1) }
+	sv << Series{
+		kind:           .dumbbell
+		lo:             before.clone()
+		hi:             after.clone()
+		labels:         labels.clone()
+		label:          opts.label
+		color:          before_col
+		color_hi:       after_col
+		show_values:    opts.show_values
+		secondary_axis: opts.secondary_axis
+	}
+	nc.series = sv
+	return nc
+}
+
 // ---- geometry & bounds ----
 
 struct Geom {
@@ -707,6 +729,18 @@ fn waterfall_meta(series string, label string, delta f64, is_total bool, running
 	}
 }
 
+fn dumbbell_meta(series string, label string, before f64, after f64) Meta {
+	head := if series != '' { '${series}\n' } else { '' }
+	delta := after - before
+	sign := if delta >= 0.0 { '+' } else { '' }
+	return Meta{
+		tooltip: '${head}${label}: ${fmt_tick(before)} → ${fmt_tick(after)} (${sign}${fmt_tick(delta)})'
+		series:  series
+		label:   label
+		y:       fmt_tick(after)
+	}
+}
+
 fn series_bounds(s Series) (f64, f64, f64, f64) {
 	return match s.kind {
 		.line, .scatter {
@@ -845,7 +879,11 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 			-0.5, f64(nbars) - 0.5, 0.0, max_seg
 		}
 		.dumbbell {
-			-0.5, 0.5, 0.0, 1.0 // implemented in Task 5
+			lo_before, hi_before := extent(s.lo)
+			lo_after, hi_after := extent(s.hi)
+			xlo := math.min(lo_before, lo_after)
+			xhi := math.max(hi_before, hi_after)
+			xlo, xhi, -0.5, f64(s.lo.len) - 0.5
 		}
 	}
 }
@@ -936,7 +974,7 @@ pub fn (c Chart) effective_margins() (int, int, int, int) {
 		}
 	}
 	for s in c.series {
-		if s.kind in [.dot, .hbar] {
+		if s.kind in [.dot, .hbar, .dumbbell] {
 			for lb in s.labels {
 				w, _ := text_extent(lb, t.font_size)
 				if w > max_left {
@@ -1464,7 +1502,41 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 					}
 				}
 			}
-			.dumbbell {}
+			.dumbbell {
+				ys := g.yscale_for(s)
+				for i in 0 .. s.lo.len {
+					py := ys.map(f64(s.lo.len - 1 - i))
+					before_px := g.xscale.map(s.lo[i])
+					after_px := g.xscale.map(s.hi[i])
+					lbl := if s.labels.len > i { s.labels[i] } else { fmt_tick(f64(i)) }
+					scene.primitives << Line{
+						x1:     before_px
+						y1:     py
+						x2:     after_px
+						y2:     py
+						stroke: t.grid_color
+						width:  t.axis_width
+					}
+					scene.primitives << Circle{
+						cx:     before_px
+						cy:     py
+						r:      t.marker_radius + 1.0
+						fill:   s.color
+						stroke: 'none'
+						width:  0.0
+						meta:   dumbbell_meta(s.label, lbl, s.lo[i], s.hi[i])
+					}
+					scene.primitives << Circle{
+						cx:     after_px
+						cy:     py
+						r:      t.marker_radius + 1.0
+						fill:   s.color_hi
+						stroke: 'none'
+						width:  0.0
+						meta:   dumbbell_meta(s.label, lbl, s.lo[i], s.hi[i])
+					}
+				}
+			}
 			.waterfall {
 				ys := g.yscale_for(s)
 				band := g.xscale.map(1.0) - g.xscale.map(0.0)
@@ -1546,7 +1618,7 @@ fn (c Chart) draw_ticks(mut scene Scene, g Geom) {
 	mut y_cat_labels := []string{}
 	mut x_cat_labels := []string{}
 	for s in c.series {
-		if s.kind in [.dot, .hbar] && s.labels.len > 0 && y_cat_labels.len == 0 {
+		if s.kind in [.dot, .hbar, .dumbbell] && s.labels.len > 0 && y_cat_labels.len == 0 {
 			y_cat_labels = s.labels.clone()
 		}
 		if s.kind in [.stacked_bar, .waterfall, .grouped_bar] && s.labels.len > 0 && x_cat_labels.len == 0 {
@@ -2007,6 +2079,32 @@ fn (c Chart) draw_value_labels(mut scene Scene, g Geom) {
 						x:       g.xscale.map(f64(i))
 						y:       ys.map(cum) - 4.0
 						content: text
+						size:    t.font_size
+						fill:    t.axis_color
+						anchor:  .middle
+						family:  t.font_family
+					}
+				}
+			}
+			.dumbbell {
+				ys := g.yscale_for(s)
+				for i in 0 .. s.lo.len {
+					py := ys.map(f64(s.lo.len - 1 - i))
+					before_px := g.xscale.map(s.lo[i])
+					after_px := g.xscale.map(s.hi[i])
+					scene.primitives << Text{
+						x:       before_px
+						y:       py - t.marker_radius - 4.0
+						content: fmt_tick(s.lo[i])
+						size:    t.font_size
+						fill:    t.axis_color
+						anchor:  .middle
+						family:  t.font_family
+					}
+					scene.primitives << Text{
+						x:       after_px
+						y:       py - t.marker_radius - 4.0
+						content: fmt_tick(s.hi[i])
 						size:    t.font_size
 						fill:    t.axis_color
 						anchor:  .middle
