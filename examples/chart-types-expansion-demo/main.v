@@ -36,12 +36,13 @@ fn main() {
 			'Q2',
 			'Q3',
 			'Q4',
-		], colors: ['#1f77b4', '#ff7f0e'])
+		], colors: ['#1f77b4', '#ff7f0e'], show_values: true)
 	gb.save(os.join_path(out_dir, 'grouped_bar_demo.svg'))!
 	println('Wrote grouped_bar_demo.svg (side-by-side clusters)')
 
 	// dumbbell: before/after intervention
 	db := chart.new(title: 'Latency Before/After Optimization (ms)', width: 500, height: 320)
+		.xmin(100.0)
 		.dumbbell([320.0, 410.0, 275.0, 500.0], [180.0, 260.0, 190.0, 300.0], [
 			'API A',
 			'API B',
@@ -51,5 +52,22 @@ fn main() {
 	db.save(os.join_path(out_dir, 'dumbbell_demo.svg'))!
 	println('Wrote dumbbell_demo.svg (paired before/after)')
 
-	println('\nAll 4 demo charts written to ${out_dir}')
+	// 100% stacked bar: quarterly product-line mix, contrast-aware labels
+	sp := chart.new(title: 'Product Mix by Quarter (% of Revenue)', width: 500, height: 320)
+		.xcategories(['Q1', 'Q2', 'Q3', 'Q4'])
+		.stacked_bar_pct([
+			[45.0, 35.0, 20.0],
+			[50.0, 30.0, 20.0],
+			[40.0, 40.0, 20.0],
+			[55.0, 25.0, 20.0],
+		], labels: [
+			'Q1',
+			'Q2',
+			'Q3',
+			'Q4',
+		], colors: ['#08306b', '#4292c6', '#c6dbef'], label: 'Product Mix')
+	sp.save(os.join_path(out_dir, 'stacked_pct_demo.svg'))!
+	println('Wrote stacked_pct_demo.svg (100% stacked bar, contrast-aware labels)')
+
+	println('\nAll 5 demo charts written to ${out_dir}')
 }

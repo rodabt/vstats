@@ -25,3 +25,17 @@ fn test__dumbbell_show_values_labels_both_points() {
 	assert svg.contains('>10<')
 	assert svg.contains('>25<')
 }
+
+fn test__xmin_forces_x_axis_start() {
+	// without xmin(), the x-axis would start near the data min (180); xmin(100) should
+	// force the domain to start at 100 instead, shifting where value 180 lands on-screen.
+	without := chart.new(width: 500, height: 300)
+		.dumbbell([320.0, 410.0], [180.0, 260.0], ['A', 'B'])
+		.render()
+	with_override := chart.new(width: 500, height: 300)
+		.xmin(100.0)
+		.dumbbell([320.0, 410.0], [180.0, 260.0], ['A', 'B'])
+		.render()
+	assert with_override.contains('>100<')
+	assert without != with_override
+}

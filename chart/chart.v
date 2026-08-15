@@ -39,6 +39,7 @@ struct Series {
 	labels         []string
 	colors         []string   // per-segment colors (stacked_bar)
 	secondary_axis bool
+	pct            bool // stacked_bar_pct: values are already normalized to 0..100
 }
 
 pub struct Chart {
@@ -54,6 +55,8 @@ mut:
 	hlines       []f64
 	vlines       []f64
 	xcategories_ []string
+	xmin_override     f64
+	has_xmin_override bool
 }
 
 @[params]
@@ -227,6 +230,13 @@ pub fn (c Chart) ylabel(s string) Chart {
 pub fn (c Chart) xcategories(labels []string) Chart {
 	mut nc := c
 	nc.xcategories_ = labels.clone()
+	return nc
+}
+
+pub fn (c Chart) xmin(v f64) Chart {
+	mut nc := c
+	nc.xmin_override = v
+	nc.has_xmin_override = true
 	return nc
 }
 
@@ -448,6 +458,41 @@ pub fn (c Chart) stacked_bar(groups [][]f64, opts SeriesOpts) Chart {
 	return nc
 }
 
+// stacked_bar_pct normalizes each group's values to percentages of that
+// group's total (summing to 100), so every bar reaches full height.
+pub fn (c Chart) stacked_bar_pct(groups [][]f64, opts SeriesOpts) Chart {
+	assert groups.len > 0
+	nseg := groups[0].len
+	assert nseg > 0
+	mut flat := []f64{cap: groups.len * nseg}
+	for grp in groups {
+		assert grp.len == nseg
+		mut total := 0.0
+		for v in grp {
+			total += v
+		}
+		for v in grp {
+			flat << if total > 0.0 { v / total * 100.0 } else { 0.0 }
+		}
+	}
+	mut nc := c
+	mut sv := c.series.clone()
+	sv << Series{
+		kind:           .stacked_bar
+		x:              flat
+		nbins:          nseg
+		label:          opts.label
+		color:          ''
+		labels:         opts.labels.clone()
+		colors:         opts.colors.clone()
+		show_values:    true
+		secondary_axis: opts.secondary_axis
+		pct:            true
+	}
+	nc.series = sv
+	return nc
+}
+
 pub fn (c Chart) waterfall(values []f64, labels []string, opts SeriesOpts) Chart {
 	assert values.len >= 2
 	assert labels.len == values.len
@@ -641,6 +686,14 @@ fn hex_to_rgb(hex string) (f64, f64, f64) {
 	gv := f64(strconv.parse_uint(h[2..4], 16, 8) or { 0 })
 	b := f64(strconv.parse_uint(h[4..6], 16, 8) or { 0 })
 	return r, gv, b
+}
+
+// contrast_text_color picks black or white text based on the perceptual
+// brightness of a hex background color (ITU-R BT.601 luma).
+fn contrast_text_color(hex string) string {
+	r, gv, b := hex_to_rgb(hex)
+	luminance := 0.299 * r + 0.587 * gv + 0.114 * b
+	return if luminance > 140.0 { '#000000' } else { '#ffffff' }
 }
 
 fn lerp_color(lo string, hi string, t f64) string {
@@ -933,7 +986,11 @@ fn (c Chart) data_bounds() (f64, f64, f64, f64) {
 	if primary.len == 0 {
 		primary = c.series.clone()
 	}
-	return bounds_for(primary)
+	xmin, xmax, ymin, ymax := bounds_for(primary)
+	if c.has_xmin_override {
+		return c.xmin_override, xmax, ymin, ymax
+	}
+	return xmin, xmax, ymin, ymax
 }
 
 fn (c Chart) data_bounds_secondary() (f64, f64, f64, f64) {
@@ -962,8 +1019,9 @@ pub fn (c Chart) effective_margins() (int, int, int, int) {
 	mut ml := t.margin_left
 	mut mr := t.margin_right
 	mt := t.margin_top
-	mb := t.margin_bottom
+	mut mb := t.margin_bottom
 	_, _, ymin, ymax := c.data_bounds()
+	legend_below := c.has_secondary_series()
 
 	// left: widest y-axis label (numeric ticks or categorical row labels) + axis title
 	mut max_left := 0.0
@@ -999,7 +1057,7 @@ pub fn (c Chart) effective_margins() (int, int, int, int) {
 				}
 			}
 		}
-		if s.label != '' {
+		if s.label != '' && !legend_below {
 			w, _ := text_extent(s.label, t.font_size)
 			lw := w + 24.0 // legend swatch + gap
 			if lw > max_right {
@@ -1021,6 +1079,21 @@ pub fn (c Chart) effective_margins() (int, int, int, int) {
 	need_right := int(max_right) + 8
 	if need_right > mr {
 		mr = need_right
+	}
+
+	if legend_below {
+		mut labeled_count := 0
+		for s in c.series {
+			if s.label != '' {
+				labeled_count++
+			}
+		}
+		if labeled_count >= 2 {
+			need_bottom := t.margin_bottom + int(t.font_size) + 22
+			if need_bottom > mb {
+				mb = need_bottom
+			}
+		}
 	}
 
 	return ml, mr, mt, mb
@@ -1983,14 +2056,34 @@ fn (c Chart) draw_value_labels(mut scene Scene, g Geom) {
 					for j in 0 .. nseg {
 						seg_val := s.x[i * nseg + j]
 						mid_py := g.yscale.map(cum + seg_val / 2.0)
-						scene.primitives << Text{
-							x:       cx
-							y:       mid_py + t.font_size * 0.35
-							content: fmt_tick(seg_val)
-							size:    t.font_size
-							fill:    t.axis_color
-							anchor:  .middle
-							family:  t.font_family
+						if s.pct {
+							bottom_px := g.yscale.map(cum)
+							top_px := g.yscale.map(cum + seg_val)
+							seg_h := math.abs(bottom_px - top_px)
+							content := '${int(math.round(seg_val))}%'
+							_, th := text_extent(content, t.font_size)
+							if seg_h >= th * 1.6 {
+								col := if s.colors.len > j { s.colors[j] } else { c.theme.color(j) }
+								scene.primitives << Text{
+									x:       cx
+									y:       mid_py + t.font_size * 0.35
+									content: content
+									size:    t.font_size
+									fill:    contrast_text_color(col)
+									anchor:  .middle
+									family:  t.font_family
+								}
+							}
+						} else {
+							scene.primitives << Text{
+								x:       cx
+								y:       mid_py + t.font_size * 0.35
+								content: fmt_tick(seg_val)
+								size:    t.font_size
+								fill:    t.axis_color
+								anchor:  .middle
+								family:  t.font_family
+							}
 						}
 						cum += seg_val
 					}
@@ -2063,11 +2156,14 @@ fn (c Chart) draw_value_labels(mut scene Scene, g Geom) {
 				mut cum := 0.0
 				for i, v in s.y {
 					is_total := i == 0 || i == s.y.len - 1
+					mut base := cum
 					if is_total {
 						cum = v
+						base = 0.0
 					} else {
 						cum += v
 					}
+					top := ys.map(math.max(base, cum))
 					text := if is_total {
 						fmt_tick(cum)
 					} else if v >= 0.0 {
@@ -2077,7 +2173,7 @@ fn (c Chart) draw_value_labels(mut scene Scene, g Geom) {
 					}
 					scene.primitives << Text{
 						x:       g.xscale.map(f64(i))
-						y:       ys.map(cum) - 4.0
+						y:       top - 4.0
 						content: text
 						size:    t.font_size
 						fill:    t.axis_color
@@ -2126,6 +2222,42 @@ fn (c Chart) draw_legend(mut scene Scene, g Geom) {
 		}
 	}
 	if labeled.len < 2 {
+		return
+	}
+	if g.has_secondary {
+		// combo chart: horizontal legend centered below the plot, clear of x-axis ticks
+		mut total_w := 0.0
+		mut widths := []f64{}
+		for s in labeled {
+			w, _ := text_extent(s.label, t.font_size)
+			item_w := 18.0 + w
+			widths << item_w
+			total_w += item_w
+		}
+		total_w += f64(labeled.len - 1) * 16.0 // gap between items
+		mut lx := g.plot_x + (g.plot_w - total_w) / 2.0
+		ly := g.plot_y + g.plot_h + f64(t.font_size) + 20.0
+		for i, s in labeled {
+			scene.primitives << Rect{
+				x:      lx
+				y:      ly
+				w:      12.0
+				h:      12.0
+				fill:   s.color
+				stroke: 'none'
+				width:  0.0
+			}
+			scene.primitives << Text{
+				x:       lx + 18.0
+				y:       ly + 11.0
+				content: s.label
+				size:    t.font_size
+				fill:    t.axis_color
+				anchor:  .start
+				family:  t.font_family
+			}
+			lx += widths[i] + 16.0
+		}
 		return
 	}
 	lx := g.plot_x + g.plot_w + 8.0 // sit in the reserved right margin, clear of the plot
