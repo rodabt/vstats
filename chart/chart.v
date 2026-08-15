@@ -471,6 +471,34 @@ pub fn (c Chart) waterfall(values []f64, labels []string, opts SeriesOpts) Chart
 	return nc
 }
 
+pub fn (c Chart) grouped_bar(groups [][]f64, opts SeriesOpts) Chart {
+	assert groups.len > 0
+	nseg := groups[0].len
+	assert nseg > 0
+	mut flat := []f64{cap: groups.len * nseg}
+	for grp in groups {
+		assert grp.len == nseg
+		for v in grp {
+			flat << v
+		}
+	}
+	mut nc := c
+	mut sv := c.series.clone()
+	sv << Series{
+		kind:           .grouped_bar
+		x:              flat
+		nbins:          nseg
+		label:          opts.label
+		color:          ''
+		labels:         opts.labels.clone()
+		colors:         opts.colors.clone()
+		show_values:    opts.show_values
+		secondary_axis: opts.secondary_axis
+	}
+	nc.series = sv
+	return nc
+}
+
 // ---- geometry & bounds ----
 
 struct Geom {
@@ -803,7 +831,18 @@ fn series_bounds(s Series) (f64, f64, f64, f64) {
 			-0.5, f64(s.y.len) - 0.5, ymin, ymax
 		}
 		.grouped_bar {
-			-0.5, 0.5, 0.0, 1.0 // implemented in Task 4
+			nseg := s.nbins
+			if nseg == 0 {
+				return -0.5, 0.5, 0.0, 1.0
+			}
+			nbars := s.x.len / nseg
+			mut max_seg := 0.0
+			for v in s.x {
+				if v > max_seg {
+					max_seg = v
+				}
+			}
+			-0.5, f64(nbars) - 0.5, 0.0, max_seg
 		}
 		.dumbbell {
 			-0.5, 0.5, 0.0, 1.0 // implemented in Task 5
@@ -1394,7 +1433,37 @@ fn (c Chart) draw_series(mut scene Scene, g Geom) {
 					}
 				}
 			}
-			.grouped_bar {}
+			.grouped_bar {
+				ys := g.yscale_for(s)
+				nseg := s.nbins
+				if nseg == 0 {
+					continue
+				}
+				nbars := s.x.len / nseg
+				band := g.xscale.map(1.0) - g.xscale.map(0.0)
+				bw := band * 0.8
+				sub_bw := bw / f64(nseg)
+				baseline := ys.map(0.0)
+				for i in 0 .. nbars {
+					cx := g.xscale.map(f64(i))
+					bar_lbl := if s.labels.len > i { s.labels[i] } else { fmt_tick(f64(i)) }
+					for j in 0 .. nseg {
+						seg_val := s.x[i * nseg + j]
+						top := ys.map(seg_val)
+						col := if s.colors.len > j { s.colors[j] } else { c.theme.color(j) }
+						scene.primitives << Rect{
+							x:      cx - bw / 2.0 + f64(j) * sub_bw
+							y:      math.min(top, baseline)
+							w:      sub_bw
+							h:      math.abs(baseline - top)
+							fill:   col
+							stroke: 'none'
+							width:  0.0
+							meta:   seg_meta(bar_lbl, j, seg_val)
+						}
+					}
+				}
+			}
 			.dumbbell {}
 			.waterfall {
 				ys := g.yscale_for(s)
@@ -1480,7 +1549,7 @@ fn (c Chart) draw_ticks(mut scene Scene, g Geom) {
 		if s.kind in [.dot, .hbar] && s.labels.len > 0 && y_cat_labels.len == 0 {
 			y_cat_labels = s.labels.clone()
 		}
-		if s.kind in [.stacked_bar, .waterfall] && s.labels.len > 0 && x_cat_labels.len == 0 {
+		if s.kind in [.stacked_bar, .waterfall, .grouped_bar] && s.labels.len > 0 && x_cat_labels.len == 0 {
 			x_cat_labels = s.labels.clone()
 		}
 		if s.kind == .heatmap && s.labels.len > 0 {
@@ -1882,6 +1951,33 @@ fn (c Chart) draw_value_labels(mut scene Scene, g Geom) {
 							x:       px
 							y:       py + t.font_size * 0.35
 							content: c.value_text(s, i * ncols + j, s.x[i * ncols + j])
+							size:    t.font_size
+							fill:    t.axis_color
+							anchor:  .middle
+							family:  t.font_family
+						}
+					}
+				}
+			}
+			.grouped_bar {
+				ys := g.yscale_for(s)
+				nseg := s.nbins
+				if nseg == 0 {
+					continue
+				}
+				nbars := s.x.len / nseg
+				band := g.xscale.map(1.0) - g.xscale.map(0.0)
+				bw := band * 0.8
+				sub_bw := bw / f64(nseg)
+				for i in 0 .. nbars {
+					cx := g.xscale.map(f64(i))
+					for j in 0 .. nseg {
+						seg_val := s.x[i * nseg + j]
+						top := ys.map(seg_val)
+						scene.primitives << Text{
+							x:       cx - bw / 2.0 + (f64(j) + 0.5) * sub_bw
+							y:       top - 4.0
+							content: fmt_tick(seg_val)
 							size:    t.font_size
 							fill:    t.axis_color
 							anchor:  .middle
