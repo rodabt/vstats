@@ -14,6 +14,18 @@ fn test__normal_cdf() {
 	assert prob.normal_cdf(0.0, 0.0, 1.0) < prob.normal_cdf(1.0, 0.0, 1.0)
 }
 
+fn test__qq_points() {
+	theoretical, sample := prob.qq_points([f64(3), 1, 4, 2])
+	assert sample == [f64(1), 2, 3, 4]
+	assert theoretical.len == 4
+	// plotting positions (i-0.5)/n are symmetric around 0.5, so theoretical
+	// quantiles from the standard normal must be symmetric around 0.
+	assert math.abs(theoretical[0] + theoretical[3]) < 1e-4
+	assert math.abs(theoretical[1] + theoretical[2]) < 1e-4
+	assert theoretical[0] < theoretical[1]
+	assert theoretical[1] < theoretical[2]
+}
+
 fn test__bernoulli_pdf() {
 	assert prob.bernoulli_pdf(1.0, 0.5) == 0.5
 	assert prob.bernoulli_pdf(0.0, 0.5) == 0.5

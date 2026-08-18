@@ -133,6 +133,14 @@ fn test__rtm_correction_no_selection() {
 	assert result == 0.0
 }
 
+fn test__ecdf() {
+	xs, probs := stats.ecdf([f64(3), 1, 2])
+	assert xs == [f64(1), 2, 3]
+	assert math.abs(probs[0] - 1.0 / 3.0) < 1e-9
+	assert math.abs(probs[1] - 2.0 / 3.0) < 1e-9
+	assert math.abs(probs[2] - 1.0) < 1e-9
+}
+
 fn test__rtm_correction_positive_shift() {
 	// With positive correlation, selected-above-threshold units should have
 	// predicted followup > overall followup mean → positive RTM shift

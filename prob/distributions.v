@@ -10,6 +10,21 @@ pub struct DistribParams {
 	tolerance	f64 = 0.00001
 }
 
+// qq_points returns (theoretical, sample) standard-normal Q-Q plot coordinates
+// for x: sample is x sorted ascending, theoretical is the matching standard-normal
+// quantile at plotting position (i-0.5)/n, suitable for chart.scatter().
+pub fn qq_points(x []f64) ([]f64, []f64) {
+	mut sample := x.clone()
+	sample.sort()
+	n := sample.len
+	mut theoretical := []f64{len: n}
+	for i in 0 .. n {
+		p := (f64(i) + 0.5) / f64(n)
+		theoretical[i] = inverse_normal_cdf(p, 0, 1, DistribParams{})
+	}
+	return theoretical, sample
+}
+
 pub fn beta_function(x f64, y f64) f64 {
     return math.gamma(x) * math.gamma(y) / math.gamma(x + y)
 }

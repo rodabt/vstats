@@ -40,6 +40,18 @@ pub fn quantile(x []f64, p f64) f64 {
 	return x_sorted[p_index]
 }
 
+// ecdf returns the empirical CDF of x as (sorted_values, cumulative_probabilities),
+// suitable for plotting with chart.step().
+pub fn ecdf(x []f64) ([]f64, []f64) {
+	mut x_sorted := x.clone()
+	x_sorted.sort()
+	mut probs := []f64{len: x_sorted.len}
+	for i in 0 .. x_sorted.len {
+		probs[i] = f64(i + 1) / f64(x_sorted.len)
+	}
+	return x_sorted, probs
+}
+
 pub fn mode(x []f64) []f64 {
 	counts := arrays.map_of_counts(x)
 	max_count := arrays.max(counts.values()) or {0}
